@@ -1,5 +1,5 @@
-import { api } from "../api/apiClient";
-import { endpoints } from "../api/endpoints";
+import { api } from "../../api/apiClient";
+import { endpoints } from "../../api/endpoints";
 
 export const jobsService = {
   // JobsPage: lista jobs de coleta (rota global, independente da fonte).

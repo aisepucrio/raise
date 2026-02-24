@@ -1,12 +1,11 @@
-import { api } from "../api/apiClient";
-import { endpoints } from "../api/endpoints";
-import type { JiraSection } from "../api/endpoints";
+import { api } from "../../api/apiClient";
+import { endpoints } from "../../api/endpoints";
+import type { JiraSection } from "../../api/endpoints";
 import {
-  getDateInputBounds,
   type ApiDateRangeResponse,
   type DateFilterRange,
   type RequestOptions,
-} from "./shared";
+} from "../shared";
 
 const SOURCE = "jira" as const;
 
@@ -35,11 +34,6 @@ export type JiraPreviewParams = {
   created__lte?: string;
 };
 
-export type JiraExportBody = {
-  // No fluxo atual Jira exporta basicamente o formato.
-  format: "json" | "csv" | "xlsx" | string;
-};
-
 export type JiraProject = { jira_domain: string; project_key: string };
 export type JiraCollectBody = {
   projects: JiraProject[];
@@ -53,21 +47,14 @@ export const jiraService = {
     api.get(endpoints.dashboard(SOURCE), { params, signal: options?.signal }),
 
   // Overview e Preview: faixa de datas para limitar filtros por projeto.
-  getDateRange: (params: JiraDateRangeParams, options?: RequestOptions) =>
+  getDateRange: (
+    params: JiraDateRangeParams,
+    options?: RequestOptions,
+  ): Promise<ApiDateRangeResponse> =>
     api.get<ApiDateRangeResponse>(endpoints.dateRange(SOURCE), {
       params,
       signal: options?.signal,
-    }),
-
-  // Overview e Preview: atalho para buscar date-range pelo item selecionado.
-  getDateRangeByItem: (itemId: string, options?: RequestOptions) =>
-    api.get<ApiDateRangeResponse>(endpoints.dateRange(SOURCE), {
-      params: { project_id: itemId },
-      signal: options?.signal,
-    }),
-
-  // Overview e Preview: normaliza min/max_date para input de data.
-  toDateBounds: getDateInputBounds,
+    }) as Promise<ApiDateRangeResponse>,
 
   // ChartLine (Overview): serie acumulada por intervalo.
   getGraph: (params: JiraGraphParams, options?: RequestOptions) =>
@@ -84,9 +71,9 @@ export const jiraService = {
       signal: options?.signal,
     }),
 
-  // ModalDownload (Preview): exporta dados do Jira.
-  exportPreview: (body: JiraExportBody, options?: RequestOptions) =>
-    api.post(endpoints.export(SOURCE), body, {
+  // ModalDownload (Preview): exporta no formato padrão atual (json).
+  exportPreview: (options?: RequestOptions) =>
+    api.post(endpoints.export(SOURCE), { format: "json" }, {
       responseType: "blob",
       signal: options?.signal,
     }),

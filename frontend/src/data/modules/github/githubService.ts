@@ -1,12 +1,11 @@
-import { api } from "../api/apiClient";
-import { endpoints } from "../api/endpoints";
-import type { GithubSection } from "../api/endpoints";
+import { api } from "../../api/apiClient";
+import { endpoints } from "../../api/endpoints";
+import type { GithubSection } from "../../api/endpoints";
 import {
-  getDateInputBounds,
   type ApiDateRangeResponse,
   type DateFilterRange,
   type RequestOptions,
-} from "./shared";
+} from "../shared";
 
 const SOURCE = "github" as const;
 
@@ -32,14 +31,6 @@ export type GithubPreviewParams = {
   created_at__lte?: string;
 };
 
-type GithubExportFormat = "json" | "csv" | "xlsx" | string;
-
-export type GithubExportBody = {
-  format: GithubExportFormat;
-  table?: string;
-  data_type?: string;
-};
-
 export type GithubCollectType =
   | "metadata"
   | "issues"
@@ -55,46 +46,20 @@ export type GithubCollectBody = {
   end_date?: string;
 };
 
-const buildExportBodyFromSection = (
-  section: GithubSection,
-  format: GithubExportFormat = "json",
-): GithubExportBody => {
-  // O backend do GitHub usa combinacoes diferentes por secao.
-  if (section === "commits") return { format, table: "githubcommit" };
-  if (section === "issues") {
-    return { format, table: "githubissuepullrequest", data_type: "issue" };
-  }
-  if (section === "pull-requests") {
-    return {
-      format,
-      table: "githubissuepullrequest",
-      data_type: "pull_request",
-    };
-  }
-  return { format };
-};
-
 export const githubService = {
   // Overview e ItemSwitcher: cards do dashboard e lista de repositorios.
   getOverview: (params?: GithubOverviewParams, options?: RequestOptions) =>
     api.get(endpoints.dashboard(SOURCE), { params, signal: options?.signal }),
 
   // Overview e Preview: faixa de datas para limitar filtros por repositorio.
-  getDateRange: (params: GithubDateRangeParams, options?: RequestOptions) =>
+  getDateRange: (
+    params: GithubDateRangeParams,
+    options?: RequestOptions,
+  ): Promise<ApiDateRangeResponse> =>
     api.get<ApiDateRangeResponse>(endpoints.dateRange(SOURCE), {
       params,
       signal: options?.signal,
-    }),
-
-  // Overview e Preview: atalho para buscar date-range pelo item selecionado.
-  getDateRangeByItem: (itemId: string, options?: RequestOptions) =>
-    api.get<ApiDateRangeResponse>(endpoints.dateRange(SOURCE), {
-      params: { repository_id: itemId },
-      signal: options?.signal,
-    }),
-
-  // Overview e Preview: normaliza min/max_date para input de data.
-  toDateBounds: getDateInputBounds,
+    }) as Promise<ApiDateRangeResponse>,
 
   // ChartLine (Overview): serie acumulada por intervalo.
   getGraph: (params: GithubGraphParams, options?: RequestOptions) =>
@@ -114,23 +79,16 @@ export const githubService = {
       signal: options?.signal,
     }),
 
-  // ModalDownload (Preview): exporta usando body informado.
-  exportPreview: (body: GithubExportBody, options?: RequestOptions) =>
-    api.post(endpoints.export(SOURCE), body, {
-      responseType: "blob",
-      signal: options?.signal,
-    }),
-
-  // ModalDownload (Preview): monta o body de export pela secao.
-  exportPreviewBySection: (
-    section: GithubSection,
-    format: GithubExportFormat = "json",
-    options?: RequestOptions,
-  ) =>
-    api.post(endpoints.export(SOURCE), buildExportBodyFromSection(section, format), {
-      responseType: "blob",
-      signal: options?.signal,
-    }),
+  // ModalDownload (Preview): exporta no formato padrão atual (json).
+  exportPreview: (options?: RequestOptions) =>
+    api.post(
+      endpoints.export(SOURCE),
+      { format: "json" },
+      {
+        responseType: "blob",
+        signal: options?.signal,
+      },
+    ),
 
   // Collect: inicia a coleta de GitHub via endpoint padronizado.
   collect: (body: GithubCollectBody, options?: RequestOptions) =>

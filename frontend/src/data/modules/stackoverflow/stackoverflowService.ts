@@ -1,12 +1,11 @@
-import { api } from "../api/apiClient";
-import { endpoints } from "../api/endpoints";
-import type { StackOverflowSection } from "../api/endpoints";
+import { api } from "../../api/apiClient";
+import { endpoints } from "../../api/endpoints";
+import type { StackOverflowSection } from "../../api/endpoints";
 import {
-  getDateInputBounds,
   type ApiDateRangeResponse,
   type DateFilterRange,
   type RequestOptions,
-} from "./shared";
+} from "../shared";
 
 const SOURCE = "stackoverflow" as const;
 
@@ -24,11 +23,6 @@ export type StackOverflowOverviewParams = DateFilterRange & { question_id?: stri
 export type StackOverflowDateRangeParams = { question_id: string };
 export type StackOverflowGraphParams = DateFilterRange & {
   interval: "day" | "month" | "year";
-};
-
-export type StackOverflowExportBody = {
-  // No fluxo atual Stack Overflow exporta basicamente o formato.
-  format: "json" | "csv" | "xlsx" | string;
 };
 
 export type StackOverflowCollectBody = {
@@ -50,21 +44,11 @@ export const stackoverflowService = {
   getDateRange: (
     params: StackOverflowDateRangeParams,
     options?: RequestOptions,
-  ) =>
+  ): Promise<ApiDateRangeResponse> =>
     api.get<ApiDateRangeResponse>(endpoints.dateRange(SOURCE), {
       params,
       signal: options?.signal,
-    }),
-
-  // Overview e Preview: atalho para buscar date-range pelo item selecionado.
-  getDateRangeByItem: (itemId: string, options?: RequestOptions) =>
-    api.get<ApiDateRangeResponse>(endpoints.dateRange(SOURCE), {
-      params: { question_id: itemId },
-      signal: options?.signal,
-    }),
-
-  // Overview e Preview: normaliza min/max_date para input de data.
-  toDateBounds: getDateInputBounds,
+    }) as Promise<ApiDateRangeResponse>,
 
   // ChartLine (Overview): serie acumulada por intervalo (sem question_id).
   getGraph: (params: StackOverflowGraphParams, options?: RequestOptions) =>
@@ -84,9 +68,9 @@ export const stackoverflowService = {
       signal: options?.signal,
     }),
 
-  // ModalDownload (Preview): exporta dados de Stack Overflow.
-  exportPreview: (body: StackOverflowExportBody, options?: RequestOptions) =>
-    api.post(endpoints.export(SOURCE), body, {
+  // ModalDownload (Preview): exporta no formato padrão atual (json).
+  exportPreview: (options?: RequestOptions) =>
+    api.post(endpoints.export(SOURCE), { format: "json" }, {
       responseType: "blob",
       signal: options?.signal,
     }),
