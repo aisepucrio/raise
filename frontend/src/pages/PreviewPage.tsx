@@ -1,9 +1,25 @@
+import { getQueryErrorMessage, stackoverflowModule } from "@/data";
+
 export default function PreviewPage() {
+  const stackPreviewQuery = stackoverflowModule.queries.useStackOverflowPreviewQuery(
+    "questions",
+    {
+      page: 1,
+      page_size: 10,
+    },
+  );
+
   return (
-    <section className="space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-bold">Preview</h1>
-      </header>
-    </section>
+    <div>
+      {stackPreviewQuery.isPending && <p>Carregando preview...</p>}
+
+      {stackPreviewQuery.isError && (
+        <p>{getQueryErrorMessage(stackPreviewQuery.error, "Erro ao carregar preview.")}</p>
+      )}
+
+      {stackPreviewQuery.isSuccess && (
+        <pre>{JSON.stringify(stackPreviewQuery.data, null, 2)}</pre>
+      )}
+    </div>
   );
 }
