@@ -19,12 +19,12 @@ export default function SidebarNavItem({
       onClick={onClick}
       aria-current={active ? "page" : undefined}
       className={[
-        "sidebar-nav-item",
-        "-ml-6 flex w-[calc(80%+1.5rem)] self-start items-center gap-3 rounded-none rounded-r-xl bg-transparent px-6 py-3 text-left",
+        "-ml-6 flex w-[calc(80%+1.5rem)] self-start items-center gap-3 rounded-none rounded-r-md border-0 border-r-2 border-r-transparent px-6 py-2 text-left",
         "text-[1.05rem] font-semibold transition-colors duration-150",
+        "focus-visible:outline-none",
         active
-          ? "sidebar-nav-item-active opacity-100"
-          : "opacity-85 hover:opacity-100",
+          ? "[border-right-color:var(--color-sidebar-border)] [background-color:var(--color-sidebar-item-active-bg)] [color:var(--color-sidebar-item-active-fg)]"
+          : "bg-transparent opacity-85 hover:[background-color:var(--color-sidebar-item-hover-bg)]",
       ].join(" ")}
     >
       <Icon className="shrink-0" size={18} strokeWidth={2.1} />
