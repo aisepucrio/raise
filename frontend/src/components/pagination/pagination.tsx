@@ -57,7 +57,7 @@ function PaginationLink({
     <Button
       aria-current={isActive ? "page" : undefined}
       fullWidth={false}
-      small
+      className="min-h-8.5 px-3 py-1"
       variant="selectable"
       selected={Boolean(isActive)}
       {...props}
@@ -72,7 +72,7 @@ function PaginationPrevious({
     <Button
       aria-label="Go to previous page"
       fullWidth={false}
-      small
+      className="min-h-8.5 px-3 py-1"
       text="Previous"
       icon={<ChevronLeftIcon />}
       iconSide="left"
@@ -88,7 +88,7 @@ function PaginationNext({
     <Button
       aria-label="Go to next page"
       fullWidth={false}
-      small
+      className="min-h-8.5 px-3 py-1"
       text="Next"
       icon={<ChevronRightIcon />}
       iconSide="right"

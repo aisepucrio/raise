@@ -3,7 +3,7 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 // Propriedades nativas de botão permitidas na API padronizada.
-type BasicButtonNativeProps = Pick<
+type ButtonBaseProps = Pick<
   ButtonHTMLAttributes<HTMLButtonElement>,
   | "id"
   | "type"
@@ -16,14 +16,12 @@ type BasicButtonNativeProps = Pick<
   | "form"
   | "aria-label"
   | "aria-current"
->;
-
-type ButtonBaseProps = BasicButtonNativeProps & {
+> & {
   text?: string;
   icon?: ReactNode;
   iconSide?: "left" | "right";
   fullWidth?: boolean;
-  small?: boolean;
+  className?: string;
   variant?: "default" | "selectable";
   selected?: boolean;
 };
@@ -42,11 +40,11 @@ function Button({
   name,
   value,
   form,
+  className,
   text,
   icon,
   iconSide = "left",
   fullWidth = true,
-  small = false,
   variant = "default",
   selected = false,
   "aria-label": ariaLabel,
@@ -90,12 +88,8 @@ function Button({
         "enabled:cursor-pointer disabled:cursor-not-allowed",
         "focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-form-focus)",
         isIconOnly
-          ? small
-            ? "w-9 min-h-8.5 px-0 py-0"
-            : "w-11 min-h-11 px-0 py-0"
-          : small
-            ? "px-3 py-1 min-h-8.5"
-            : "min-h-11 px-3.5 py-2.5",
+          ? "w-11 min-h-11 px-0 py-0"
+          : "min-h-11 px-3.5 py-2.5",
         fullWidth && !isIconOnly ? "w-full" : null,
         isSelectable
           ? selected
@@ -105,6 +99,7 @@ function Button({
         isSelectable
           ? "disabled:border-(--color-pagination-border) disabled:bg-transparent disabled:text-(--color-pagination-disabled-text) disabled:filter-none"
           : "disabled:bg-(--color-form-disabled-bg) disabled:text-(--color-form-disabled-text) disabled:filter-none",
+        className,
       )}
     >
       {iconSide === "left" ? iconNode : null}

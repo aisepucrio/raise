@@ -1,6 +1,9 @@
 import type { InputHTMLAttributes } from "react";
-import FormFieldBase from "./FormFieldBase";
-import { formControlBaseClassName } from "./formStyles";
+import { cn } from "@/lib/utils";
+import FormFieldBase, {
+  formControlBaseClassName,
+  type FormFieldLabelPosition,
+} from "./FormFieldBase";
 
 type NativeDateProps = Omit<InputHTMLAttributes<HTMLInputElement>, "type">;
 
@@ -9,6 +12,7 @@ type FormDateSelectorProps = NativeDateProps & {
   hint?: string;
   error?: string;
   wrapperClassName?: string;
+  labelPosition?: FormFieldLabelPosition;
 };
 
 export default function FormDateSelector({
@@ -18,6 +22,7 @@ export default function FormDateSelector({
   error,
   required,
   wrapperClassName,
+  labelPosition = "top",
   className,
   ...props
 }: FormDateSelectorProps) {
@@ -29,20 +34,18 @@ export default function FormDateSelector({
       error={error}
       required={required}
       className={wrapperClassName}
+      labelPosition={labelPosition}
     >
       <input
         id={id}
         type="date"
         required={required}
-        className={[
+        className={cn(
           formControlBaseClassName,
-          "min-w-0",
           "[&::-webkit-calendar-picker-indicator]:cursor-pointer",
           "[&::-webkit-calendar-picker-indicator]:filter-(--color-form-date-picker-indicator-filter)",
           className,
-        ]
-          .filter(Boolean)
-          .join(" ")}
+        )}
         {...props}
       />
     </FormFieldBase>

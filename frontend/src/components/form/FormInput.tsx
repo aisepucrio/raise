@@ -1,12 +1,16 @@
 import type { InputHTMLAttributes } from "react";
-import FormFieldBase from "./FormFieldBase";
-import { formControlBaseClassName } from "./formStyles";
+import { cn } from "@/lib/utils";
+import FormFieldBase, {
+  formControlBaseClassName,
+  type FormFieldLabelPosition,
+} from "./FormFieldBase";
 
 type FormInputProps = InputHTMLAttributes<HTMLInputElement> & {
   label?: string;
   hint?: string;
   error?: string;
   wrapperClassName?: string;
+  labelPosition?: FormFieldLabelPosition;
 };
 
 export default function FormInput({
@@ -16,6 +20,7 @@ export default function FormInput({
   error,
   required,
   wrapperClassName,
+  labelPosition = "top",
   className,
   type = "text",
   ...props
@@ -28,14 +33,16 @@ export default function FormInput({
       error={error}
       required={required}
       className={wrapperClassName}
+      labelPosition={labelPosition}
     >
       <input
         id={id}
         type={type}
         required={required}
-        className={[formControlBaseClassName, className]
-          .filter(Boolean)
-          .join(" ")}
+        className={cn(
+          formControlBaseClassName,
+          className,
+        )}
         {...props}
       />
     </FormFieldBase>

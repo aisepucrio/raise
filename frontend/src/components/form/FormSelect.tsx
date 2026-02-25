@@ -2,18 +2,18 @@ import { motion } from "motion/react";
 import { ChevronRight } from "lucide-react";
 import { useRef, useState } from "react";
 import type { KeyboardEvent, ReactNode, SelectHTMLAttributes } from "react";
-import FormFieldBase from "./FormFieldBase";
-import {
+import { cn } from "@/lib/utils";
+import FormFieldBase, {
   formControlBaseClassName,
-  formSelectIconClassName,
-  formSelectSpecificClassName,
-} from "./formStyles";
+  type FormFieldLabelPosition,
+} from "./FormFieldBase";
 
 type FormSelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
   label?: string;
   hint?: string;
   error?: string;
   wrapperClassName?: string;
+  labelPosition?: FormFieldLabelPosition;
   children: ReactNode;
 };
 
@@ -24,6 +24,7 @@ export default function FormSelect({
   error,
   required,
   wrapperClassName,
+  labelPosition = "top",
   className,
   children,
   ...props
@@ -44,7 +45,6 @@ export default function FormSelect({
     ) {
       setIsOpenLike(true);
     }
-
   };
 
   return (
@@ -55,10 +55,11 @@ export default function FormSelect({
       error={error}
       required={required}
       className={wrapperClassName}
+      labelPosition={labelPosition}
     >
       <div className="relative">
         <motion.span
-          className={formSelectIconClassName}
+          className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-[color:var(--color-form-text)]"
           aria-hidden="true"
           animate={{ rotate: isOpenLike ? 90 : 0 }}
           transition={{ duration: 0.16, ease: "easeOut" }}
@@ -81,20 +82,14 @@ export default function FormSelect({
           onFocus={() => {
             setIsOpenLike(true);
           }}
-          onBlur={() => {
-            setIsOpenLike(false);
-          }}
-          onChange={() => {
-            setIsOpenLike(false);
-          }}
+          onBlur={() => setIsOpenLike(false)}
+          onChange={() => setIsOpenLike(false)}
           onKeyDown={handleKeyDown}
-          className={[
+          className={cn(
             formControlBaseClassName,
-            formSelectSpecificClassName,
+            "appearance-none pl-9 pr-3",
             className,
-          ]
-            .filter(Boolean)
-            .join(" ")}
+          )}
           {...props}
         >
           {children}
