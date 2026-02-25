@@ -1,3 +1,4 @@
+import { PageHeader } from "@/components/page-header";
 import { getQueryErrorMessage, stackoverflowModule } from "@/data";
 
 export default function PreviewPage() {
@@ -10,7 +11,12 @@ export default function PreviewPage() {
   );
 
   return (
-    <div>
+    <section className="space-y-6">
+      <PageHeader
+        title="Preview"
+        subtitle="Visualize uma amostra dos dados antes do processamento."
+      />
+
       {stackPreviewQuery.isPending && <p>Carregando preview...</p>}
 
       {stackPreviewQuery.isError && (
@@ -20,6 +26,6 @@ export default function PreviewPage() {
       {stackPreviewQuery.isSuccess && (
         <pre>{JSON.stringify(stackPreviewQuery.data, null, 2)}</pre>
       )}
-    </div>
+    </section>
   );
 }

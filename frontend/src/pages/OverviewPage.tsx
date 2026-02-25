@@ -1,9 +1,12 @@
+import { PageHeader } from "@/components/page-header";
+
 export default function OverviewPage() {
   return (
     <section className="space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-bold">Overview</h1>
-      </header>
+      <PageHeader
+        title="Overview"
+        subtitle="Visão geral dos dados coletados e do status do pipeline."
+      />
     </section>
   );
 }
