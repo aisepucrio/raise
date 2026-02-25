@@ -36,6 +36,21 @@
   --color-blueberry-900-68: #0e1862ad;
   --color-blueberry-900-92: #0e1862eb;
 
+  /* Cores de status (JOBS) */
+  --color-status-in-progress-color-light: #6675e6;
+  --color-status-in-queue-color-light: #d08a12;
+  --color-status-finished-color-light: #1f9b8f;
+  --color-status-failure-color-light: #e35d72;
+  --color-status-cancelled-color-light: #7c879d;
+  --color-status-unknown-color-light: #62759a;
+
+  --color-status-in-progress-color-dark: #a8b4ff;
+  --color-status-in-queue-color-dark: #ffd36b;
+  --color-status-finished-color-dark: #63e6cf;
+  --color-status-failure-color-dark: #ff8da1;
+  --color-status-cancelled-color-dark: #c5cee0;
+  --color-status-unknown-color-dark: #9fb0cf;
+
   /* Tokens do shadcn/Tailwind usados localmente */
   --color-shadcn-border-light: oklch(0.923 0.003 48.717);
   --color-shadcn-ring-light: oklch(0.709 0.01 56.259);
@@ -95,6 +110,14 @@
   --color-pagination-active-border: var(--color-blueberry-900);
   --color-pagination-disabled-text: var(--color-blueberry-900-45);
   --color-pagination-ellipsis: var(--color-blueberry-900-68);
+
+  /* Status de jobs (versões resolvidas para o tema atual) */
+  --color-status-in-progress-color: var(--color-status-in-progress-color-light);
+  --color-status-in-queue-color: var(--color-status-in-queue-color-light);
+  --color-status-finished-color: var(--color-status-finished-color-light);
+  --color-status-failure-color: var(--color-status-failure-color-light);
+  --color-status-cancelled-color: var(--color-status-cancelled-color-light);
+  --color-status-unknown-color: var(--color-status-unknown-color-light);
 
   /* Ponte mínima para tokens semânticos usados por Tailwind/shadcn no projeto. */
   --background: var(--color-app-bg);
@@ -165,6 +188,16 @@
     --color-pagination-disabled-text: var(--color-metal-50-45);
     --color-pagination-ellipsis: var(--color-metal-50-68);
 
+    /* Status de jobs */
+    --color-status-in-progress-color: var(
+      --color-status-in-progress-color-dark
+    );
+    --color-status-in-queue-color: var(--color-status-in-queue-color-dark);
+    --color-status-finished-color: var(--color-status-finished-color-dark);
+    --color-status-failure-color: var(--color-status-failure-color-dark);
+    --color-status-cancelled-color: var(--color-status-cancelled-color-dark);
+    --color-status-unknown-color: var(--color-status-unknown-color-dark);
+
     /* Tokens semânticos mínimos expostos ao Tailwind/shadcn. */
     --border: var(--color-shadcn-border-dark);
     --ring: var(--color-shadcn-ring-dark);
@@ -220,6 +253,14 @@
   --color-pagination-active-border: var(--color-metal-50);
   --color-pagination-disabled-text: var(--color-metal-50-45);
   --color-pagination-ellipsis: var(--color-metal-50-68);
+
+  /* Status de jobs */
+  --color-status-in-progress-color: var(--color-status-in-progress-color-dark);
+  --color-status-in-queue-color: var(--color-status-in-queue-color-dark);
+  --color-status-finished-color: var(--color-status-finished-color-dark);
+  --color-status-failure-color: var(--color-status-failure-color-dark);
+  --color-status-cancelled-color: var(--color-status-cancelled-color-dark);
+  --color-status-unknown-color: var(--color-status-unknown-color-dark);
 
   /* Tokens semânticos mínimos expostos ao Tailwind/shadcn. */
   --border: var(--color-shadcn-border-dark);
