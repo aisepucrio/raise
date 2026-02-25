@@ -8,33 +8,132 @@
 
 /* Paleta base do app (tokens "brutos" reutilizados nos temas). */
 @theme {
-  /* Cores Principais */
-  --color-metal-50: #f3f4f7;
-  --color-blueberry-900: #0e1862;
+  /* Bases em RGB (mude aqui e tudo deriva automaticamente) */
+  /* Primaria -> Fundo, Secundaria -> Elementos de destaque (textos, botões, etc) */
+  --color-light-primary: #f3f4f7;
+  --color-light-secondary: #0e1862;
+  --color-dark-primary: #15161f;
+  --color-dark-secondary: #5f81ff;
 
-  /* Cores de estado */
+  /* Percentuais */
+  --p-15: 15%;
+  --p-25: 25%;
+  --p-50: 50%;
+  --p-70: 70%;
+  --p-90: 90%;
+
+  /* Derivadas: Light Primary */
+  --color-light-primary-15: color-mix(
+    in srgb,
+    var(--color-light-primary) var(--p-15),
+    transparent
+  );
+  --color-light-primary-25: color-mix(
+    in srgb,
+    var(--color-light-primary) var(--p-25),
+    transparent
+  );
+  --color-light-primary-50: color-mix(
+    in srgb,
+    var(--color-light-primary) var(--p-50),
+    transparent
+  );
+  --color-light-primary-70: color-mix(
+    in srgb,
+    var(--color-light-primary) var(--p-70),
+    transparent
+  );
+  --color-light-primary-90: color-mix(
+    in srgb,
+    var(--color-light-primary) var(--p-90),
+    transparent
+  );
+
+  /* Derivadas: Light Secondary */
+  --color-light-secondary-15: color-mix(
+    in srgb,
+    var(--color-light-secondary) var(--p-15),
+    transparent
+  );
+  --color-light-secondary-25: color-mix(
+    in srgb,
+    var(--color-light-secondary) var(--p-25),
+    transparent
+  );
+  --color-light-secondary-50: color-mix(
+    in srgb,
+    var(--color-light-secondary) var(--p-50),
+    transparent
+  );
+  --color-light-secondary-70: color-mix(
+    in srgb,
+    var(--color-light-secondary) var(--p-70),
+    transparent
+  );
+  --color-light-secondary-90: color-mix(
+    in srgb,
+    var(--color-light-secondary) var(--p-90),
+    transparent
+  );
+
+  /* Derivadas: Dark Primary */
+  --color-dark-primary-15: color-mix(
+    in srgb,
+    var(--color-dark-primary) var(--p-15),
+    transparent
+  );
+  --color-dark-primary-25: color-mix(
+    in srgb,
+    var(--color-dark-primary) var(--p-25),
+    transparent
+  );
+  --color-dark-primary-50: color-mix(
+    in srgb,
+    var(--color-dark-primary) var(--p-50),
+    transparent
+  );
+  --color-dark-primary-70: color-mix(
+    in srgb,
+    var(--color-dark-primary) var(--p-70),
+    transparent
+  );
+  --color-dark-primary-90: color-mix(
+    in srgb,
+    var(--color-dark-primary) var(--p-90),
+    transparent
+  );
+
+  /* Derivadas: Dark Secondary */
+  --color-dark-secondary-15: color-mix(
+    in srgb,
+    var(--color-dark-secondary) var(--p-15),
+    transparent
+  );
+  --color-dark-secondary-25: color-mix(
+    in srgb,
+    var(--color-dark-secondary) var(--p-25),
+    transparent
+  );
+  --color-dark-secondary-50: color-mix(
+    in srgb,
+    var(--color-dark-secondary) var(--p-50),
+    transparent
+  );
+  --color-dark-secondary-70: color-mix(
+    in srgb,
+    var(--color-dark-secondary) var(--p-70),
+    transparent
+  );
+  --color-dark-secondary-90: color-mix(
+    in srgb,
+    var(--color-dark-secondary) var(--p-90),
+    transparent
+  );
+
+  /* Auxiliares */
   --color-error-700: #b42318;
   --color-error-200: #ffb4b4;
   --color-transparent: transparent;
-
-  /* Cores secundáris (manuais) - Dar preferencia */
-  --color-darker-metal-50: #d5daf6;
-  --color-lighter-bluebery-900: #1b2a83;
-
-  /* Variações (alpha em hexadecimal) - Usar em casos onde a ideia é realmente sobreposição */
-  /* Metal */
-  --color-metal-50-08: #f3f4f714;
-  --color-metal-50-14: #f3f4f724;
-  --color-metal-50-45: #f3f4f773;
-  --color-metal-50-68: #f3f4f7ad;
-  --color-metal-50-92: #f3f4f7eb;
-
-  /* Blueberry */
-  --color-blueberry-900-08: #0e186214;
-  --color-blueberry-900-14: #0e186224;
-  --color-blueberry-900-45: #0e186273;
-  --color-blueberry-900-68: #0e1862ad;
-  --color-blueberry-900-92: #0e1862eb;
 
   /* Cores de status (JOBS) */
   --color-status-in-progress-color-light: #6675e6;
@@ -63,208 +162,203 @@
   font-family: "Montserrat", system-ui, sans-serif;
   color: var(--color-app-fg);
   background-color: var(--color-app-bg);
+  color-scheme: light;
 
-  /* Baseline light theme (used when `.light` is forced or when system preference is light). */
-  --color-app-fg: var(--color-blueberry-900);
-  --color-app-bg: var(--color-metal-50);
+  /* Tokens resolvidos por `color-scheme` (light/dark). */
+  --color-app-fg: light-dark(
+    var(--color-light-secondary),
+    var(--color-dark-secondary)
+  );
+  --color-app-bg: light-dark(
+    var(--color-light-primary),
+    var(--color-dark-primary)
+  );
 
   /* Sidebar (usa tokens próprios para não acoplar ao set semântico do shadcn). */
-  --color-sidebar-border: var(--color-darker-metal-50);
-  --color-sidebar-item-active-bg: var(--color-blueberry-900);
-  --color-sidebar-item-active-fg: var(--color-metal-50);
-  --color-sidebar-item-hover-bg: var(--color-blueberry-900-08);
+  --color-sidebar-border: light-dark(
+    var(--color-light-secondary-15),
+    var(--color-dark-secondary-25)
+  );
+  --color-sidebar-item-active-bg: light-dark(
+    var(--color-light-secondary),
+    var(--color-dark-secondary)
+  );
+  --color-sidebar-item-active-fg: light-dark(
+    var(--color-light-primary),
+    var(--color-dark-primary)
+  );
+  --color-sidebar-item-hover-bg: light-dark(
+    var(--color-light-secondary-15),
+    var(--color-dark-secondary-15)
+  );
 
   /* Form controls nativos/customizados do app. */
-  --color-form-label: var(--color-blueberry-900-92);
-  --color-form-hint: var(--color-blueberry-900-68);
-  --color-form-error: var(--color-error-700);
+  --color-form-label: light-dark(
+    var(--color-light-secondary-90),
+    var(--color-dark-secondary-90)
+  );
+  --color-form-hint: light-dark(
+    var(--color-light-secondary-70),
+    var(--color-dark-secondary-70)
+  );
+  --color-form-error: light-dark(
+    var(--color-error-700),
+    var(--color-error-200)
+  );
 
-  --color-form-bg: var(--color-blueberry-900);
-  --color-form-bg-hover: var(--color-lighter-bluebery-900);
+  --color-form-bg: light-dark(
+    var(--color-light-secondary),
+    var(--color-dark-secondary)
+  );
+  --color-form-bg-hover: light-dark(
+    var(--color-light-secondary-90),
+    var(--color-dark-secondary-90)
+  );
   --color-form-border: var(--color-transparent);
   --color-form-border-hover: var(--color-transparent);
-  --color-form-text: var(--color-metal-50);
-  --color-form-placeholder: var(--color-metal-50-68);
-  --color-form-focus: var(--color-lighter-bluebery-900);
-  --color-form-focus-ring: var(--color-lighter-bluebery-900);
-  --color-form-disabled-bg: var(--color-blueberry-900-68);
-  --color-form-disabled-text: var(--color-metal-50-68);
+  --color-form-text: light-dark(
+    var(--color-light-primary),
+    var(--color-dark-primary)
+  );
+  --color-form-placeholder: light-dark(
+    var(--color-light-primary-70),
+    var(--color-dark-primary-50)
+  );
+  --color-form-focus: light-dark(
+    var(--color-light-secondary-90),
+    var(--color-dark-secondary-90)
+  );
+  --color-form-focus-ring: light-dark(
+    var(--color-light-secondary-90),
+    var(--color-dark-secondary-90)
+  );
+  --color-form-disabled-bg: light-dark(
+    var(--color-light-secondary-70),
+    var(--color-dark-secondary-70)
+  );
+  --color-form-disabled-text: light-dark(
+    var(--color-light-primary-70),
+    var(--color-dark-primary-50)
+  );
   --color-form-date-picker-indicator-filter: brightness(0) saturate(100%)
     invert(97%) sepia(8%) saturate(233%) hue-rotate(191deg) brightness(105%)
     contrast(94%);
 
   /* Tabela (shadcn adaptado ao tema do app). */
-  --color-table-border: var(--color-blueberry-900-14);
-  --color-table-head-text: var(--color-blueberry-900-92);
-  --color-table-caption: var(--color-blueberry-900-68);
-  --color-table-footer-bg: var(--color-blueberry-900-08);
-  --color-table-row-hover-bg: var(--color-blueberry-900-08);
-  --color-table-row-selected-bg: var(--color-blueberry-900-08);
+  --color-table-border: light-dark(
+    var(--color-light-secondary-15),
+    var(--color-dark-secondary-15)
+  );
+  --color-table-head-text: light-dark(
+    var(--color-light-secondary-90),
+    var(--color-dark-secondary-90)
+  );
+  --color-table-caption: light-dark(
+    var(--color-light-secondary-70),
+    var(--color-dark-secondary-70)
+  );
+  --color-table-footer-bg: light-dark(
+    var(--color-light-secondary-15),
+    var(--color-dark-secondary-15)
+  );
+  --color-table-row-hover-bg: light-dark(
+    var(--color-light-secondary-15),
+    var(--color-dark-secondary-15)
+  );
+  --color-table-row-selected-bg: light-dark(
+    var(--color-light-secondary-15),
+    var(--color-dark-secondary-15)
+  );
 
   /* Paginação (shadcn adaptado ao tema do app + Button local). */
-  --color-pagination-text: var(--color-blueberry-900-92);
-  --color-pagination-border: var(--color-blueberry-900-14);
-  --color-pagination-hover-bg: var(--color-blueberry-900-08);
-  --color-pagination-active-bg: var(--color-blueberry-900);
-  --color-pagination-active-text: var(--color-metal-50);
-  --color-pagination-active-border: var(--color-blueberry-900);
-  --color-pagination-disabled-text: var(--color-blueberry-900-45);
-  --color-pagination-ellipsis: var(--color-blueberry-900-68);
+  --color-pagination-text: light-dark(
+    var(--color-light-secondary-90),
+    var(--color-dark-secondary-90)
+  );
+  --color-pagination-border: light-dark(
+    var(--color-light-secondary-15),
+    var(--color-dark-secondary-15)
+  );
+  --color-pagination-hover-bg: light-dark(
+    var(--color-light-secondary-15),
+    var(--color-dark-secondary-15)
+  );
+  --color-pagination-active-bg: light-dark(
+    var(--color-light-secondary),
+    var(--color-dark-secondary)
+  );
+  --color-pagination-active-text: light-dark(
+    var(--color-light-primary),
+    var(--color-dark-primary)
+  );
+  --color-pagination-active-border: light-dark(
+    var(--color-light-secondary),
+    var(--color-dark-secondary)
+  );
+  --color-pagination-disabled-text: light-dark(
+    var(--color-light-secondary-50),
+    var(--color-dark-secondary-50)
+  );
+  --color-pagination-ellipsis: light-dark(
+    var(--color-light-secondary-70),
+    var(--color-dark-secondary-70)
+  );
 
   /* Status de jobs (versões resolvidas para o tema atual) */
-  --color-status-in-progress-color: var(--color-status-in-progress-color-light);
-  --color-status-in-queue-color: var(--color-status-in-queue-color-light);
-  --color-status-finished-color: var(--color-status-finished-color-light);
-  --color-status-failure-color: var(--color-status-failure-color-light);
-  --color-status-cancelled-color: var(--color-status-cancelled-color-light);
-  --color-status-unknown-color: var(--color-status-unknown-color-light);
+  --color-status-in-progress-color: light-dark(
+    var(--color-status-in-progress-color-light),
+    var(--color-status-in-progress-color-dark)
+  );
+  --color-status-in-queue-color: light-dark(
+    var(--color-status-in-queue-color-light),
+    var(--color-status-in-queue-color-dark)
+  );
+  --color-status-finished-color: light-dark(
+    var(--color-status-finished-color-light),
+    var(--color-status-finished-color-dark)
+  );
+  --color-status-failure-color: light-dark(
+    var(--color-status-failure-color-light),
+    var(--color-status-failure-color-dark)
+  );
+  --color-status-cancelled-color: light-dark(
+    var(--color-status-cancelled-color-light),
+    var(--color-status-cancelled-color-dark)
+  );
+  --color-status-unknown-color: light-dark(
+    var(--color-status-unknown-color-light),
+    var(--color-status-unknown-color-dark)
+  );
 
   /* Ponte mínima para tokens semânticos usados por Tailwind/shadcn no projeto. */
   --background: var(--color-app-bg);
   --foreground: var(--color-app-fg);
-  --border: var(--color-shadcn-border-light);
-  --ring: var(--color-shadcn-ring-light);
-}
-
-/* Sem escolha explícita: assume light até avaliar a preferência do sistema. */
-:root:not(.light):not(.dark) {
-  color-scheme: light;
-}
-
-/* Classe explícita impede o navegador de alternar automaticamente depois. */
-:root.light {
-  color-scheme: light;
+  --border: light-dark(
+    var(--color-shadcn-border-light),
+    var(--color-shadcn-border-dark)
+  );
+  --ring: light-dark(
+    var(--color-shadcn-ring-light),
+    var(--color-shadcn-ring-dark)
+  );
 }
 
 /* Fallback para dark somente quando ainda não existe `.light`/`.dark` no root. */
 @media (prefers-color-scheme: dark) {
-  /* Manter os mesmos grupos/chaves de `:root.dark` para evitar divergência visual. */
   :root:not(.light):not(.dark) {
     color-scheme: dark;
-
-    --color-app-fg: var(--color-metal-50);
-    --color-app-bg: var(--color-blueberry-900);
-
-    /* Sidebar */
-    --color-sidebar-border: var(--color-lighter-bluebery-900);
-    --color-sidebar-item-active-bg: var(--color-metal-50);
-    --color-sidebar-item-active-fg: var(--color-blueberry-900);
-    --color-sidebar-item-hover-bg: var(--color-metal-50-08);
-
-    /* Forms */
-    --color-form-label: var(--color-metal-50-92);
-    --color-form-hint: var(--color-metal-50-68);
-    --color-form-error: var(--color-error-200);
-
-    --color-form-bg: var(--color-metal-50);
-    --color-form-bg-hover: var(--color-darker-metal-50);
-    --color-form-border: var(--color-transparent);
-    --color-form-border-hover: var(--color-transparent);
-    --color-form-text: var(--color-blueberry-900);
-    --color-form-placeholder: var(--color-blueberry-900-45);
-    --color-form-focus: var(--color-darker-metal-50);
-    --color-form-focus-ring: var(--color-darker-metal-50);
-    --color-form-disabled-bg: var(--color-metal-50-68);
-    --color-form-disabled-text: var(--color-blueberry-900-45);
     --color-form-date-picker-indicator-filter: brightness(0) saturate(100%)
       invert(8%) sepia(56%) saturate(3258%) hue-rotate(229deg) brightness(88%)
       contrast(103%);
-
-    /* Tabela */
-    --color-table-border: var(--color-metal-50-14);
-    --color-table-head-text: var(--color-metal-50-92);
-    --color-table-caption: var(--color-metal-50-68);
-    --color-table-footer-bg: var(--color-metal-50-08);
-    --color-table-row-hover-bg: var(--color-metal-50-08);
-    --color-table-row-selected-bg: var(--color-metal-50-08);
-
-    /* Paginação */
-    --color-pagination-text: var(--color-metal-50-92);
-    --color-pagination-border: var(--color-metal-50-14);
-    --color-pagination-hover-bg: var(--color-metal-50-08);
-    --color-pagination-active-bg: var(--color-metal-50);
-    --color-pagination-active-text: var(--color-blueberry-900);
-    --color-pagination-active-border: var(--color-metal-50);
-    --color-pagination-disabled-text: var(--color-metal-50-45);
-    --color-pagination-ellipsis: var(--color-metal-50-68);
-
-    /* Status de jobs */
-    --color-status-in-progress-color: var(
-      --color-status-in-progress-color-dark
-    );
-    --color-status-in-queue-color: var(--color-status-in-queue-color-dark);
-    --color-status-finished-color: var(--color-status-finished-color-dark);
-    --color-status-failure-color: var(--color-status-failure-color-dark);
-    --color-status-cancelled-color: var(--color-status-cancelled-color-dark);
-    --color-status-unknown-color: var(--color-status-unknown-color-dark);
-
-    /* Tokens semânticos mínimos expostos ao Tailwind/shadcn. */
-    --border: var(--color-shadcn-border-dark);
-    --ring: var(--color-shadcn-ring-dark);
   }
 }
 
-/* Override explícito de dark (mesmos grupos do fallback acima, mas "travado" pelo app). */
+/* Override explícito de dark (travado pelo app, independente do sistema). */
 :root.dark {
   color-scheme: dark;
-
-  --color-app-fg: var(--color-metal-50);
-  --color-app-bg: var(--color-blueberry-900);
-
-  /* Sidebar */
-  --color-sidebar-border: var(--color-lighter-bluebery-900);
-  --color-sidebar-item-active-bg: var(--color-metal-50);
-  --color-sidebar-item-active-fg: var(--color-blueberry-900);
-  --color-sidebar-item-hover-bg: var(--color-metal-50-08);
-
-  /* Forms */
-  --color-form-label: var(--color-metal-50-92);
-  --color-form-hint: var(--color-metal-50-68);
-  --color-form-error: var(--color-error-200);
-
-  --color-form-bg: var(--color-metal-50);
-  --color-form-bg-hover: var(--color-darker-metal-50);
-  --color-form-border: var(--color-transparent);
-  --color-form-border-hover: var(--color-transparent);
-  --color-form-text: var(--color-blueberry-900);
-  --color-form-placeholder: var(--color-blueberry-900-45);
-  --color-form-focus: var(--color-darker-metal-50);
-  --color-form-focus-ring: var(--color-darker-metal-50);
-  --color-form-disabled-bg: var(--color-metal-50-68);
-  --color-form-disabled-text: var(--color-blueberry-900-45);
   --color-form-date-picker-indicator-filter: brightness(0) saturate(100%)
     invert(8%) sepia(56%) saturate(3258%) hue-rotate(229deg) brightness(88%)
     contrast(103%);
-
-  /* Tabela */
-  --color-table-border: var(--color-metal-50-14);
-  --color-table-head-text: var(--color-metal-50-92);
-  --color-table-caption: var(--color-metal-50-68);
-  --color-table-footer-bg: var(--color-metal-50-08);
-  --color-table-row-hover-bg: var(--color-metal-50-08);
-  --color-table-row-selected-bg: var(--color-metal-50-08);
-
-  /* Paginação */
-  --color-pagination-text: var(--color-metal-50-92);
-  --color-pagination-border: var(--color-metal-50-14);
-  --color-pagination-hover-bg: var(--color-metal-50-08);
-  --color-pagination-active-bg: var(--color-metal-50);
-  --color-pagination-active-text: var(--color-blueberry-900);
-  --color-pagination-active-border: var(--color-metal-50);
-  --color-pagination-disabled-text: var(--color-metal-50-45);
-  --color-pagination-ellipsis: var(--color-metal-50-68);
-
-  /* Status de jobs */
-  --color-status-in-progress-color: var(--color-status-in-progress-color-dark);
-  --color-status-in-queue-color: var(--color-status-in-queue-color-dark);
-  --color-status-finished-color: var(--color-status-finished-color-dark);
-  --color-status-failure-color: var(--color-status-failure-color-dark);
-  --color-status-cancelled-color: var(--color-status-cancelled-color-dark);
-  --color-status-unknown-color: var(--color-status-unknown-color-dark);
-
-  /* Tokens semânticos mínimos expostos ao Tailwind/shadcn. */
-  --border: var(--color-shadcn-border-dark);
-  --ring: var(--color-shadcn-ring-dark);
 }
 
 /* Mantém o ícone nativo de date alinhado com o tema do app. */
