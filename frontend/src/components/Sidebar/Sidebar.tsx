@@ -32,7 +32,7 @@ export default function Sidebar() {
   const [sourceFilter, setSourceFilter] = useState("all");
 
   return (
-    <aside className="shrink-0 border-b-2 border-(--color-sidebar-border) p-6 md:flex md:min-h-dvh md:w-[15%] md:min-w-55 md:max-w-125 md:flex-col md:border-r-2 md:border-b-0">
+    <aside className="shrink-0 border-b-2 border-(--color-sidebar-border) p-4 md:flex md:min-h-dvh md:w-[15%] md:min-w-55 md:max-w-125 md:flex-col md:border-r-2 md:border-b-0">
       <div className="space-y-4">
         <div className="p-3">
           <div className="dark:hidden">
