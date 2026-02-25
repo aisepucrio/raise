@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 export const formControlBaseClassName =
-  "w-full min-w-0 min-h-11 box-border rounded-md !border-0 shadow-none px-3.5 py-2.5 [font:inherit] leading-[1.35] [color-scheme:light_dark] bg-[color:var(--color-form-bg)] text-[color:var(--color-form-text)] placeholder:text-[color:var(--color-form-placeholder)] outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus:[box-shadow:none] focus-visible:[box-shadow:none] disabled:cursor-not-allowed disabled:bg-[color:var(--color-form-disabled-bg)] disabled:text-[color:var(--color-form-disabled-text)] disabled:placeholder:text-[color:var(--color-form-disabled-text)]";
+  "w-full min-w-0 min-h-11 box-border rounded-md !border-0 shadow-none px-3.5 py-2.5 [font:inherit] leading-[1.35] bg-[color:var(--color-form-bg)] text-[color:var(--color-form-text)] placeholder:text-[color:var(--color-form-placeholder)] outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus:[box-shadow:none] focus-visible:[box-shadow:none] disabled:cursor-not-allowed disabled:bg-[color:var(--color-form-disabled-bg)] disabled:text-[color:var(--color-form-disabled-text)] disabled:placeholder:text-[color:var(--color-form-disabled-text)]";
 
 export type FormFieldLabelPosition = "top" | "left";
 
