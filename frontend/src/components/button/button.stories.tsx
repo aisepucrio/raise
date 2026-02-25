@@ -117,7 +117,7 @@ export const ComparacaoDeModo: Story = {
         >
           <p className="mb-3 text-sm font-semibold">Modo escuro (app)</p>
           <div className="flex items-center gap-3">
-            <Button text="Salvar" icon={<Plus />} />
+            <Button text="Salvar" icon={<Plus />} fullWidth={false} />
             <Button icon={<Download />} aria-label="Baixar" title="Baixar" />
           </div>
         </section>
@@ -128,7 +128,7 @@ export const ComparacaoDeModo: Story = {
         >
           <p className="mb-3 text-sm font-semibold">Modo claro (app)</p>
           <div className="flex items-center gap-3">
-            <Button text="Salvar" icon={<Plus />} />
+            <Button text="Salvar" icon={<Plus />} fullWidth={false} />
             <Button icon={<Download />} aria-label="Baixar" title="Baixar" />
           </div>
         </section>

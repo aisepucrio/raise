@@ -1,6 +1,14 @@
-import { Briefcase, Download, Eye, Home, type LucideIcon } from "lucide-react";
+import {
+  Briefcase,
+  Download,
+  Eye,
+  FileText,
+  Home,
+  type LucideIcon,
+} from "lucide-react";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { Button } from "../button";
 import { FormSelect } from "../form";
 import SidebarNavItem from "./SidebarNavItem";
 import ThemeSwitcher from "./ThemeSwitcher";
@@ -13,8 +21,8 @@ type SidebarRouteItem = {
 
 const sidebarItems: SidebarRouteItem[] = [
   { label: "Overview", to: "/", icon: Home },
-  { label: "Preview", to: "/preview", icon: Eye },
   { label: "Collect", to: "/collect", icon: Download },
+  { label: "Preview", to: "/preview", icon: Eye },
   { label: "Jobs", to: "/jobs", icon: Briefcase },
 ];
 
@@ -30,6 +38,7 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [sourceFilter, setSourceFilter] = useState("all");
+  const apiDocsUrl = import.meta.env.VITE_API_URL;
 
   return (
     <aside className="shrink-0 border-b-2 border-(--color-sidebar-border) p-4 md:flex md:min-h-dvh md:w-[15%] md:min-w-55 md:max-w-125 md:flex-col md:border-r-2 md:border-b-0">
@@ -91,8 +100,21 @@ export default function Sidebar() {
         </nav>
       </div>
 
-      <div className="mt-6 border-t-2 border-(--color-sidebar-border) pt-4 md:mt-auto">
-        <ThemeSwitcher />
+      <div className="mt-6 md:mt-auto">
+        <Button
+          text="API docs"
+          icon={<FileText />}
+          title={"Open API documentation "}
+          disabled={!apiDocsUrl}
+          onClick={() => {
+            if (!apiDocsUrl) return;
+            window.open(apiDocsUrl, "_blank", "noopener,noreferrer");
+          }}
+        />
+
+        <div className="mt-4 border-t-2 border-(--color-sidebar-border) pt-4">
+          <ThemeSwitcher />
+        </div>
       </div>
     </aside>
   );

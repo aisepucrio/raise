@@ -36,6 +36,7 @@
   --color-form-error: #b42318;
 
   --color-form-bg: var(--color-blueberry-900);
+  --color-form-bg-hover: var(--color-lighter-bluebery-900);
   --color-form-border: transparent;
   --color-form-border-hover: transparent;
   --color-form-text: var(--color-metal-50);
@@ -86,6 +87,7 @@
     --color-form-error: #ffb4b4;
 
     --color-form-bg: var(--color-metal-50);
+    --color-form-bg-hover: var(--color-darker-metal-50);
     --color-form-border: transparent;
     --color-form-border-hover: transparent;
     --color-form-text: var(--color-blueberry-900);
@@ -123,6 +125,7 @@
   --color-form-error: #ffb4b4;
 
   --color-form-bg: var(--color-metal-50);
+  --color-form-bg-hover: var(--color-darker-metal-50);
   --color-form-border: transparent;
   --color-form-border-hover: transparent;
   --color-form-text: var(--color-blueberry-900);
