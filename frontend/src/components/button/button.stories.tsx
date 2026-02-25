@@ -41,13 +41,16 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {};
+export const Padrao: Story = {
+  args: {},
+};
 
 export const ComIconeEsquerda: Story = {
   args: {
     text: "Novo registro",
     icon: <Plus />,
     iconSide: "left",
+    "aria-label": "Novo registro",
   },
 };
 
@@ -56,6 +59,7 @@ export const ComIconeDireita: Story = {
     text: "Continuar",
     icon: <ArrowRight />,
     iconSide: "right",
+    "aria-label": "Continuar",
   },
 };
 

@@ -38,7 +38,7 @@ export default function FormDateSelector({
           formControlBaseClassName,
           "min-w-0",
           "[&::-webkit-calendar-picker-indicator]:cursor-pointer",
-          "[&::-webkit-calendar-picker-indicator]:[filter:var(--color-form-date-picker-indicator-filter)]",
+          "[&::-webkit-calendar-picker-indicator]:filter-(--color-form-date-picker-indicator-filter)",
           className,
         ]
           .filter(Boolean)

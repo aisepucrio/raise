@@ -39,7 +39,9 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const ComHint: Story = {};
+export const ComHint: Story = {
+  args: {},
+};
 
 export const ComErro: Story = {
   args: {
