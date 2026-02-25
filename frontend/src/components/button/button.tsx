@@ -91,10 +91,10 @@ function Button({
         "focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-form-focus)",
         isIconOnly
           ? small
-            ? "w-9 min-h-9 px-0 py-0"
+            ? "w-9 min-h-8.5 px-0 py-0"
             : "w-11 min-h-11 px-0 py-0"
           : small
-            ? "px-3 py-1.5"
+            ? "px-3 py-1 min-h-8.5"
             : "min-h-11 px-3.5 py-2.5",
         fullWidth && !isIconOnly ? "w-full" : null,
         isSelectable
