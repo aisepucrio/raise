@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FormSelect } from "../form";
 import SidebarNavItem from "./SidebarNavItem";
+import ThemeSwitcher from "./ThemeSwitcher";
 
 type SidebarRouteItem = {
   label: string;
@@ -31,20 +32,24 @@ export default function Sidebar() {
   const [sourceFilter, setSourceFilter] = useState("all");
 
   return (
-    <aside className="shrink-0 border-b-2 border-(--color-sidebar-border) p-6 md:min-h-dvh md:w-[15%] md:min-w-55 md:max-w-125 md:border-r-2 md:border-b-0">
+    <aside className="shrink-0 border-b-2 border-(--color-sidebar-border) p-6 md:flex md:min-h-dvh md:w-[15%] md:min-w-55 md:max-w-125 md:flex-col md:border-r-2 md:border-b-0">
       <div className="space-y-4">
         <div className="p-3">
-          <picture>
-            <source
-              srcSet="/LOGO_LIGHT.svg"
-              media="(prefers-color-scheme: dark)"
-            />
+          <div className="dark:hidden">
             <img
-              src="/LOGO_DARKpng"
+              src="/LOGO_DARK.svg"
               alt="Dataminer"
-              className="block h-auto w-full "
+              className="block h-auto w-full"
             />
-          </picture>
+          </div>
+
+          <div className="hidden dark:block">
+            <img
+              src="/LOGO_LIGHT.svg"
+              alt="Dataminer"
+              className="block h-auto w-full"
+            />
+          </div>
         </div>
 
         <div
@@ -84,6 +89,10 @@ export default function Sidebar() {
             );
           })}
         </nav>
+      </div>
+
+      <div className="mt-6 border-t-2 border-(--color-sidebar-border) pt-4 md:mt-auto">
+        <ThemeSwitcher />
       </div>
     </aside>
   );
