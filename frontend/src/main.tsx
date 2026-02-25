@@ -5,6 +5,7 @@ import { RouterProvider } from "react-router-dom";
 import { router } from "./router";
 import { queryClient } from "./data/query/client";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { Toast } from "./components/toast";
 import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -12,6 +13,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
         <RouterProvider router={router} />
+        <Toast closeButton richColors position="top-center" />
       </QueryClientProvider>
     </ThemeProvider>
   </React.StrictMode>,

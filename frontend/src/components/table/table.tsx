@@ -10,7 +10,10 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
     >
       <table
         data-slot="table"
-        className={cn("w-full caption-bottom text-sm text-(--color-app-fg)", className)}
+        className={cn(
+          "w-full caption-bottom text-sm text-(--color-app-fg)",
+          className,
+        )}
         {...props}
       />
     </div>
@@ -21,7 +24,10 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
   return (
     <thead
       data-slot="table-header"
-      className={cn("[&_tr]:border-b [&_tr]:border-(--color-table-border)", className)}
+      className={cn(
+        "[&_tr]:border-b [&_tr]:border-(--color-table-border)",
+        className,
+      )}
       {...props}
     />
   );
@@ -68,7 +74,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-(--color-table-head-text) [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+        "h-10 px-2 text-left align-middle text-[0.90rem] font-bold whitespace-nowrap text-(--color-table-head-text) [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
         className,
       )}
       {...props}
