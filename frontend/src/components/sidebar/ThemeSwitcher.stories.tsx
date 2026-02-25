@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import ThemeSwitcher from "./ThemeSwitcher";
 
 type ThemeName = "light" | "dark";
@@ -15,11 +16,13 @@ function withInitialTheme(theme: ThemeName) {
     }
 
     return (
-      <aside className="w-full max-w-72 rounded-xl border border-(--color-sidebar-border) p-4">
-        <div className="border-t-2 border-(--color-sidebar-border) pt-4">
-          <Story />
-        </div>
-      </aside>
+      <ThemeProvider>
+        <aside className="w-full max-w-72 rounded-xl border border-(--color-sidebar-border) p-4">
+          <div className="border-t-2 border-(--color-sidebar-border) pt-4">
+            <Story />
+          </div>
+        </aside>
+      </ThemeProvider>
     );
   };
 }
@@ -32,7 +35,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Alternador de tema da sidebar. Usa o `Switch` na variante `theme-toggle`, ocupa a largura disponível entre os ícones e sincroniza o tema via classes `.light`/`.dark` no `document.documentElement`.",
+          "Alternador de tema da sidebar. Usa o `Switch` na variante `theme-toggle`, consome `ThemeContext` e sincroniza as classes `.light`/`.dark` no `document.documentElement`.",
       },
     },
   },

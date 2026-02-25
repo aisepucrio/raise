@@ -1,58 +1,11 @@
-import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 import { Switch } from "../switch/switch";
 import { cn } from "@/lib/utils";
-
-type ThemeMode = "light" | "dark";
-
-// Aplica a escolha atual no root para que todo o app (e os utilitários `dark:`) respondam.
-const applyTheme = (theme: ThemeMode) => {
-  const root = document.documentElement;
-
-  // O app usa classes explícitas no root para travar o tema escolhido.
-  root.classList.remove("light", "dark");
-  root.classList.add(theme);
-  root.dataset.theme = theme;
-};
-
-// Ordem de prioridade:
-// 1) classe já definida no root (escolha explícita anterior)
-// 2) preferência do sistema
-// 3) light como fallback seguro
-const getInitialTheme = (): ThemeMode => {
-  if (typeof document !== "undefined") {
-    const root = document.documentElement;
-
-    if (root.classList.contains("dark")) {
-      return "dark";
-    }
-
-    if (root.classList.contains("light")) {
-      return "light";
-    }
-  }
-
-  if (
-    typeof window !== "undefined" &&
-    typeof window.matchMedia === "function"
-  ) {
-    // Fallback: segue a preferência do navegador/SO até o usuário trocar manualmente.
-    return window.matchMedia("(prefers-color-scheme: dark)").matches
-      ? "dark"
-      : "light";
-  }
-
-  return "light";
-};
+import { useAppTheme } from "@/contexts/ThemeContext";
 
 export default function ThemeSwitcher() {
-  // `true` representa tema dark ativo (switch ligado).
-  const [isDark, setIsDark] = useState(() => getInitialTheme() === "dark");
-
-  useEffect(() => {
-    // Sincroniza o estado visual do switch com as classes globais de tema.
-    applyTheme(isDark ? "dark" : "light");
-  }, [isDark]);
+  const { theme, setTheme } = useAppTheme();
+  const isDark = theme === "dark";
 
   return (
     <div
@@ -76,7 +29,7 @@ export default function ThemeSwitcher() {
         <Switch
           checked={isDark}
           onCheckedChange={(checked) => {
-            setIsDark(checked);
+            setTheme(checked ? "dark" : "light");
           }}
           variant="theme-toggle"
           // O switch ocupa todo o espaço restante entre os ícones.
