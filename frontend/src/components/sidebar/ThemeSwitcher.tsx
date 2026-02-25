@@ -56,7 +56,7 @@ export default function ThemeSwitcher() {
 
   return (
     <div
-      className="flex w-full items-center rounded-2xl px-3 py-2"
+      className="flex w-full items-center rounded-2xl px-3 py-2 max-w-50 mx-auto"
       role="group"
       aria-label="Alternador de tema"
     >
