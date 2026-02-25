@@ -2,7 +2,7 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
-// Propriedades nativas de botão (excluindo `className` e `style`)
+// Propriedades nativas de botão permitidas na API padronizada.
 type BasicButtonNativeProps = Pick<
   ButtonHTMLAttributes<HTMLButtonElement>,
   | "id"
@@ -15,6 +15,7 @@ type BasicButtonNativeProps = Pick<
   | "value"
   | "form"
   | "aria-label"
+  | "aria-current"
 >;
 
 type ButtonBaseProps = BasicButtonNativeProps & {
@@ -22,6 +23,9 @@ type ButtonBaseProps = BasicButtonNativeProps & {
   icon?: ReactNode;
   iconSide?: "left" | "right";
   fullWidth?: boolean;
+  small?: boolean;
+  variant?: "default" | "selectable";
+  selected?: boolean;
 };
 
 type ButtonProps =
@@ -42,11 +46,16 @@ function Button({
   icon,
   iconSide = "left",
   fullWidth = true,
+  small = false,
+  variant = "default",
+  selected = false,
   "aria-label": ariaLabel,
+  "aria-current": ariaCurrent,
 }: ButtonProps) {
   const hasText = Boolean(text);
   const hasIcon = Boolean(icon);
   const isIconOnly = hasIcon && !hasText;
+  const isSelectable = variant === "selectable";
 
   const iconNode = hasIcon ? (
     <span
@@ -63,6 +72,8 @@ function Button({
   return (
     <button
       data-slot="button"
+      data-variant={variant}
+      data-selected={isSelectable ? String(selected) : undefined}
       id={id}
       type={type}
       disabled={disabled}
@@ -73,12 +84,27 @@ function Button({
       value={value}
       form={form}
       aria-label={ariaLabel}
+      aria-current={ariaCurrent}
       className={cn(
-        "inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-md border-0 bg-(--color-form-bg) text-(--color-form-text) shadow-none outline-none [font:inherit] text-sm font-semibold leading-[1.35] whitespace-nowrap transition-[filter,background-color,color] duration-150",
-        "enabled:hover:bg-(--color-form-bg-hover) enabled:active:filter-[brightness(0.92)] disabled:cursor-not-allowed disabled:bg-(--color-form-disabled-bg) disabled:text-(--color-form-disabled-text) disabled:filter-none",
+        "inline-flex shrink-0 items-center justify-center gap-2 rounded-md shadow-none outline-none [font:inherit] text-sm font-semibold leading-[1.35] whitespace-nowrap transition-[filter,background-color,color,border-color] duration-150",
+        "enabled:cursor-pointer disabled:cursor-not-allowed",
         "focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-form-focus)",
-        isIconOnly ? "w-11 px-0 py-0" : "px-3.5 py-2.5",
+        isIconOnly
+          ? small
+            ? "w-9 min-h-9 px-0 py-0"
+            : "w-11 min-h-11 px-0 py-0"
+          : small
+            ? "px-3 py-1.5"
+            : "min-h-11 px-3.5 py-2.5",
         fullWidth && !isIconOnly ? "w-full" : null,
+        isSelectable
+          ? selected
+            ? "border border-(--color-pagination-active-border) bg-(--color-pagination-active-bg) text-(--color-pagination-active-text) enabled:hover:bg-(--color-pagination-active-bg) enabled:active:filter-none"
+            : "border border-(--color-pagination-active-border) bg-transparent text-(--color-pagination-active-bg) enabled:hover:bg-(--color-pagination-hover-bg) enabled:active:bg-(--color-pagination-hover-bg) enabled:active:filter-none"
+          : "border-0 bg-(--color-form-bg) text-(--color-form-text) enabled:hover:bg-(--color-form-bg-hover) enabled:active:filter-[brightness(0.92)]",
+        isSelectable
+          ? "disabled:border-(--color-pagination-border) disabled:bg-transparent disabled:text-(--color-pagination-disabled-text) disabled:filter-none"
+          : "disabled:bg-(--color-form-disabled-bg) disabled:text-(--color-form-disabled-text) disabled:filter-none",
       )}
     >
       {iconSide === "left" ? iconNode : null}

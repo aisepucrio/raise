@@ -49,6 +49,24 @@
     invert(97%) sepia(8%) saturate(233%) hue-rotate(191deg) brightness(105%)
     contrast(94%);
 
+  /* Tabela (shadcn adaptado ao tema do app). */
+  --color-table-border: rgba(14, 24, 98, 0.12);
+  --color-table-head-text: rgba(14, 24, 98, 0.92);
+  --color-table-caption: rgba(14, 24, 98, 0.7);
+  --color-table-footer-bg: rgba(14, 24, 98, 0.04);
+  --color-table-row-hover-bg: rgba(14, 24, 98, 0.04);
+  --color-table-row-selected-bg: rgba(14, 24, 98, 0.08);
+
+  /* Paginação (shadcn adaptado ao tema do app + Button local). */
+  --color-pagination-text: rgba(14, 24, 98, 0.88);
+  --color-pagination-border: rgba(14, 24, 98, 0.14);
+  --color-pagination-hover-bg: rgba(14, 24, 98, 0.06);
+  --color-pagination-active-bg: var(--color-blueberry-900);
+  --color-pagination-active-text: var(--color-metal-50);
+  --color-pagination-active-border: var(--color-blueberry-900);
+  --color-pagination-disabled-text: rgba(14, 24, 98, 0.45);
+  --color-pagination-ellipsis: rgba(14, 24, 98, 0.68);
+
   /* Ponte mínima para tokens semânticos usados por Tailwind/shadcn no projeto. */
   --background: var(--color-app-bg);
   --foreground: var(--color-app-fg);
@@ -100,6 +118,24 @@
       invert(8%) sepia(56%) saturate(3258%) hue-rotate(229deg) brightness(88%)
       contrast(103%);
 
+    /* Tabela */
+    --color-table-border: rgba(243, 244, 247, 0.14);
+    --color-table-head-text: rgba(243, 244, 247, 0.92);
+    --color-table-caption: rgba(243, 244, 247, 0.68);
+    --color-table-footer-bg: rgba(243, 244, 247, 0.06);
+    --color-table-row-hover-bg: rgba(243, 244, 247, 0.06);
+    --color-table-row-selected-bg: rgba(243, 244, 247, 0.1);
+
+    /* Paginação */
+    --color-pagination-text: rgba(243, 244, 247, 0.9);
+    --color-pagination-border: rgba(243, 244, 247, 0.16);
+    --color-pagination-hover-bg: rgba(243, 244, 247, 0.08);
+    --color-pagination-active-bg: var(--color-metal-50);
+    --color-pagination-active-text: var(--color-blueberry-900);
+    --color-pagination-active-border: var(--color-metal-50);
+    --color-pagination-disabled-text: rgba(243, 244, 247, 0.42);
+    --color-pagination-ellipsis: rgba(243, 244, 247, 0.66);
+
     /* Tokens semânticos mínimos expostos ao Tailwind/shadcn. */
     --border: oklch(1 0 0 / 10%);
     --ring: oklch(0.553 0.013 58.071);
@@ -137,6 +173,24 @@
   --color-form-date-picker-indicator-filter: brightness(0) saturate(100%)
     invert(8%) sepia(56%) saturate(3258%) hue-rotate(229deg) brightness(88%)
     contrast(103%);
+
+  /* Tabela */
+  --color-table-border: rgba(243, 244, 247, 0.14);
+  --color-table-head-text: rgba(243, 244, 247, 0.92);
+  --color-table-caption: rgba(243, 244, 247, 0.68);
+  --color-table-footer-bg: rgba(243, 244, 247, 0.06);
+  --color-table-row-hover-bg: rgba(243, 244, 247, 0.06);
+  --color-table-row-selected-bg: rgba(243, 244, 247, 0.1);
+
+  /* Paginação */
+  --color-pagination-text: rgba(243, 244, 247, 0.9);
+  --color-pagination-border: rgba(243, 244, 247, 0.16);
+  --color-pagination-hover-bg: rgba(243, 244, 247, 0.08);
+  --color-pagination-active-bg: var(--color-metal-50);
+  --color-pagination-active-text: var(--color-blueberry-900);
+  --color-pagination-active-border: var(--color-metal-50);
+  --color-pagination-disabled-text: rgba(243, 244, 247, 0.42);
+  --color-pagination-ellipsis: rgba(243, 244, 247, 0.66);
 
   /* Tokens semânticos mínimos expostos ao Tailwind/shadcn. */
   --border: oklch(1 0 0 / 10%);
