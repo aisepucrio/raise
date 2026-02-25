@@ -304,6 +304,75 @@
     var(--color-dark-secondary-70)
   );
 
+  /* Toast (shadcn/Sonner adaptado ao tema do app). */
+  /* Base do card do toast (fundo, texto e borda do estado padrão). */
+  --color-toast-bg: var(--color-app-bg);
+  --color-toast-bg-hover: light-dark(
+    var(--color-light-primary-90),
+    var(--color-dark-primary-90)
+  );
+  --color-toast-text: var(--color-app-fg);
+  --color-toast-border: light-dark(
+    var(--color-light-secondary-15),
+    var(--color-dark-secondary-25)
+  );
+  --color-toast-border-hover: light-dark(
+    var(--color-light-secondary-25),
+    var(--color-dark-secondary-25)
+  );
+
+  /* Sucesso: usa a cor de status "finished" do app. */
+  --color-toast-success-bg: color-mix(
+    in srgb,
+    var(--color-status-finished-color) 10%,
+    var(--color-toast-bg)
+  );
+  --color-toast-success-border: color-mix(
+    in srgb,
+    var(--color-status-finished-color) 42%,
+    var(--color-toast-border)
+  );
+  --color-toast-success-text: var(--color-status-finished-color);
+
+  /* Info: usa a cor de status "in-progress" do app. */
+  --color-toast-info-bg: color-mix(
+    in srgb,
+    var(--color-status-in-progress-color) 10%,
+    var(--color-toast-bg)
+  );
+  --color-toast-info-border: color-mix(
+    in srgb,
+    var(--color-status-in-progress-color) 42%,
+    var(--color-toast-border)
+  );
+  --color-toast-info-text: var(--color-status-in-progress-color);
+
+  /* Aviso: usa a cor de status "in-queue" do app. */
+  --color-toast-warning-bg: color-mix(
+    in srgb,
+    var(--color-status-in-queue-color) 12%,
+    var(--color-toast-bg)
+  );
+  --color-toast-warning-border: color-mix(
+    in srgb,
+    var(--color-status-in-queue-color) 42%,
+    var(--color-toast-border)
+  );
+  --color-toast-warning-text: var(--color-status-in-queue-color);
+
+  /* Erro: usa a cor de status "failure" do app. */
+  --color-toast-error-bg: color-mix(
+    in srgb,
+    var(--color-status-failure-color) 10%,
+    var(--color-toast-bg)
+  );
+  --color-toast-error-border: color-mix(
+    in srgb,
+    var(--color-status-failure-color) 42%,
+    var(--color-toast-border)
+  );
+  --color-toast-error-text: var(--color-status-failure-color);
+
   /* Status de jobs (versões resolvidas para o tema atual) */
   --color-status-in-progress-color: light-dark(
     var(--color-status-in-progress-color-light),
