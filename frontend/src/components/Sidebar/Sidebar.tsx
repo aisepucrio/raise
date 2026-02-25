@@ -36,11 +36,11 @@ export default function Sidebar() {
         <div className="p-3">
           <picture>
             <source
-              srcSet="/LOGO_DARK.png"
+              srcSet="/LOGO_LIGHT.svg"
               media="(prefers-color-scheme: dark)"
             />
             <img
-              src="/LOGO_LIGHT.png"
+              src="/LOGO_DARKpng"
               alt="Dataminer"
               className="block h-auto w-full "
             />
