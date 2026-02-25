@@ -1,4 +1,11 @@
 import type { ReactNode } from "react";
+import {
+  formFieldErrorClassName,
+  formFieldHintClassName,
+  formFieldLabelClassName,
+  formFieldRequiredMarkClassName,
+  formFieldWrapperClassName,
+} from "./formStyles";
 
 type FormFieldBaseProps = {
   label?: string;
@@ -20,15 +27,14 @@ export default function FormFieldBase({
   children,
 }: FormFieldBaseProps) {
   return (
-    <div className={["grid gap-1.5", className].filter(Boolean).join(" ")}>
+    <div
+      className={[formFieldWrapperClassName, className].filter(Boolean).join(" ")}
+    >
       {label ? (
-        <label
-          className="inline-flex items-center gap-1 text-sm font-semibold text-(--color-form-label)"
-          htmlFor={htmlFor}
-        >
+        <label className={formFieldLabelClassName} htmlFor={htmlFor}>
           <span>{label}</span>
           {required ? (
-            <span className="text-(--color-form-error)" aria-hidden="true">
+            <span className={formFieldRequiredMarkClassName} aria-hidden="true">
               *
             </span>
           ) : null}
@@ -38,14 +44,11 @@ export default function FormFieldBase({
       {children}
 
       {error ? (
-        <p
-          className="m-0 text-[0.82rem] text-(--color-form-error)"
-          role="alert"
-        >
+        <p className={formFieldErrorClassName} role="alert">
           {error}
         </p>
       ) : hint ? (
-        <p className="m-0 text-[0.82rem] text-(--color-form-hint)">{hint}</p>
+        <p className={formFieldHintClassName}>{hint}</p>
       ) : null}
     </div>
   );

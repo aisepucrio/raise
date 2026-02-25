@@ -1,6 +1,6 @@
 import type { InputHTMLAttributes } from "react";
 import FormFieldBase from "./FormFieldBase";
-import { formControlClassName } from "./formControlClassName";
+import { formControlBaseClassName } from "./formStyles";
 
 type FormInputProps = InputHTMLAttributes<HTMLInputElement> & {
   label?: string;
@@ -33,7 +33,9 @@ export default function FormInput({
         id={id}
         type={type}
         required={required}
-        className={[formControlClassName, className].filter(Boolean).join(" ")}
+        className={[formControlBaseClassName, className]
+          .filter(Boolean)
+          .join(" ")}
         {...props}
       />
     </FormFieldBase>

@@ -1,5 +1,7 @@
 import { Briefcase, Download, Eye, Home, type LucideIcon } from "lucide-react";
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { FormSelect } from "../form";
 import SidebarNavItem from "./SidebarNavItem";
 
 type SidebarRouteItem = {
@@ -26,9 +28,10 @@ const isActiveRoute = (pathname: string, routePath: string) => {
 export default function Sidebar() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const [sourceFilter, setSourceFilter] = useState("all");
 
   return (
-    <aside className="shrink-0 border-b-2 border-(--color-sidebar-border) p-6 md:min-h-dvh md:w-64 md:border-r-2 md:border-b-0">
+    <aside className="shrink-0 border-b-2 border-(--color-sidebar-border) p-6 md:min-h-dvh md:w-[15%] md:min-w-55 md:max-w-125 md:border-r-2 md:border-b-0">
       <div className="space-y-4">
         <div className="p-3">
           <picture>
@@ -48,6 +51,19 @@ export default function Sidebar() {
           className="border-t-2 border-(--color-sidebar-border)"
           aria-hidden="true"
         />
+
+        <FormSelect
+          id="sidebar-source-filter"
+          value={sourceFilter}
+          onChange={(event) => setSourceFilter(event.target.value)}
+          wrapperClassName="-ml-6 w-[calc(85%+1.5rem)]"
+          className="min-h-10 rounded-none rounded-r-md py-2 text-left"
+          aria-label="Selecionar origem"
+        >
+          <option value="github">GitHub</option>
+          <option value="jira">Jira</option>
+          <option value="stackoverflow">Stack Overflow</option>
+        </FormSelect>
 
         <nav className="flex flex-col gap-1">
           {sidebarItems.map((item) => {
