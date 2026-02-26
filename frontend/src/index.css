@@ -164,162 +164,92 @@
   background-color: var(--color-app-bg);
   color-scheme: light;
 
-  /* Tokens resolvidos por `color-scheme` (light/dark). */
-  --color-app-fg: light-dark(
-    var(--color-light-secondary),
-    var(--color-dark-secondary)
-  );
-  --color-app-bg: light-dark(
-    var(--color-light-primary),
-    var(--color-dark-primary)
-  );
+  /* 1. Default (Light): aliases de tema para evitar `light-dark()`. */
+  --theme-primary: var(--color-light-primary);
+  --theme-primary-15: var(--color-light-primary-15);
+  --theme-primary-25: var(--color-light-primary-25);
+  --theme-primary-50: var(--color-light-primary-50);
+  --theme-primary-70: var(--color-light-primary-70);
+  --theme-primary-90: var(--color-light-primary-90);
+
+  --theme-secondary: var(--color-light-secondary);
+  --theme-secondary-15: var(--color-light-secondary-15);
+  --theme-secondary-25: var(--color-light-secondary-25);
+  --theme-secondary-50: var(--color-light-secondary-50);
+  --theme-secondary-70: var(--color-light-secondary-70);
+  --theme-secondary-90: var(--color-light-secondary-90);
+
+  --theme-border-subtle: var(--color-light-secondary-15);
+  --theme-primary-muted: var(--color-light-primary-70);
+  --theme-form-error: var(--color-error-700);
+
+  --theme-status-in-progress-color: var(--color-status-in-progress-color-light);
+  --theme-status-in-queue-color: var(--color-status-in-queue-color-light);
+  --theme-status-finished-color: var(--color-status-finished-color-light);
+  --theme-status-failure-color: var(--color-status-failure-color-light);
+  --theme-status-cancelled-color: var(--color-status-cancelled-color-light);
+  --theme-status-unknown-color: var(--color-status-unknown-color-light);
+
+  --theme-shadcn-border: var(--color-shadcn-border-light);
+  --theme-shadcn-ring: var(--color-shadcn-ring-light);
+
+  --theme-date-picker-indicator-filter: brightness(0) saturate(100%) invert(97%)
+    sepia(8%) saturate(233%) hue-rotate(191deg) brightness(105%) contrast(94%);
+
+  /* Tokens semânticos resolvidos pelos aliases do tema atual. */
+  --color-app-fg: var(--theme-secondary);
+  --color-app-bg: var(--theme-primary);
 
   /* Sidebar (usa tokens próprios para não acoplar ao set semântico do shadcn). */
-  --color-sidebar-border: light-dark(
-    var(--color-light-secondary-15),
-    var(--color-dark-secondary-25)
-  );
-  --color-sidebar-item-active-bg: light-dark(
-    var(--color-light-secondary),
-    var(--color-dark-secondary)
-  );
-  --color-sidebar-item-active-fg: light-dark(
-    var(--color-light-primary),
-    var(--color-dark-primary)
-  );
-  --color-sidebar-item-hover-bg: light-dark(
-    var(--color-light-secondary-15),
-    var(--color-dark-secondary-15)
-  );
+  --color-sidebar-border: var(--theme-border-subtle);
+  --color-sidebar-item-active-bg: var(--theme-secondary);
+  --color-sidebar-item-active-fg: var(--theme-primary);
+  --color-sidebar-item-hover-bg: var(--theme-secondary-15);
 
   /* Form controls nativos/customizados do app. */
-  --color-form-label: light-dark(
-    var(--color-light-secondary-90),
-    var(--color-dark-secondary-90)
-  );
-  --color-form-hint: light-dark(
-    var(--color-light-secondary-70),
-    var(--color-dark-secondary-70)
-  );
-  --color-form-error: light-dark(
-    var(--color-error-700),
-    var(--color-error-200)
-  );
+  --color-form-label: var(--theme-secondary-90);
+  --color-form-hint: var(--theme-secondary-70);
+  --color-form-error: var(--theme-form-error);
 
-  --color-form-bg: light-dark(
-    var(--color-light-secondary),
-    var(--color-dark-secondary)
-  );
-  --color-form-bg-hover: light-dark(
-    var(--color-light-secondary-90),
-    var(--color-dark-secondary-90)
-  );
+  --color-form-bg: var(--theme-secondary);
+  --color-form-bg-hover: var(--theme-secondary-90);
   --color-form-border: var(--color-transparent);
   --color-form-border-hover: var(--color-transparent);
-  --color-form-text: light-dark(
-    var(--color-light-primary),
-    var(--color-dark-primary)
+  --color-form-text: var(--theme-primary);
+  --color-form-placeholder: var(--theme-primary-muted);
+  --color-form-focus: var(--theme-secondary-90);
+  --color-form-focus-ring: var(--theme-secondary-90);
+  --color-form-disabled-bg: var(--theme-secondary-70);
+  --color-form-disabled-text: var(--theme-primary-muted);
+  --color-form-date-picker-indicator-filter: var(
+    --theme-date-picker-indicator-filter
   );
-  --color-form-placeholder: light-dark(
-    var(--color-light-primary-70),
-    var(--color-dark-primary-50)
-  );
-  --color-form-focus: light-dark(
-    var(--color-light-secondary-90),
-    var(--color-dark-secondary-90)
-  );
-  --color-form-focus-ring: light-dark(
-    var(--color-light-secondary-90),
-    var(--color-dark-secondary-90)
-  );
-  --color-form-disabled-bg: light-dark(
-    var(--color-light-secondary-70),
-    var(--color-dark-secondary-70)
-  );
-  --color-form-disabled-text: light-dark(
-    var(--color-light-primary-70),
-    var(--color-dark-primary-50)
-  );
-  --color-form-date-picker-indicator-filter: brightness(0) saturate(100%)
-    invert(97%) sepia(8%) saturate(233%) hue-rotate(191deg) brightness(105%)
-    contrast(94%);
 
   /* Tabela (shadcn adaptado ao tema do app). */
-  --color-table-border: light-dark(
-    var(--color-light-secondary-15),
-    var(--color-dark-secondary-15)
-  );
-  --color-table-head-text: light-dark(
-    var(--color-light-secondary-90),
-    var(--color-dark-secondary-90)
-  );
-  --color-table-caption: light-dark(
-    var(--color-light-secondary-70),
-    var(--color-dark-secondary-70)
-  );
-  --color-table-footer-bg: light-dark(
-    var(--color-light-secondary-15),
-    var(--color-dark-secondary-15)
-  );
-  --color-table-row-hover-bg: light-dark(
-    var(--color-light-secondary-15),
-    var(--color-dark-secondary-15)
-  );
-  --color-table-row-selected-bg: light-dark(
-    var(--color-light-secondary-15),
-    var(--color-dark-secondary-15)
-  );
+  --color-table-border: var(--theme-secondary-15);
+  --color-table-head-text: var(--theme-secondary-90);
+  --color-table-caption: var(--theme-secondary-70);
+  --color-table-footer-bg: var(--theme-secondary-15);
+  --color-table-row-hover-bg: var(--theme-secondary-15);
+  --color-table-row-selected-bg: var(--theme-secondary-15);
 
   /* Paginação (shadcn adaptado ao tema do app + Button local). */
-  --color-pagination-text: light-dark(
-    var(--color-light-secondary-90),
-    var(--color-dark-secondary-90)
-  );
-  --color-pagination-border: light-dark(
-    var(--color-light-secondary-15),
-    var(--color-dark-secondary-15)
-  );
-  --color-pagination-hover-bg: light-dark(
-    var(--color-light-secondary-15),
-    var(--color-dark-secondary-15)
-  );
-  --color-pagination-active-bg: light-dark(
-    var(--color-light-secondary),
-    var(--color-dark-secondary)
-  );
-  --color-pagination-active-text: light-dark(
-    var(--color-light-primary),
-    var(--color-dark-primary)
-  );
-  --color-pagination-active-border: light-dark(
-    var(--color-light-secondary),
-    var(--color-dark-secondary)
-  );
-  --color-pagination-disabled-text: light-dark(
-    var(--color-light-secondary-50),
-    var(--color-dark-secondary-50)
-  );
-  --color-pagination-ellipsis: light-dark(
-    var(--color-light-secondary-70),
-    var(--color-dark-secondary-70)
-  );
+  --color-pagination-text: var(--theme-secondary-90);
+  --color-pagination-border: var(--theme-secondary-15);
+  --color-pagination-hover-bg: var(--theme-secondary-15);
+  --color-pagination-active-bg: var(--theme-secondary);
+  --color-pagination-active-text: var(--theme-primary);
+  --color-pagination-active-border: var(--theme-secondary);
+  --color-pagination-disabled-text: var(--theme-secondary-50);
+  --color-pagination-ellipsis: var(--theme-secondary-70);
 
   /* Toast (shadcn/Sonner adaptado ao tema do app). */
   /* Base do card do toast (fundo, texto e borda do estado padrão). */
   --color-toast-bg: var(--color-app-bg);
-  --color-toast-bg-hover: light-dark(
-    var(--color-light-primary-90),
-    var(--color-dark-primary-90)
-  );
+  --color-toast-bg-hover: var(--theme-primary-90);
   --color-toast-text: var(--color-app-fg);
-  --color-toast-border: light-dark(
-    var(--color-light-secondary-15),
-    var(--color-dark-secondary-25)
-  );
-  --color-toast-border-hover: light-dark(
-    var(--color-light-secondary-25),
-    var(--color-dark-secondary-25)
-  );
+  --color-toast-border: var(--theme-border-subtle);
+  --color-toast-border-hover: var(--theme-secondary-25);
 
   /* Sucesso: usa a cor de status "finished" do app. */
   --color-toast-success-bg: color-mix(
@@ -374,60 +304,131 @@
   --color-toast-error-text: var(--color-status-failure-color);
 
   /* Status de jobs (versões resolvidas para o tema atual) */
-  --color-status-in-progress-color: light-dark(
-    var(--color-status-in-progress-color-light),
-    var(--color-status-in-progress-color-dark)
-  );
-  --color-status-in-queue-color: light-dark(
-    var(--color-status-in-queue-color-light),
-    var(--color-status-in-queue-color-dark)
-  );
-  --color-status-finished-color: light-dark(
-    var(--color-status-finished-color-light),
-    var(--color-status-finished-color-dark)
-  );
-  --color-status-failure-color: light-dark(
-    var(--color-status-failure-color-light),
-    var(--color-status-failure-color-dark)
-  );
-  --color-status-cancelled-color: light-dark(
-    var(--color-status-cancelled-color-light),
-    var(--color-status-cancelled-color-dark)
-  );
-  --color-status-unknown-color: light-dark(
-    var(--color-status-unknown-color-light),
-    var(--color-status-unknown-color-dark)
-  );
+  --color-status-in-progress-color: var(--theme-status-in-progress-color);
+  --color-status-in-queue-color: var(--theme-status-in-queue-color);
+  --color-status-finished-color: var(--theme-status-finished-color);
+  --color-status-failure-color: var(--theme-status-failure-color);
+  --color-status-cancelled-color: var(--theme-status-cancelled-color);
+  --color-status-unknown-color: var(--theme-status-unknown-color);
 
   /* Ponte mínima para tokens semânticos usados por Tailwind/shadcn no projeto. */
   --background: var(--color-app-bg);
   --foreground: var(--color-app-fg);
-  --border: light-dark(
-    var(--color-shadcn-border-light),
-    var(--color-shadcn-border-dark)
-  );
-  --ring: light-dark(
-    var(--color-shadcn-ring-light),
-    var(--color-shadcn-ring-dark)
-  );
+  --border: var(--theme-shadcn-border);
+  --ring: var(--theme-shadcn-ring);
 }
 
-/* Fallback para dark somente quando ainda não existe `.light`/`.dark` no root. */
+/* 2. Dark: override explícito (travado pelo app, independente do sistema). */
+:root.dark {
+  color-scheme: dark;
+
+  --theme-primary: var(--color-dark-primary);
+  --theme-primary-15: var(--color-dark-primary-15);
+  --theme-primary-25: var(--color-dark-primary-25);
+  --theme-primary-50: var(--color-dark-primary-50);
+  --theme-primary-70: var(--color-dark-primary-70);
+  --theme-primary-90: var(--color-dark-primary-90);
+
+  --theme-secondary: var(--color-dark-secondary);
+  --theme-secondary-15: var(--color-dark-secondary-15);
+  --theme-secondary-25: var(--color-dark-secondary-25);
+  --theme-secondary-50: var(--color-dark-secondary-50);
+  --theme-secondary-70: var(--color-dark-secondary-70);
+  --theme-secondary-90: var(--color-dark-secondary-90);
+
+  --theme-border-subtle: var(--color-dark-secondary-25);
+  --theme-primary-muted: var(--color-dark-primary-50);
+  --theme-form-error: var(--color-error-200);
+
+  --theme-status-in-progress-color: var(--color-status-in-progress-color-dark);
+  --theme-status-in-queue-color: var(--color-status-in-queue-color-dark);
+  --theme-status-finished-color: var(--color-status-finished-color-dark);
+  --theme-status-failure-color: var(--color-status-failure-color-dark);
+  --theme-status-cancelled-color: var(--color-status-cancelled-color-dark);
+  --theme-status-unknown-color: var(--color-status-unknown-color-dark);
+
+  --theme-shadcn-border: var(--color-shadcn-border-dark);
+  --theme-shadcn-ring: var(--color-shadcn-ring-dark);
+
+  --theme-date-picker-indicator-filter: brightness(0) saturate(100%) invert(8%)
+    sepia(56%) saturate(3258%) hue-rotate(229deg) brightness(88%) contrast(103%);
+}
+
+/* 3. Preferência automática do sistema (quando não existe `.light`/`.dark`). */
 @media (prefers-color-scheme: dark) {
   :root:not(.light):not(.dark) {
     color-scheme: dark;
-    --color-form-date-picker-indicator-filter: brightness(0) saturate(100%)
+
+    --theme-primary: var(--color-dark-primary);
+    --theme-primary-15: var(--color-dark-primary-15);
+    --theme-primary-25: var(--color-dark-primary-25);
+    --theme-primary-50: var(--color-dark-primary-50);
+    --theme-primary-70: var(--color-dark-primary-70);
+    --theme-primary-90: var(--color-dark-primary-90);
+
+    --theme-secondary: var(--color-dark-secondary);
+    --theme-secondary-15: var(--color-dark-secondary-15);
+    --theme-secondary-25: var(--color-dark-secondary-25);
+    --theme-secondary-50: var(--color-dark-secondary-50);
+    --theme-secondary-70: var(--color-dark-secondary-70);
+    --theme-secondary-90: var(--color-dark-secondary-90);
+
+    --theme-border-subtle: var(--color-dark-secondary-25);
+    --theme-primary-muted: var(--color-dark-primary-50);
+    --theme-form-error: var(--color-error-200);
+
+    --theme-status-in-progress-color: var(
+      --color-status-in-progress-color-dark
+    );
+    --theme-status-in-queue-color: var(--color-status-in-queue-color-dark);
+    --theme-status-finished-color: var(--color-status-finished-color-dark);
+    --theme-status-failure-color: var(--color-status-failure-color-dark);
+    --theme-status-cancelled-color: var(--color-status-cancelled-color-dark);
+    --theme-status-unknown-color: var(--color-status-unknown-color-dark);
+
+    --theme-shadcn-border: var(--color-shadcn-border-dark);
+    --theme-shadcn-ring: var(--color-shadcn-ring-dark);
+
+    --theme-date-picker-indicator-filter: brightness(0) saturate(100%)
       invert(8%) sepia(56%) saturate(3258%) hue-rotate(229deg) brightness(88%)
       contrast(103%);
   }
 }
 
-/* Override explícito de dark (travado pelo app, independente do sistema). */
-:root.dark {
-  color-scheme: dark;
-  --color-form-date-picker-indicator-filter: brightness(0) saturate(100%)
-    invert(8%) sepia(56%) saturate(3258%) hue-rotate(229deg) brightness(88%)
-    contrast(103%);
+/* Override explícito de light (inclui reset se `.light` e `.dark` coexistirem). */
+:root.light {
+  color-scheme: light;
+
+  --theme-primary: var(--color-light-primary);
+  --theme-primary-15: var(--color-light-primary-15);
+  --theme-primary-25: var(--color-light-primary-25);
+  --theme-primary-50: var(--color-light-primary-50);
+  --theme-primary-70: var(--color-light-primary-70);
+  --theme-primary-90: var(--color-light-primary-90);
+
+  --theme-secondary: var(--color-light-secondary);
+  --theme-secondary-15: var(--color-light-secondary-15);
+  --theme-secondary-25: var(--color-light-secondary-25);
+  --theme-secondary-50: var(--color-light-secondary-50);
+  --theme-secondary-70: var(--color-light-secondary-70);
+  --theme-secondary-90: var(--color-light-secondary-90);
+
+  --theme-border-subtle: var(--color-light-secondary-15);
+  --theme-primary-muted: var(--color-light-primary-70);
+  --theme-form-error: var(--color-error-700);
+
+  --theme-status-in-progress-color: var(--color-status-in-progress-color-light);
+  --theme-status-in-queue-color: var(--color-status-in-queue-color-light);
+  --theme-status-finished-color: var(--color-status-finished-color-light);
+  --theme-status-failure-color: var(--color-status-failure-color-light);
+  --theme-status-cancelled-color: var(--color-status-cancelled-color-light);
+  --theme-status-unknown-color: var(--color-status-unknown-color-light);
+
+  --theme-shadcn-border: var(--color-shadcn-border-light);
+  --theme-shadcn-ring: var(--color-shadcn-ring-light);
+
+  --theme-date-picker-indicator-filter: brightness(0) saturate(100%) invert(97%)
+    sepia(8%) saturate(233%) hue-rotate(191deg) brightness(105%) contrast(94%);
 }
 
 /* Mantém o ícone nativo de date alinhado com o tema do app. */
