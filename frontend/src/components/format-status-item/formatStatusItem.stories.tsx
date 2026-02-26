@@ -23,7 +23,7 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div className="rounded-xl border border-(--color-sidebar-border) bg-(--color-app-bg) p-6 text-(--color-app-fg)">
+      <div className="rounded-xl border border-(--color-secondary-soft) bg-(--color-primary) p-6 text-(--color-secondary)">
         <Story />
       </div>
     ),
@@ -52,9 +52,9 @@ export const ListaDeStatus: Story = {
         {statuses.map((status) => (
           <div
             key={status}
-            className="flex items-center justify-between rounded-md border border-(--color-table-border) px-3 py-2"
+            className="flex items-center justify-between rounded-md border border-(--color-secondary-subtle) px-3 py-2"
           >
-            <span className="text-sm text-(--color-table-caption)">{status}</span>
+            <span className="text-sm text-(--color-secondary-muted)">{status}</span>
             <FormatStatusItem status={status} />
           </div>
         ))}
@@ -66,37 +66,35 @@ export const ListaDeStatus: Story = {
 export const ComparacaoDeModo: Story = {
   render: () => {
     const darkModeVars = {
-      "--color-app-bg": "var(--color-blueberry-900)",
-      "--color-app-fg": "var(--color-metal-50)",
-      "--color-sidebar-border": "var(--color-lighter-bluebery-900)",
-      "--color-table-border": "rgba(243, 244, 247, 0.14)",
-      "--color-table-caption": "rgba(243, 244, 247, 0.68)",
-      "--color-status-in-progress-color": "var(--color-status-in-progress-color-dark)",
-      "--color-status-in-queue-color": "var(--color-status-in-queue-color-dark)",
-      "--color-status-finished-color": "var(--color-status-finished-color-dark)",
-      "--color-status-failure-color": "var(--color-status-failure-color-dark)",
-      "--color-status-cancelled-color": "var(--color-status-cancelled-color-dark)",
-      "--color-status-unknown-color": "var(--color-status-unknown-color-dark)",
+      "--color-primary": "var(--color-slate-950)",
+      "--color-primary-inverse": "var(--color-indigo-500)",
+      "--color-secondary": "var(--color-indigo-500)",
+      "--color-secondary-inverse": "var(--color-slate-950)",
+      "--color-indigo": "var(--color-indigo-200)",
+      "--color-amber": "var(--color-amber-300)",
+      "--color-teal": "var(--color-teal-300)",
+      "--color-rose": "var(--color-rose-300)",
+      "--color-slate": "var(--color-slate-300)",
+      "--color-steel": "var(--color-steel-300)",
     } as CSSProperties;
 
     const lightModeVars = {
-      "--color-app-bg": "var(--color-metal-50)",
-      "--color-app-fg": "var(--color-blueberry-900)",
-      "--color-sidebar-border": "var(--color-darker-metal-50)",
-      "--color-table-border": "rgba(14, 24, 98, 0.14)",
-      "--color-table-caption": "rgba(14, 24, 98, 0.68)",
-      "--color-status-in-progress-color": "var(--color-status-in-progress-color-light)",
-      "--color-status-in-queue-color": "var(--color-status-in-queue-color-light)",
-      "--color-status-finished-color": "var(--color-status-finished-color-light)",
-      "--color-status-failure-color": "var(--color-status-failure-color-light)",
-      "--color-status-cancelled-color": "var(--color-status-cancelled-color-light)",
-      "--color-status-unknown-color": "var(--color-status-unknown-color-light)",
+      "--color-primary": "var(--color-slate-050)",
+      "--color-primary-inverse": "var(--color-indigo-950)",
+      "--color-secondary": "var(--color-indigo-950)",
+      "--color-secondary-inverse": "var(--color-slate-050)",
+      "--color-indigo": "var(--color-indigo-400)",
+      "--color-amber": "var(--color-amber-700)",
+      "--color-teal": "var(--color-teal-700)",
+      "--color-rose": "var(--color-rose-600)",
+      "--color-slate": "var(--color-slate-500)",
+      "--color-steel": "var(--color-steel-600)",
     } as CSSProperties;
 
     return (
       <div className="grid gap-4 md:grid-cols-2">
         <section
-          className="rounded-xl border border-(--color-sidebar-border) bg-(--color-app-bg) p-4 text-(--color-app-fg)"
+          className="rounded-xl border border-(--color-secondary-soft) bg-(--color-primary) p-4 text-(--color-secondary)"
           style={darkModeVars}
         >
           <p className="mb-3 text-sm font-semibold">Modo escuro</p>
@@ -110,7 +108,7 @@ export const ComparacaoDeModo: Story = {
         </section>
 
         <section
-          className="rounded-xl border border-(--color-sidebar-border) bg-(--color-app-bg) p-4 text-(--color-app-fg)"
+          className="rounded-xl border border-(--color-secondary-soft) bg-(--color-primary) p-4 text-(--color-secondary)"
           style={lightModeVars}
         >
           <p className="mb-3 text-sm font-semibold">Modo claro</p>

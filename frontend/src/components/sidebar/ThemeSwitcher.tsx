@@ -18,7 +18,7 @@ export default function ThemeSwitcher() {
         <Sun
           aria-hidden="true"
           className={cn(
-            "size-7 text-(--color-app-fg) transition-opacity",
+            "size-7 text-(--color-secondary) transition-opacity",
             isDark ? "opacity-35" : "opacity-100",
           )}
         />
@@ -43,7 +43,7 @@ export default function ThemeSwitcher() {
         <Moon
           aria-hidden="true"
           className={cn(
-            "size-7 text-(--color-app-fg) transition-opacity",
+            "size-7 text-(--color-secondary) transition-opacity",
             isDark ? "opacity-100" : "opacity-35",
           )}
         />

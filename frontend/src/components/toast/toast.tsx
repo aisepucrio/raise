@@ -1,4 +1,4 @@
-import { type CSSProperties } from "react";
+import type { CSSProperties } from "react";
 import {
   CircleCheckIcon,
   InfoIcon,
@@ -20,25 +20,30 @@ const defaultIcons: NonNullable<ToasterProps["icons"]> = {
 };
 
 const defaultToastStyle = {
-  "--normal-bg": "var(--color-toast-bg)",
-  "--normal-bg-hover": "var(--color-toast-bg-hover)",
-  "--normal-text": "var(--color-toast-text)",
-  "--normal-border": "var(--color-toast-border)",
-  "--normal-border-hover": "var(--color-toast-border-hover)",
-  "--success-bg": "var(--color-toast-success-bg)",
-  "--success-border": "var(--color-toast-success-border)",
-  "--success-text": "var(--color-toast-success-text)",
-  "--info-bg": "var(--color-toast-info-bg)",
-  "--info-border": "var(--color-toast-info-border)",
-  "--info-text": "var(--color-toast-info-text)",
-  "--warning-bg": "var(--color-toast-warning-bg)",
-  "--warning-border": "var(--color-toast-warning-border)",
-  "--warning-text": "var(--color-toast-warning-text)",
-  "--error-bg": "var(--color-toast-error-bg)",
-  "--error-border": "var(--color-toast-error-border)",
-  "--error-text": "var(--color-toast-error-text)",
+  "--normal-bg": "var(--color-primary)",
+  "--normal-bg-hover":
+    "color-mix(in srgb, var(--color-secondary) 8%, var(--color-primary))",
+  "--normal-text": "var(--color-secondary)",
+  "--normal-border": "var(--color-secondary-soft)",
+  "--normal-border-hover": "var(--color-secondary-soft)",
+  "--success-bg": "color-mix(in srgb, var(--color-teal) 10%, var(--color-primary))",
+  "--success-border":
+    "color-mix(in srgb, var(--color-teal) 42%, var(--color-secondary-soft))",
+  "--success-text": "var(--color-teal)",
+  "--info-bg": "color-mix(in srgb, var(--color-indigo) 10%, var(--color-primary))",
+  "--info-border":
+    "color-mix(in srgb, var(--color-indigo) 42%, var(--color-secondary-soft))",
+  "--info-text": "var(--color-indigo)",
+  "--warning-bg": "color-mix(in srgb, var(--color-amber) 12%, var(--color-primary))",
+  "--warning-border":
+    "color-mix(in srgb, var(--color-amber) 42%, var(--color-secondary-soft))",
+  "--warning-text": "var(--color-amber)",
+  "--error-bg": "color-mix(in srgb, var(--color-rose) 10%, var(--color-primary))",
+  "--error-border":
+    "color-mix(in srgb, var(--color-rose) 42%, var(--color-secondary-soft))",
+  "--error-text": "var(--color-rose)",
   "--border-radius": "var(--radius, 0.75rem)",
-} as React.CSSProperties;
+} as CSSProperties;
 
 function Toast({
   className,

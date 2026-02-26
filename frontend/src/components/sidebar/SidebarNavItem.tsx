@@ -23,8 +23,8 @@ export default function SidebarNavItem({
         "text-[1.05rem] font-semibold transition-colors duration-150",
         "focus-visible:outline-none",
         active
-          ? "border-r-(--color-sidebar-border) bg-(--color-sidebar-item-active-bg) text-(--color-sidebar-item-active-fg)"
-          : "bg-transparent opacity-85 hover:bg-(--color-sidebar-item-hover-bg)",
+          ? "border-r-(--color-secondary-soft) bg-(--color-secondary) text-(--color-secondary-inverse)"
+          : "bg-transparent opacity-85 hover:bg-(--color-secondary-subtle)",
       ].join(" ")}
     >
       <Icon className="shrink-0" size={18} strokeWidth={2.1} />

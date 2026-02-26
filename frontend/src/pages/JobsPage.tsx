@@ -189,10 +189,10 @@ export default function JobsPage() {
       </div>
 
       {/* Card/bloco principal que agrupa feedbacks, tabela e controles de paginação. */}
-      <section className="space-y-4 rounded-xl border-2 border-(--color-sidebar-border) p-4">
+      <section className="space-y-4 rounded-xl border-2 border-(--color-secondary-soft) p-4">
         {/* Erro da listagem: falha ao buscar jobs (query principal da página). */}
         {jobsQuery.isError ? (
-          <p className="text-sm text-(--color-form-error)">
+          <p className="text-sm text-(--color-red)">
             {getQueryErrorMessage(jobsQuery.error, "Failed to load jobs.")}
           </p>
         ) : null}

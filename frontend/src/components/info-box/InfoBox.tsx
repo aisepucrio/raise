@@ -11,10 +11,8 @@ type InfoBoxProps = {
 
 const colorVariants: Record<InfoBoxColor, string> = {
   // Aumenta levemente a opacidade para o zebra ficar mais perceptível sem fugir do tema.
-  primary:
-    "border border-(--theme-secondary-50) bg-(--theme-secondary-80) text-(--theme-secondary)",
-  secondary:
-    "border border-transparent bg-(--theme-secondary) text-(--theme-primary)",
+  primary: "bg-(--color-secondary-subtle) text-(--color-secondary)",
+  secondary: "bg-(--color-secondary-muted) text-(--color-secondary-inverse)",
 };
 
 function InfoBox({
@@ -28,7 +26,7 @@ function InfoBox({
       data-slot="info-box"
       data-color={color}
       className={cn(
-        "flex h-full w-full flex-col items-center justify-between rounded-md p-4 text-center shadow-none",
+        "flex h-full w-full flex-col items-center justify-center rounded-md p-2 text-center shadow-none",
         "min-h-28 gap-4",
         colorVariants[color],
         className,

@@ -22,7 +22,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Padrao: Story = {
   render: () => (
-    <div className="h-36 rounded-xl border border-(--color-sidebar-border) bg-(--color-app-bg) p-4">
+    <div className="h-36 rounded-xl border border-(--color-secondary-soft) bg-(--color-primary) p-4">
       <Loader />
     </div>
   ),
@@ -39,13 +39,13 @@ export const Padrao: Story = {
 export const ResizePorContainer: Story = {
   render: () => (
     <div className="grid gap-4 sm:grid-cols-3">
-      <div className="h-20 rounded-lg border border-(--color-sidebar-border) bg-(--color-app-bg) p-2">
+      <div className="h-20 rounded-lg border border-(--color-secondary-soft) bg-(--color-primary) p-2">
         <Loader />
       </div>
-      <div className="h-32 rounded-lg border border-(--color-sidebar-border) bg-(--color-app-bg) p-2">
+      <div className="h-32 rounded-lg border border-(--color-secondary-soft) bg-(--color-primary) p-2">
         <Loader />
       </div>
-      <div className="h-52 rounded-lg border border-(--color-sidebar-border) bg-(--color-app-bg) p-2">
+      <div className="h-52 rounded-lg border border-(--color-secondary-soft) bg-(--color-primary) p-2">
         <Loader />
       </div>
     </div>
@@ -63,24 +63,26 @@ export const ResizePorContainer: Story = {
 export const ComparacaoLightDark: Story = {
   render: () => {
     const darkVars = {
-      "--color-app-bg": "var(--color-blueberry-900)",
-      "--color-app-fg": "var(--color-metal-50)",
-      "--color-sidebar-border": "rgba(243, 244, 247, 0.2)",
+      "--color-primary": "var(--color-slate-950)",
+      "--color-primary-inverse": "var(--color-indigo-500)",
+      "--color-secondary": "var(--color-indigo-500)",
+      "--color-secondary-inverse": "var(--color-slate-950)",
     } as CSSProperties;
 
     const lightVars = {
-      "--color-app-bg": "var(--color-metal-50)",
-      "--color-app-fg": "var(--color-blueberry-900)",
-      "--color-sidebar-border": "rgba(14, 24, 98, 0.14)",
+      "--color-primary": "var(--color-slate-050)",
+      "--color-primary-inverse": "var(--color-indigo-950)",
+      "--color-secondary": "var(--color-indigo-950)",
+      "--color-secondary-inverse": "var(--color-slate-050)",
     } as CSSProperties;
 
     return (
       <div className="grid gap-4 sm:grid-cols-2">
         <section
-          className="h-36 rounded-xl border border-(--color-sidebar-border) bg-(--color-app-bg) p-4"
+          className="h-36 rounded-xl border border-(--color-secondary-soft) bg-(--color-primary) p-4"
           style={darkVars}
         >
-          <p className="mb-2 text-sm font-semibold text-(--color-app-fg)">
+          <p className="mb-2 text-sm font-semibold text-(--color-secondary)">
             Modo escuro
           </p>
           <div className="h-[calc(100%_-_2rem)]">
@@ -89,10 +91,10 @@ export const ComparacaoLightDark: Story = {
         </section>
 
         <section
-          className="h-36 rounded-xl border border-(--color-sidebar-border) bg-(--color-app-bg) p-4"
+          className="h-36 rounded-xl border border-(--color-secondary-soft) bg-(--color-primary) p-4"
           style={lightVars}
         >
-          <p className="mb-2 text-sm font-semibold text-(--color-app-fg)">
+          <p className="mb-2 text-sm font-semibold text-(--color-secondary)">
             Modo claro
           </p>
           <div className="h-[calc(100%_-_2rem)]">

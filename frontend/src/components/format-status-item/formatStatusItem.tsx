@@ -53,7 +53,7 @@ export function getFormatStatusItemInfo(
     return buildStatusInfo(
       rawStatus,
       "In Progress",
-      "--color-status-in-progress-color",
+      "--color-indigo",
       {
         stopActionActive: true,
         restartActionActive: false,
@@ -65,7 +65,7 @@ export function getFormatStatusItemInfo(
     return buildStatusInfo(
       rawStatus,
       "In Queue",
-      "--color-status-in-queue-color",
+      "--color-amber",
       {
         stopActionActive: false,
         restartActionActive: false,
@@ -77,7 +77,7 @@ export function getFormatStatusItemInfo(
     return buildStatusInfo(
       rawStatus,
       "Finished",
-      "--color-status-finished-color",
+      "--color-teal",
       {
         stopActionActive: false,
         restartActionActive: false,
@@ -89,7 +89,7 @@ export function getFormatStatusItemInfo(
     return buildStatusInfo(
       rawStatus,
       "Failure",
-      "--color-status-failure-color",
+      "--color-rose",
       {
         stopActionActive: false,
         restartActionActive: true,
@@ -101,7 +101,7 @@ export function getFormatStatusItemInfo(
     return buildStatusInfo(
       rawStatus,
       "Cancelled",
-      "--color-status-cancelled-color",
+      "--color-slate",
       {
         stopActionActive: false,
         restartActionActive: true,
@@ -113,7 +113,7 @@ export function getFormatStatusItemInfo(
     return buildStatusInfo(
       rawStatus,
       "In Progress",
-      "--color-status-in-progress-color",
+      "--color-indigo",
       {
         stopActionActive: false,
         restartActionActive: false,
@@ -123,7 +123,7 @@ export function getFormatStatusItemInfo(
 
   // Fallback para status não mapeado: label curta e previsível.
   // O valor bruto ainda fica disponível no title do elemento para inspeção.
-  return buildStatusInfo(rawStatus, "Unknown", "--color-status-unknown-color", {
+  return buildStatusInfo(rawStatus, "Unknown", "--color-steel", {
     stopActionActive: false,
     restartActionActive: false,
   });

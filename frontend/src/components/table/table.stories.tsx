@@ -94,7 +94,7 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div className="rounded-xl border border-(--color-sidebar-border) bg-(--color-app-bg) p-4">
+      <div className="rounded-xl border border-(--color-secondary-soft) bg-(--color-primary) p-4">
         <Story />
       </div>
     ),
@@ -135,33 +135,23 @@ export const LinhaSelecionada: Story = {
 export const ComparacaoDeModo: Story = {
   render: () => {
     const darkModeVars = {
-      "--color-app-bg": "var(--color-blueberry-900)",
-      "--color-app-fg": "var(--color-metal-50)",
-      "--color-sidebar-border": "var(--color-lighter-bluebery-900)",
-      "--color-table-border": "rgba(243, 244, 247, 0.14)",
-      "--color-table-head-text": "rgba(243, 244, 247, 0.92)",
-      "--color-table-caption": "rgba(243, 244, 247, 0.68)",
-      "--color-table-footer-bg": "rgba(243, 244, 247, 0.06)",
-      "--color-table-row-hover-bg": "rgba(243, 244, 247, 0.06)",
-      "--color-table-row-selected-bg": "rgba(243, 244, 247, 0.1)",
+      "--color-primary": "var(--color-slate-950)",
+      "--color-primary-inverse": "var(--color-indigo-500)",
+      "--color-secondary": "var(--color-indigo-500)",
+      "--color-secondary-inverse": "var(--color-slate-950)",
     } as CSSProperties;
 
     const lightModeVars = {
-      "--color-app-bg": "var(--color-metal-50)",
-      "--color-app-fg": "var(--color-blueberry-900)",
-      "--color-sidebar-border": "var(--color-darker-metal-50)",
-      "--color-table-border": "rgba(14, 24, 98, 0.12)",
-      "--color-table-head-text": "rgba(14, 24, 98, 0.92)",
-      "--color-table-caption": "rgba(14, 24, 98, 0.7)",
-      "--color-table-footer-bg": "rgba(14, 24, 98, 0.04)",
-      "--color-table-row-hover-bg": "rgba(14, 24, 98, 0.04)",
-      "--color-table-row-selected-bg": "rgba(14, 24, 98, 0.08)",
+      "--color-primary": "var(--color-slate-050)",
+      "--color-primary-inverse": "var(--color-indigo-950)",
+      "--color-secondary": "var(--color-indigo-950)",
+      "--color-secondary-inverse": "var(--color-slate-050)",
     } as CSSProperties;
 
     return (
       <div className="grid gap-4 xl:grid-cols-2">
         <section
-          className="rounded-xl border border-(--color-sidebar-border) bg-(--color-app-bg) p-4 text-(--color-app-fg)"
+          className="rounded-xl border border-(--color-secondary-soft) bg-(--color-primary) p-4 text-(--color-secondary)"
           style={darkModeVars}
         >
           <p className="mb-3 text-sm font-semibold">Modo escuro (app)</p>
@@ -169,7 +159,7 @@ export const ComparacaoDeModo: Story = {
         </section>
 
         <section
-          className="rounded-xl border border-(--color-sidebar-border) bg-(--color-app-bg) p-4 text-(--color-app-fg)"
+          className="rounded-xl border border-(--color-secondary-soft) bg-(--color-primary) p-4 text-(--color-secondary)"
           style={lightModeVars}
         >
           <p className="mb-3 text-sm font-semibold">Modo claro (app)</p>

@@ -17,7 +17,7 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div className="rounded-xl border border-(--color-sidebar-border) bg-(--color-app-bg) p-6 text-(--color-app-fg)">
+      <div className="rounded-xl border border-(--color-secondary-soft) bg-(--color-primary) p-6 text-(--color-secondary)">
         <Story />
       </div>
     ),
@@ -45,23 +45,23 @@ export const TextoLongo: Story = {
 export const ComparacaoDeModo: Story = {
   render: () => {
     const darkModeVars = {
-      "--color-app-bg": "var(--color-blueberry-900)",
-      "--color-app-fg": "var(--color-metal-50)",
-      "--color-sidebar-border": "var(--color-lighter-bluebery-900)",
-      "--color-table-caption": "rgba(243, 244, 247, 0.68)",
+      "--color-primary": "var(--color-slate-950)",
+      "--color-primary-inverse": "var(--color-indigo-500)",
+      "--color-secondary": "var(--color-indigo-500)",
+      "--color-secondary-inverse": "var(--color-slate-950)",
     } as CSSProperties;
 
     const lightModeVars = {
-      "--color-app-bg": "var(--color-metal-50)",
-      "--color-app-fg": "var(--color-blueberry-900)",
-      "--color-sidebar-border": "var(--color-darker-metal-50)",
-      "--color-table-caption": "rgba(14, 24, 98, 0.68)",
+      "--color-primary": "var(--color-slate-050)",
+      "--color-primary-inverse": "var(--color-indigo-950)",
+      "--color-secondary": "var(--color-indigo-950)",
+      "--color-secondary-inverse": "var(--color-slate-050)",
     } as CSSProperties;
 
     return (
       <div className="grid gap-4 md:grid-cols-2">
         <section
-          className="rounded-xl border border-(--color-sidebar-border) bg-(--color-app-bg) p-4 text-(--color-app-fg)"
+          className="rounded-xl border border-(--color-secondary-soft) bg-(--color-primary) p-4 text-(--color-secondary)"
           style={darkModeVars}
         >
           <p className="mb-3 text-sm font-semibold">Modo escuro (app)</p>
@@ -72,7 +72,7 @@ export const ComparacaoDeModo: Story = {
         </section>
 
         <section
-          className="rounded-xl border border-(--color-sidebar-border) bg-(--color-app-bg) p-4 text-(--color-app-fg)"
+          className="rounded-xl border border-(--color-secondary-soft) bg-(--color-primary) p-4 text-(--color-secondary)"
           style={lightModeVars}
         >
           <p className="mb-3 text-sm font-semibold">Modo claro (app)</p>

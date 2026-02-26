@@ -4,7 +4,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { InfoBox } from "./";
 
 const storyWrapperClassName =
-  "rounded-xl border border-(--color-sidebar-border) bg-(--color-app-bg) p-4 text-(--color-app-fg)";
+  "rounded-xl border border-(--color-secondary-soft) bg-(--color-primary) p-4 text-(--color-secondary)";
 
 const meta = {
   title: "Components/InfoBox",
@@ -58,14 +58,10 @@ export const ComparacaoDeModo: Story = {
         className={storyWrapperClassName}
         style={
           {
-            "--color-app-bg": "#15161f",
-            "--color-app-fg": "#5f81ff",
-            "--color-sidebar-border": "rgba(95, 129, 255, 0.22)",
-            "--theme-primary": "#15161f",
-            "--theme-secondary": "#5f81ff",
-            "--theme-secondary-25": "rgba(95, 129, 255, 0.25)",
-            "--theme-secondary-50": "rgba(95, 129, 255, 0.5)",
-            "--theme-border-subtle": "rgba(95, 129, 255, 0.2)",
+            "--color-primary": "var(--color-slate-950)",
+            "--color-primary-inverse": "var(--color-indigo-500)",
+            "--color-secondary": "var(--color-indigo-500)",
+            "--color-secondary-inverse": "var(--color-slate-950)",
           } as CSSProperties
         }
       >
@@ -79,14 +75,10 @@ export const ComparacaoDeModo: Story = {
         className={storyWrapperClassName}
         style={
           {
-            "--color-app-bg": "#f3f4f7",
-            "--color-app-fg": "#0e1862",
-            "--color-sidebar-border": "rgba(14, 24, 98, 0.16)",
-            "--theme-primary": "#f3f4f7",
-            "--theme-secondary": "#0e1862",
-            "--theme-secondary-25": "rgba(14, 24, 98, 0.25)",
-            "--theme-secondary-50": "rgba(14, 24, 98, 0.5)",
-            "--theme-border-subtle": "rgba(14, 24, 98, 0.16)",
+            "--color-primary": "var(--color-slate-050)",
+            "--color-primary-inverse": "var(--color-indigo-950)",
+            "--color-secondary": "var(--color-indigo-950)",
+            "--color-secondary-inverse": "var(--color-slate-050)",
           } as CSSProperties
         }
       >

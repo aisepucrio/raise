@@ -17,7 +17,7 @@ function InteractiveDemo({
 
   return (
     <div className="space-y-3">
-      <div className="rounded-md border border-(--color-table-border) px-3 py-2 text-sm text-(--color-table-caption)">
+      <div className="rounded-md border border-(--color-secondary-subtle) px-3 py-2 text-sm text-(--color-secondary-muted)">
         Demo context: total items = {totalItems}, page = {currentPage}, rows/page ={" "}
         {rowsPerPage}
       </div>
@@ -57,7 +57,7 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div className="rounded-xl border border-(--color-sidebar-border) bg-(--color-app-bg) p-6 text-(--color-app-fg) overflow-x-auto">
+      <div className="rounded-xl border border-(--color-secondary-soft) bg-(--color-primary) p-6 text-(--color-secondary) overflow-x-auto">
         <div className="min-w-[52rem]">
           <Story />
         </div>

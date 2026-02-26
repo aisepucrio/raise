@@ -86,19 +86,19 @@ function Button({
       className={cn(
         "inline-flex shrink-0 items-center justify-center gap-2 rounded-md shadow-none outline-none [font:inherit] text-sm font-semibold leading-[1.35] whitespace-nowrap transition-[filter,background-color,color,border-color] duration-150",
         "enabled:cursor-pointer disabled:cursor-not-allowed",
-        "focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-form-focus)",
+        "focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-secondary-strong)",
         isIconOnly
           ? "w-11 min-h-11 px-0 py-0"
           : "min-h-11 px-3.5 py-2.5",
         fullWidth && !isIconOnly ? "w-full" : null,
         isSelectable
           ? selected
-            ? "border border-(--color-pagination-active-border) bg-(--color-pagination-active-bg) text-(--color-pagination-active-text) enabled:hover:bg-(--color-pagination-active-bg) enabled:active:filter-none"
-            : "border border-(--color-pagination-active-border) bg-transparent text-(--color-pagination-active-bg) enabled:hover:bg-(--color-pagination-hover-bg) enabled:active:bg-(--color-pagination-hover-bg) enabled:active:filter-none"
-          : "border-0 bg-(--color-form-bg) text-(--color-form-text) enabled:hover:bg-(--color-form-bg-hover) enabled:active:filter-[brightness(0.92)]",
+            ? "border border-(--color-secondary) bg-(--color-secondary) text-(--color-secondary-inverse) enabled:hover:bg-(--color-secondary) enabled:active:filter-none"
+            : "border border-(--color-secondary) bg-transparent text-(--color-secondary) enabled:hover:bg-(--color-secondary-subtle) enabled:active:bg-(--color-secondary-subtle) enabled:active:filter-none"
+          : "border-0 bg-(--color-secondary) text-(--color-secondary-inverse) enabled:hover:bg-(--color-secondary-strong) enabled:active:filter-[brightness(0.92)]",
         isSelectable
-          ? "disabled:border-(--color-pagination-border) disabled:bg-transparent disabled:text-(--color-pagination-disabled-text) disabled:filter-none"
-          : "disabled:bg-(--color-form-disabled-bg) disabled:text-(--color-form-disabled-text) disabled:filter-none",
+          ? "disabled:border-(--color-secondary-subtle) disabled:bg-transparent disabled:text-(--color-secondary-mid) disabled:filter-none"
+          : "disabled:bg-(--color-secondary-muted) disabled:text-(--color-secondary-inverse-muted) disabled:filter-none",
         className,
       )}
     >

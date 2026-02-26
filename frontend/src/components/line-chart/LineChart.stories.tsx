@@ -66,7 +66,7 @@ const queueSeries: LineSeries[] = [
 ];
 
 const storyWrapperClassName =
-  "rounded-xl border border-(--color-sidebar-border) bg-(--color-app-bg) p-4 text-(--color-app-fg)";
+  "rounded-xl border border-(--color-secondary-soft) bg-(--color-primary) p-4 text-(--color-secondary)";
 
 const meta = {
   title: "Components/LineChart",
@@ -171,37 +171,25 @@ export const SemDados: Story = {
 export const ComparacaoDeModo: Story = {
   render: () => {
     const darkModeVars = {
-      "--color-app-bg": "#15161f",
-      "--color-app-fg": "#5f81ff",
-      "--theme-secondary": "#5f81ff",
-      "--theme-secondary-15": "rgba(95, 129, 255, 0.15)",
-      "--theme-secondary-25": "rgba(95, 129, 255, 0.25)",
-      "--theme-secondary-50": "rgba(95, 129, 255, 0.5)",
-      "--theme-secondary-70": "rgba(95, 129, 255, 0.7)",
-      "--theme-secondary-90": "rgba(95, 129, 255, 0.9)",
-      "--theme-border-subtle": "rgba(95, 129, 255, 0.2)",
-      "--color-sidebar-border": "rgba(95, 129, 255, 0.22)",
-      "--color-status-in-progress-color": "#a8b4ff",
-      "--color-status-in-queue-color": "#ffd36b",
-      "--color-status-finished-color": "#63e6cf",
-      "--color-status-failure-color": "#ff8da1",
+      "--color-primary": "var(--color-slate-950)",
+      "--color-primary-inverse": "var(--color-indigo-500)",
+      "--color-secondary": "var(--color-indigo-500)",
+      "--color-secondary-inverse": "var(--color-slate-950)",
+      "--color-indigo": "var(--color-indigo-200)",
+      "--color-amber": "var(--color-amber-300)",
+      "--color-teal": "var(--color-teal-300)",
+      "--color-rose": "var(--color-rose-300)",
     } as CSSProperties;
 
     const lightModeVars = {
-      "--color-app-bg": "#f3f4f7",
-      "--color-app-fg": "#0e1862",
-      "--theme-secondary": "#0e1862",
-      "--theme-secondary-15": "rgba(14, 24, 98, 0.15)",
-      "--theme-secondary-25": "rgba(14, 24, 98, 0.25)",
-      "--theme-secondary-50": "rgba(14, 24, 98, 0.5)",
-      "--theme-secondary-70": "rgba(14, 24, 98, 0.7)",
-      "--theme-secondary-90": "rgba(14, 24, 98, 0.9)",
-      "--theme-border-subtle": "rgba(14, 24, 98, 0.16)",
-      "--color-sidebar-border": "rgba(14, 24, 98, 0.16)",
-      "--color-status-in-progress-color": "#6675e6",
-      "--color-status-in-queue-color": "#d08a12",
-      "--color-status-finished-color": "#1f9b8f",
-      "--color-status-failure-color": "#e35d72",
+      "--color-primary": "var(--color-slate-050)",
+      "--color-primary-inverse": "var(--color-indigo-950)",
+      "--color-secondary": "var(--color-indigo-950)",
+      "--color-secondary-inverse": "var(--color-slate-050)",
+      "--color-indigo": "var(--color-indigo-400)",
+      "--color-amber": "var(--color-amber-700)",
+      "--color-teal": "var(--color-teal-700)",
+      "--color-rose": "var(--color-rose-600)",
     } as CSSProperties;
 
     return (

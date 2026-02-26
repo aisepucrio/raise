@@ -35,13 +35,13 @@ const meta = {
     docs: {
       description: {
         component:
-          "Componente `Switch` derivado de shadcn/ui (Radix UI), adaptado para usar as cores do app (`metal-50` e `blueberry-900`) com inversão por modo.",
+          "Componente `Switch` derivado de shadcn/ui (Radix UI), adaptado para usar os tokens contextuais do app (`primary`/`secondary`) com inversão por modo.",
       },
     },
   },
   decorators: [
     (Story) => (
-      <div className="rounded-xl border border-(--color-sidebar-border) p-6">
+      <div className="rounded-xl border border-(--color-secondary-soft) p-6">
         <Story />
       </div>
     ),
@@ -112,19 +112,23 @@ export const EstadosDesabilitados: Story = {
 export const ComparacaoDeModo: Story = {
   render: () => {
     const darkModeVars = {
-      "--color-app-bg": "var(--color-blueberry-900)",
-      "--color-app-fg": "var(--color-metal-50)",
+      "--color-primary": "var(--color-slate-950)",
+      "--color-primary-inverse": "var(--color-indigo-500)",
+      "--color-secondary": "var(--color-indigo-500)",
+      "--color-secondary-inverse": "var(--color-slate-950)",
     } as CSSProperties;
 
     const lightModeVars = {
-      "--color-app-bg": "var(--color-metal-50)",
-      "--color-app-fg": "var(--color-blueberry-900)",
+      "--color-primary": "var(--color-slate-050)",
+      "--color-primary-inverse": "var(--color-indigo-950)",
+      "--color-secondary": "var(--color-indigo-950)",
+      "--color-secondary-inverse": "var(--color-slate-050)",
     } as CSSProperties;
 
     return (
       <div className="grid gap-4 sm:grid-cols-2">
         <section
-          className="rounded-xl border border-white/10 bg-(--color-app-bg) p-4 text-(--color-app-fg)"
+          className="rounded-xl border border-(--color-secondary-soft) bg-(--color-primary) p-4 text-(--color-secondary)"
           style={darkModeVars}
         >
           <p className="mb-3 text-sm font-semibold">Modo escuro (app)</p>
@@ -135,7 +139,7 @@ export const ComparacaoDeModo: Story = {
         </section>
 
         <section
-          className="rounded-xl border border-black/10 bg-(--color-app-bg) p-4 text-(--color-app-fg)"
+          className="rounded-xl border border-(--color-secondary-soft) bg-(--color-primary) p-4 text-(--color-secondary)"
           style={lightModeVars}
         >
           <p className="mb-3 text-sm font-semibold">Modo claro (app)</p>
@@ -151,7 +155,7 @@ export const ComparacaoDeModo: Story = {
     docs: {
       description: {
         story:
-          "Mostra a inversão de `metal-50` e `blueberry-900` usada pelo app em cada modo.",
+          "Mostra a inversão contextual de `primary`/`secondary` usada pelo app em cada modo.",
       },
     },
   },

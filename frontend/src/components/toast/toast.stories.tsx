@@ -8,17 +8,17 @@ function ToastDemo(props: ToastProps) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-(--color-sidebar-border) p-4">
+      <div className="rounded-xl border border-(--color-secondary-soft) p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm font-semibold">Tema atual: {theme}</p>
-          <div className="inline-flex rounded-lg border border-(--color-sidebar-border) p-1">
+          <div className="inline-flex rounded-lg border border-(--color-secondary-soft) p-1">
             <button
               type="button"
               onClick={() => setTheme("light")}
               className={`rounded-md px-3 py-1 text-sm transition ${
                 theme === "light"
-                  ? "bg-(--color-app-fg) text-(--color-app-bg)"
-                  : "text-(--color-app-fg) opacity-70 hover:opacity-100"
+                  ? "bg-(--color-secondary) text-(--color-primary)"
+                  : "text-(--color-secondary) opacity-70 hover:opacity-100"
               }`}
             >
               Light
@@ -28,8 +28,8 @@ function ToastDemo(props: ToastProps) {
               onClick={() => setTheme("dark")}
               className={`rounded-md px-3 py-1 text-sm transition ${
                 theme === "dark"
-                  ? "bg-(--color-app-fg) text-(--color-app-bg)"
-                  : "text-(--color-app-fg) opacity-70 hover:opacity-100"
+                  ? "bg-(--color-secondary) text-(--color-primary)"
+                  : "text-(--color-secondary) opacity-70 hover:opacity-100"
               }`}
             >
               Dark
@@ -45,7 +45,7 @@ function ToastDemo(props: ToastProps) {
                 description: "Feedback rápido para ações comuns da interface.",
               })
             }
-            className="rounded-md border border-(--color-sidebar-border) px-3 py-2 text-sm"
+            className="rounded-md border border-(--color-secondary-soft) px-3 py-2 text-sm"
           >
             Toast padrão
           </button>
@@ -57,7 +57,7 @@ function ToastDemo(props: ToastProps) {
                 description: "Exemplo de confirmação visual temporária.",
               })
             }
-            className="rounded-md border border-(--color-sidebar-border) px-3 py-2 text-sm"
+            className="rounded-md border border-(--color-secondary-soft) px-3 py-2 text-sm"
           >
             Sucesso
           </button>
@@ -69,7 +69,7 @@ function ToastDemo(props: ToastProps) {
                 description: "Mensagem informativa sem bloquear o fluxo.",
               })
             }
-            className="rounded-md border border-(--color-sidebar-border) px-3 py-2 text-sm"
+            className="rounded-md border border-(--color-secondary-soft) px-3 py-2 text-sm"
           >
             Info
           </button>
@@ -81,7 +81,7 @@ function ToastDemo(props: ToastProps) {
                 description: "Exemplo de aviso para revisão de parâmetros.",
               })
             }
-            className="rounded-md border border-(--color-sidebar-border) px-3 py-2 text-sm"
+            className="rounded-md border border-(--color-secondary-soft) px-3 py-2 text-sm"
           >
             Aviso
           </button>
@@ -93,7 +93,7 @@ function ToastDemo(props: ToastProps) {
                 description: "Exemplo de erro para feedback de operação.",
               })
             }
-            className="rounded-md border border-(--color-sidebar-border) px-3 py-2 text-sm"
+            className="rounded-md border border-(--color-secondary-soft) px-3 py-2 text-sm"
           >
             Erro
           </button>

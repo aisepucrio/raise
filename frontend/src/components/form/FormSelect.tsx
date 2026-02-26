@@ -59,7 +59,7 @@ export default function FormSelect({
     >
       <div className="relative">
         <motion.span
-          className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-[color:var(--color-form-text)]"
+          className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-[color:var(--color-secondary-inverse)]"
           aria-hidden="true"
           animate={{ rotate: isOpenLike ? 90 : 0 }}
           transition={{ duration: 0.16, ease: "easeOut" }}

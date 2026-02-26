@@ -39,7 +39,7 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <aside className="w-72 border-r-2 border-(--color-sidebar-border) p-6">
+      <aside className="w-72 border-r-2 border-(--color-secondary-soft) p-6">
         <nav className="flex flex-col gap-1">
           <Story />
         </nav>

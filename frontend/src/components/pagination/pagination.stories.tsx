@@ -142,7 +142,7 @@ function DemoTableWithPagination() {
         </TableBody>
       </Table>
 
-      <div className="flex items-center justify-between gap-3 text-sm text-(--color-pagination-ellipsis)">
+      <div className="flex items-center justify-between gap-3 text-sm text-(--color-secondary-muted)">
         <span>Mostrando 1-10 de 87 resultados</span>
         <DemoPagination
           currentPage={3}
@@ -171,7 +171,7 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div className="rounded-xl border border-(--color-sidebar-border) bg-(--color-app-bg) p-4">
+      <div className="rounded-xl border border-(--color-secondary-soft) bg-(--color-primary) p-4">
         <Story />
       </div>
     ),
@@ -225,49 +225,23 @@ export const UsoComTabela: Story = {
 export const ComparacaoDeModo: Story = {
   render: () => {
     const darkModeVars = {
-      "--color-app-bg": "var(--color-blueberry-900)",
-      "--color-app-fg": "var(--color-metal-50)",
-      "--color-sidebar-border": "var(--color-lighter-bluebery-900)",
-      "--color-form-bg": "var(--color-metal-50)",
-      "--color-form-bg-hover": "var(--color-darker-metal-50)",
-      "--color-form-text": "var(--color-blueberry-900)",
-      "--color-form-focus": "var(--color-darker-metal-50)",
-      "--color-form-disabled-bg": "rgba(243, 244, 247, 0.6)",
-      "--color-form-disabled-text": "rgba(14, 24, 98, 0.45)",
-      "--color-pagination-text": "rgba(243, 244, 247, 0.9)",
-      "--color-pagination-border": "rgba(243, 244, 247, 0.16)",
-      "--color-pagination-hover-bg": "rgba(243, 244, 247, 0.08)",
-      "--color-pagination-active-bg": "var(--color-metal-50)",
-      "--color-pagination-active-text": "var(--color-blueberry-900)",
-      "--color-pagination-active-border": "var(--color-metal-50)",
-      "--color-pagination-disabled-text": "rgba(243, 244, 247, 0.42)",
-      "--color-pagination-ellipsis": "rgba(243, 244, 247, 0.66)",
+      "--color-primary": "var(--color-slate-950)",
+      "--color-primary-inverse": "var(--color-indigo-500)",
+      "--color-secondary": "var(--color-indigo-500)",
+      "--color-secondary-inverse": "var(--color-slate-950)",
     } as CSSProperties;
 
     const lightModeVars = {
-      "--color-app-bg": "var(--color-metal-50)",
-      "--color-app-fg": "var(--color-blueberry-900)",
-      "--color-sidebar-border": "var(--color-darker-metal-50)",
-      "--color-form-bg": "var(--color-blueberry-900)",
-      "--color-form-bg-hover": "var(--color-lighter-bluebery-900)",
-      "--color-form-text": "var(--color-metal-50)",
-      "--color-form-focus": "var(--color-lighter-bluebery-900)",
-      "--color-form-disabled-bg": "rgba(14, 24, 98, 0.65)",
-      "--color-form-disabled-text": "rgba(243, 244, 247, 0.65)",
-      "--color-pagination-text": "rgba(14, 24, 98, 0.88)",
-      "--color-pagination-border": "rgba(14, 24, 98, 0.14)",
-      "--color-pagination-hover-bg": "rgba(14, 24, 98, 0.06)",
-      "--color-pagination-active-bg": "var(--color-blueberry-900)",
-      "--color-pagination-active-text": "var(--color-metal-50)",
-      "--color-pagination-active-border": "var(--color-blueberry-900)",
-      "--color-pagination-disabled-text": "rgba(14, 24, 98, 0.45)",
-      "--color-pagination-ellipsis": "rgba(14, 24, 98, 0.68)",
+      "--color-primary": "var(--color-slate-050)",
+      "--color-primary-inverse": "var(--color-indigo-950)",
+      "--color-secondary": "var(--color-indigo-950)",
+      "--color-secondary-inverse": "var(--color-slate-050)",
     } as CSSProperties;
 
     return (
       <div className="grid gap-4 xl:grid-cols-2">
         <section
-          className="rounded-xl border border-(--color-sidebar-border) bg-(--color-app-bg) p-4 text-(--color-app-fg)"
+          className="rounded-xl border border-(--color-secondary-soft) bg-(--color-primary) p-4 text-(--color-secondary)"
           style={darkModeVars}
         >
           <p className="mb-3 text-sm font-semibold">Modo escuro (app)</p>
@@ -281,7 +255,7 @@ export const ComparacaoDeModo: Story = {
         </section>
 
         <section
-          className="rounded-xl border border-(--color-sidebar-border) bg-(--color-app-bg) p-4 text-(--color-app-fg)"
+          className="rounded-xl border border-(--color-secondary-soft) bg-(--color-primary) p-4 text-(--color-secondary)"
           style={lightModeVars}
         >
           <p className="mb-3 text-sm font-semibold">Modo claro (app)</p>

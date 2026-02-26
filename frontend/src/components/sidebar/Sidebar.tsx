@@ -42,7 +42,7 @@ export default function Sidebar() {
   const apiDocsUrl = import.meta.env.VITE_API_URL;
 
   return (
-    <aside className="shrink-0 border-b-2 border-(--color-sidebar-border) p-4 md:flex md:min-h-dvh md:w-[15%] md:min-w-55 md:max-w-125 md:flex-col md:border-r-2 md:border-b-0">
+    <aside className="shrink-0 border-b-2 border-(--color-secondary-soft) p-4 md:flex md:min-h-dvh md:w-[15%] md:min-w-55 md:max-w-125 md:flex-col md:border-r-2 md:border-b-0">
       <div className="space-y-4">
         <div className="p-3">
           <div className="dark:hidden">
@@ -63,7 +63,7 @@ export default function Sidebar() {
         </div>
 
         <div
-          className="border-t-2 border-(--color-sidebar-border)"
+          className="border-t-2 border-(--color-secondary-soft)"
           aria-hidden="true"
         />
 
@@ -115,7 +115,7 @@ export default function Sidebar() {
           }}
         />
 
-        <div className="mt-4 border-t-2 border-(--color-sidebar-border) pt-4">
+        <div className="mt-4 border-t-2 border-(--color-secondary-soft) pt-4">
           <ThemeSwitcher />
         </div>
       </div>

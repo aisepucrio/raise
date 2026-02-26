@@ -60,7 +60,7 @@ export function TablePaginationFooter({
       )}
     >
       {/* Resumo textual da faixa visível atual. */}
-      <p className="text-sm text-(--color-pagination-ellipsis)">
+      <p className="text-sm text-(--color-secondary-muted)">
         {hasItems
           ? `Showing ${firstRowNumber}-${lastRowNumber} of ${totalItems} ${itemsLabel}`
           : "No rows to paginate"}

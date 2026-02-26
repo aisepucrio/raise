@@ -28,40 +28,40 @@ export interface LineChartProps {
 
 // Fallback de cores (caso a série não tenha cor definida)
 const DEFAULT_COLORS = [
-  "var(--color-status-in-progress-color)",
-  "var(--color-status-finished-color)",
-  "var(--color-status-in-queue-color)",
-  "var(--color-status-failure-color)",
-  "var(--theme-secondary)",
+  "var(--color-indigo)",
+  "var(--color-teal)",
+  "var(--color-amber)",
+  "var(--color-rose)",
+  "var(--color-secondary)",
 ];
 
 const chartTheme = {
-  background: "var(--color-app-bg)",
+  background: "var(--color-primary)",
   text: {
-    fill: "var(--color-app-fg)",
+    fill: "var(--color-secondary)",
     fontSize: 12,
     fontFamily: "Montserrat, system-ui, sans-serif",
   },
   axis: {
     domain: {
       line: {
-        stroke: "var(--theme-secondary-25)",
+        stroke: "var(--color-secondary-soft)",
         strokeWidth: 1,
       },
     },
     ticks: {
       line: {
-        stroke: "var(--theme-secondary-25)",
+        stroke: "var(--color-secondary-soft)",
         strokeWidth: 1,
       },
       text: {
-        fill: "var(--theme-secondary-70)",
+        fill: "var(--color-secondary-muted)",
         fontSize: 11,
       },
     },
     legend: {
       text: {
-        fill: "var(--color-app-fg)",
+        fill: "var(--color-secondary)",
         fontSize: 12,
         fontWeight: 600,
       },
@@ -69,31 +69,31 @@ const chartTheme = {
   },
   grid: {
     line: {
-      stroke: "var(--theme-secondary-15)",
+      stroke: "var(--color-secondary-subtle)",
       strokeWidth: 1,
     },
   },
   crosshair: {
     line: {
-      stroke: "var(--theme-secondary-50)",
+      stroke: "var(--color-secondary-mid)",
       strokeWidth: 1,
       strokeOpacity: 0.5,
     },
   },
   legends: {
     text: {
-      fill: "var(--theme-secondary-90)",
+      fill: "var(--color-secondary-strong)",
       fontSize: 12,
     },
   },
   tooltip: {
     container: {
-      background: "var(--color-app-bg)",
-      color: "var(--color-app-fg)",
-      border: "1px solid var(--theme-border-subtle)",
+      background: "var(--color-primary)",
+      color: "var(--color-secondary)",
+      border: "1px solid var(--color-secondary-soft)",
       borderRadius: "12px",
       boxShadow:
-        "0 8px 24px color-mix(in srgb, var(--theme-secondary) 12%, transparent)",
+        "0 8px 24px color-mix(in srgb, var(--color-secondary) 12%, transparent)",
     },
   },
 } as const;
@@ -144,7 +144,7 @@ export function LineChart({
       style={{
         display: "grid",
         gap: 12,
-        color: "var(--color-app-fg)",
+        color: "var(--color-secondary)",
       }}
     >
       <header
@@ -158,7 +158,7 @@ export function LineChart({
         <h3
           style={{
             margin: 0,
-            color: "var(--theme-secondary)",
+            color: "var(--color-secondary)",
             fontSize: 18,
             fontWeight: 600,
             lineHeight: 1.2,
@@ -186,8 +186,8 @@ export function LineChart({
               fontSize: 14,
               lineHeight: 1.4,
               color: error
-                ? "var(--color-status-failure-color)"
-                : "var(--theme-secondary-70)",
+                ? "var(--color-rose)"
+                : "var(--color-secondary-muted)",
             }}
           >
             {error ?? emptyMessage}
@@ -242,12 +242,12 @@ export function LineChart({
                 itemOpacity: 0.75,
                 symbolSize: 12,
                 symbolShape: "circle",
-                symbolBorderColor: "var(--theme-secondary-25)",
+                symbolBorderColor: "var(--color-secondary-soft)",
                 effects: [
                   {
                     on: "hover",
                     style: {
-                      itemBackground: "var(--theme-secondary-15)",
+                      itemBackground: "var(--color-secondary-subtle)",
                       itemOpacity: 1,
                     },
                   },

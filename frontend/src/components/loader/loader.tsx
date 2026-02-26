@@ -9,7 +9,7 @@ function Loader() {
       <Loader2Icon
         role="status"
         aria-label="Carregando"
-        className="size-[clamp(1rem,24cqmin,2rem)] animate-spin text-(--color-app-fg)"
+        className="size-[clamp(1rem,24cqmin,2rem)] animate-spin text-(--color-secondary)"
       />
     </div>
   );

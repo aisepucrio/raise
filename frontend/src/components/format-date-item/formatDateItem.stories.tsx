@@ -19,7 +19,7 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <div className="rounded-xl border border-(--color-sidebar-border) bg-(--color-app-bg) p-6 text-(--color-app-fg)">
+      <div className="rounded-xl border border-(--color-secondary-soft) bg-(--color-primary) p-6 text-(--color-secondary)">
         <Story />
       </div>
     ),
@@ -46,9 +46,9 @@ export const VariacoesComuns: Story = {
         {values.map((value) => (
           <div
             key={value || "empty"}
-            className="flex items-center justify-between rounded-md border border-(--color-table-border) px-3 py-2"
+            className="flex items-center justify-between rounded-md border border-(--color-secondary-subtle) px-3 py-2"
           >
-            <span className="text-sm text-(--color-table-caption)">
+            <span className="text-sm text-(--color-secondary-muted)">
               {value || "(empty)"}
             </span>
             <FormatDateItem value={value} />

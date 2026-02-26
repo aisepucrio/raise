@@ -11,7 +11,7 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
       <table
         data-slot="table"
         className={cn(
-          "w-full caption-bottom text-sm text-(--color-app-fg)",
+          "w-full caption-bottom text-sm text-(--color-secondary)",
           className,
         )}
         {...props}
@@ -25,7 +25,7 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
     <thead
       data-slot="table-header"
       className={cn(
-        "[&_tr]:border-b [&_tr]:border-(--color-table-border)",
+        "[&_tr]:border-b [&_tr]:border-(--color-secondary-subtle)",
         className,
       )}
       {...props}
@@ -48,7 +48,7 @@ function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
     <tfoot
       data-slot="table-footer"
       className={cn(
-        "border-t border-(--color-table-border) bg-(--color-table-footer-bg) font-medium [&>tr]:last:border-b-0",
+        "border-t border-(--color-secondary-subtle) bg-(--color-secondary-subtle) font-medium [&>tr]:last:border-b-0",
         className,
       )}
       {...props}
@@ -61,7 +61,7 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
     <tr
       data-slot="table-row"
       className={cn(
-        "border-b border-(--color-table-border) transition-colors hover:bg-(--color-table-row-hover-bg) data-[state=selected]:bg-(--color-table-row-selected-bg)",
+        "border-b border-(--color-secondary-subtle) transition-colors hover:bg-(--color-secondary-subtle) data-[state=selected]:bg-(--color-secondary-subtle)",
         className,
       )}
       {...props}
@@ -74,7 +74,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "h-10 px-2 text-left align-middle text-[0.90rem] font-bold whitespace-nowrap text-(--color-table-head-text) [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+        "h-10 px-2 text-left align-middle text-[0.90rem] font-bold whitespace-nowrap text-(--color-secondary-strong) [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
         className,
       )}
       {...props}
@@ -102,7 +102,7 @@ function TableCaption({
   return (
     <caption
       data-slot="table-caption"
-      className={cn("mt-4 text-sm text-(--color-table-caption)", className)}
+      className={cn("mt-4 text-sm text-(--color-secondary-muted)", className)}
       {...props}
     />
   );

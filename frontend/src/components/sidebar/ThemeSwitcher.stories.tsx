@@ -17,8 +17,8 @@ function withInitialTheme(theme: ThemeName) {
 
     return (
       <ThemeProvider>
-        <aside className="w-full max-w-72 rounded-xl border border-(--color-sidebar-border) p-4">
-          <div className="border-t-2 border-(--color-sidebar-border) pt-4">
+        <aside className="w-full max-w-72 rounded-xl border border-(--color-secondary-soft) p-4">
+          <div className="border-t-2 border-(--color-secondary-soft) pt-4">
             <Story />
           </div>
         </aside>

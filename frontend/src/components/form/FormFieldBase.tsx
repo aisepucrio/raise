@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 export const formControlBaseClassName =
-  "w-full min-w-0 min-h-11 box-border rounded-md !border-0 shadow-none px-3.5 py-2.5 [font:inherit] leading-[1.35] bg-[color:var(--color-form-bg)] text-[color:var(--color-form-text)] placeholder:text-[color:var(--color-form-placeholder)] outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus:[box-shadow:none] focus-visible:[box-shadow:none] disabled:cursor-not-allowed disabled:bg-[color:var(--color-form-disabled-bg)] disabled:text-[color:var(--color-form-disabled-text)] disabled:placeholder:text-[color:var(--color-form-disabled-text)]";
+  "w-full min-w-0 min-h-11 box-border rounded-md !border-0 shadow-none px-3.5 py-2.5 [font:inherit] leading-[1.35] bg-[color:var(--color-secondary)] text-[color:var(--color-secondary-inverse)] placeholder:text-[color:var(--color-secondary-inverse-muted)] outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus:[box-shadow:none] focus-visible:[box-shadow:none] disabled:cursor-not-allowed disabled:bg-[color:var(--color-secondary-muted)] disabled:text-[color:var(--color-secondary-inverse-muted)] disabled:placeholder:text-[color:var(--color-secondary-inverse-muted)]";
 
 export type FormFieldLabelPosition = "top" | "left";
 
@@ -40,14 +40,14 @@ export default function FormFieldBase({
       {label ? (
         <label
           className={cn(
-            "inline-flex items-center gap-1 text-sm font-semibold text-(--color-form-label)",
+            "inline-flex items-center gap-1 text-sm font-semibold text-(--color-secondary-strong)",
             isInlineLabel && "whitespace-nowrap",
           )}
           htmlFor={htmlFor}
         >
           <span>{label}</span>
           {required ? (
-            <span className="text-(--color-form-error)" aria-hidden="true">
+            <span className="text-(--color-red)" aria-hidden="true">
               *
             </span>
           ) : null}
@@ -59,7 +59,7 @@ export default function FormFieldBase({
       {error ? (
         <p
           className={cn(
-            "m-0 text-[0.82rem] text-(--color-form-error)",
+            "m-0 text-[0.82rem] text-(--color-red)",
             isInlineLabel && "col-start-2",
           )}
           role="alert"
@@ -69,7 +69,7 @@ export default function FormFieldBase({
       ) : hint ? (
         <p
           className={cn(
-            "m-0 text-[0.82rem] text-(--color-form-hint)",
+            "m-0 text-[0.82rem] text-(--color-secondary-muted)",
             isInlineLabel && "col-start-2",
           )}
         >

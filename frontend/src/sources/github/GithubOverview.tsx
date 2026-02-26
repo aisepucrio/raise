@@ -47,15 +47,15 @@ const REPOSITORY_CARD_CONFIG: readonly OverviewMetricCardConfig<GithubOverviewRe
 function getGithubOverviewChartSeriesColor(serie: { id: string }) {
   const key = serie.id.toLowerCase().replace(/[\s-]+/g, "_");
 
-  if (key.includes("commit")) return "var(--color-status-finished-color)";
-  if (key.includes("issue")) return "var(--color-status-in-progress-color)";
-  if (key.includes("pull_request")) return "var(--color-status-in-queue-color)";
-  if (key.includes("user")) return "var(--theme-secondary)";
-  if (key.includes("comment")) return "var(--theme-secondary-70)";
-  if (key.includes("fork")) return "var(--theme-secondary-90)";
-  if (key.includes("star")) return "var(--color-status-failure-color)";
+  if (key.includes("commit")) return "var(--color-teal)";
+  if (key.includes("issue")) return "var(--color-indigo)";
+  if (key.includes("pull_request")) return "var(--color-amber)";
+  if (key.includes("user")) return "var(--color-secondary)";
+  if (key.includes("comment")) return "var(--color-secondary-muted)";
+  if (key.includes("fork")) return "var(--color-secondary-strong)";
+  if (key.includes("star")) return "var(--color-rose)";
 
-  return "var(--theme-secondary)";
+  return "var(--color-secondary)";
 }
 
 export default function GithubOverview() {
@@ -159,9 +159,9 @@ export default function GithubOverview() {
     // Layout principal 80/20 em desktop.
     <section className="grid h-full min-h-0 gap-4 xl:grid-cols-[minmax(0,4fr)_minmax(0,1fr)]">
       {/* Coluna esquerda: filtros + gráfico */}
-      <section className="flex min-h-168 min-w-0 flex-col rounded-xl border-2 border-(--color-sidebar-border) bg-(--color-app-bg) xl:min-h-0 xl:h-full xl:max-h-full">
+      <section className="flex min-h-168 min-w-0 flex-col rounded-xl border-2 border-(--color-secondary-soft) bg-(--color-primary) xl:min-h-0 xl:h-full xl:max-h-full">
         {/* Linha de filtros (repositório + intervalo de datas) */}
-        <div className="grid gap-3 border-b-2 border-(--color-sidebar-border) p-4 md:grid-cols-2 xl:grid-cols-[2fr_1fr_1fr]">
+        <div className="grid gap-3 border-b-2 border-(--color-secondary-soft) p-4 md:grid-cols-2 xl:grid-cols-[2fr_1fr_1fr]">
           <FormSelect
             id="github-overview-repository"
             label="Repository"
@@ -205,23 +205,27 @@ export default function GithubOverview() {
 
         {/* Área restante da coluna esquerda dedicada ao gráfico */}
         <div className="min-h-0 flex-1 overflow-auto p-2 sm:p-3">
-          <LineChart
-            title="GitHub Activity"
-            data={dateOrderError ? [] : graphSeries}
-            loading={!dateOrderError && graphQuery.isPending}
-            error={graphErrorMessage}
-            yLabel="Items"
-            height={430}
-            emptyMessage={
-              dateOrderError ?? "No series found for the selected filters."
-            }
-            colors={getGithubOverviewChartSeriesColor}
-          />
+          <div className="grid min-h-full place-items-center">
+            <div className="w-full max-w-[960px]">
+              <LineChart
+                title="GitHub Activity"
+                data={dateOrderError ? [] : graphSeries}
+                loading={!dateOrderError && graphQuery.isPending}
+                error={graphErrorMessage}
+                yLabel="Items"
+                height={430}
+                emptyMessage={
+                  dateOrderError ?? "No series found for the selected filters."
+                }
+                colors={getGithubOverviewChartSeriesColor}
+              />
+            </div>
+          </div>
         </div>
       </section>
 
       {/* Coluna direita: cards de estatísticas */}
-      <aside className="flex min-h-168 min-w-0 flex-col rounded-xl border-2 border-(--color-sidebar-border) bg-(--color-app-bg) xl:min-h-0 xl:h-full xl:max-h-full">
+      <aside className="flex min-h-168 min-w-0 flex-col rounded-xl border-2 border-(--color-secondary-soft) bg-(--color-primary) xl:min-h-0 xl:h-full xl:max-h-full">
         {/* Grid vertical com métricas específicas do modo atual (all vs repository). */}
         <div className="min-h-0 flex-1 overflow-hidden p-4">
           <InfoBoxGrid
