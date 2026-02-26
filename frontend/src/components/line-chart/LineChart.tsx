@@ -26,6 +26,34 @@ export interface LineChartProps {
   colors?: string[] | ((serie: { id: string }) => string);
 }
 
+// O Nivo pode renderizar preto quando a cor da série chega como `var(--token)`.
+// Esta função aceita o formato da prop `colors` (array ou função) e devolve
+// o mesmo formato, mas com CSS variables já resolvidas para valores reais.
+function normalizeLineChartColorsForNivo(
+  colors: NonNullable<LineChartProps["colors"]>,
+): NonNullable<LineChartProps["colors"]> {
+  const resolveSingleColor = (color: string) => {
+    const match = color.match(/^var\(\s*(--[\w-]+)\s*\)$/);
+    if (!match || typeof document === "undefined") return color;
+
+    const computedColor = window
+      .getComputedStyle(document.documentElement)
+      .getPropertyValue(match[1])
+      .trim();
+
+    return computedColor || color;
+  };
+
+  // Quando o caller passa uma função, preservamos a API original e só
+  // normalizamos a cor retornada por ela.
+  if (typeof colors === "function") {
+    return (serie) => resolveSingleColor(colors(serie));
+  }
+
+  // Quando o caller passa um array, resolvemos cada entrada uma vez.
+  return colors.map(resolveSingleColor);
+}
+
 // Fallback de cores (caso a série não tenha cor definida)
 const DEFAULT_COLORS = [
   "var(--color-indigo)",
@@ -113,6 +141,7 @@ export function LineChart({
     Array.isArray(data) &&
     data.length > 0 &&
     data.some((s) => Array.isArray(s.data) && s.data.length > 0);
+  const resolvedColors = normalizeLineChartColorsForNivo(colors);
 
   useEffect(() => {
     if (!error) return;
@@ -226,7 +255,7 @@ export function LineChart({
             useMesh
             curve="monotoneX"
             enablePoints={false}
-            colors={colors}
+            colors={resolvedColors}
             legends={[
               {
                 anchor: "bottom",
