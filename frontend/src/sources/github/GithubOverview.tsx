@@ -204,23 +204,19 @@ export default function GithubOverview() {
         </div>
 
         {/* Área restante da coluna esquerda dedicada ao gráfico */}
-        <div className="min-h-0 flex-1 overflow-auto p-2 sm:p-3">
-          <div className="grid min-h-full place-items-center">
-            <div className="w-full max-w-[960px]">
-              <LineChart
-                title="GitHub Activity"
-                data={dateOrderError ? [] : graphSeries}
-                loading={!dateOrderError && graphQuery.isPending}
-                error={graphErrorMessage}
-                yLabel="Items"
-                height={430}
-                emptyMessage={
-                  dateOrderError ?? "No series found for the selected filters."
-                }
-                colors={getGithubOverviewChartSeriesColor}
-              />
-            </div>
-          </div>
+        <div className="min-h-0 flex-1 overflow-auto p-2 sm:p-3 ">
+          <LineChart
+            title="GitHub Activity"
+            data={dateOrderError ? [] : graphSeries}
+            loading={!dateOrderError && graphQuery.isPending}
+            error={graphErrorMessage}
+            yLabel="Items"
+            height={430}
+            emptyMessage={
+              dateOrderError ?? "No series found for the selected filters."
+            }
+            colors={getGithubOverviewChartSeriesColor}
+          />
         </div>
       </section>
 
