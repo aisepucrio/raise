@@ -7,13 +7,15 @@ export default function OverviewPage() {
   const OverviewModule = sourceUiModules[source].overview;
 
   return (
-    <section className="space-y-6">
+    <section className="flex h-full min-h-0 flex-col gap-2">
       <PageHeader
         title="Overview"
-        subtitle="Visão geral dos dados coletados e do status do pipeline."
+        subtitle="Overview of collected data and pipeline status."
       />
 
-      <OverviewModule />
+      <div className="min-h-0 flex-1">
+        <OverviewModule />
+      </div>
     </section>
   );
 }

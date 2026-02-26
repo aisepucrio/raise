@@ -7,7 +7,7 @@ export default function Layout() {
       <Sidebar />
 
       <main className="min-h-0 min-w-0 max-w-full flex-1 overflow-x-hidden overflow-y-auto p-6">
-        <div className="w-full min-w-0 max-w-full">
+        <div className="h-full min-h-0 w-full min-w-0 max-w-full">
           <Outlet />
         </div>
       </main>

@@ -16,6 +16,35 @@ export type GithubGraphParams = DateFilterRange & {
   repository_id?: string;
 };
 
+// Resposta do dashboard/overview (cards + lista de repositórios)
+export type GithubRepository = {
+  id: number;
+  repository: string;
+};
+
+export type GithubOverviewResponse = {
+  issues_count?: number;
+  pull_requests_count?: number;
+  commits_count?: number;
+  comments_count?: number;
+  forks_count?: number;
+  stars_count?: number;
+  users_count?: number;
+  repositories_count?: number;
+  repositories?: GithubRepository[];
+  time_mined?: string | null;
+};
+
+// Resposta do gráfico do dashboard (séries por rótulo/tempo)
+export type GithubGraphResponse = {
+  time_series?: {
+    labels?: string[];
+    [key: string]: unknown;
+  };
+  repository_id?: number;
+  repository_name?: string;
+};
+
 export type GithubPreviewParams = {
   page: number;
   page_size: number;
@@ -48,8 +77,14 @@ export type GithubCollectBody = {
 
 export const githubService = {
   // Overview e ItemSwitcher: cards do dashboard e lista de repositorios.
-  getOverview: (params?: GithubOverviewParams, options?: RequestOptions) =>
-    api.get(endpoints.dashboard(SOURCE), { params, signal: options?.signal }),
+  getOverview: (
+    params?: GithubOverviewParams,
+    options?: RequestOptions,
+  ): Promise<GithubOverviewResponse> =>
+    api.get<GithubOverviewResponse>(endpoints.dashboard(SOURCE), {
+      params,
+      signal: options?.signal,
+    }) as Promise<GithubOverviewResponse>,
 
   // Overview e Preview: faixa de datas para limitar filtros por repositorio.
   getDateRange: (
@@ -62,11 +97,14 @@ export const githubService = {
     }) as Promise<ApiDateRangeResponse>,
 
   // ChartLine (Overview): serie acumulada por intervalo.
-  getGraph: (params: GithubGraphParams, options?: RequestOptions) =>
-    api.get(endpoints.dashboardGraph(SOURCE), {
+  getGraph: (
+    params: GithubGraphParams,
+    options?: RequestOptions,
+  ): Promise<GithubGraphResponse> =>
+    api.get<GithubGraphResponse>(endpoints.dashboardGraph(SOURCE), {
       params,
       signal: options?.signal,
-    }),
+    }) as Promise<GithubGraphResponse>,
 
   // Preview: tabela paginada por secao com filtros e ordenacao.
   getPreview: (

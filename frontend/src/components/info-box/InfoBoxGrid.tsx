@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { cn } from "@/lib/utils";
 
 import { InfoBox } from "./InfoBox";
@@ -10,12 +11,14 @@ type InfoBoxGridItem = Pick<InfoBoxProps, "title" | "number"> & {
 type InfoBoxGridProps = {
   items: InfoBoxGridItem[];
   className?: string;
+  style?: CSSProperties;
 };
 
-function InfoBoxGrid({ items, className }: InfoBoxGridProps) {
+function InfoBoxGrid({ items, className, style }: InfoBoxGridProps) {
   return (
     <div
       data-slot="info-box-grid"
+      style={style}
       className={cn(
         "grid auto-rows-fr grid-cols-1 gap-3 p-3 sm:grid-cols-2 xl:grid-cols-4",
         className,
