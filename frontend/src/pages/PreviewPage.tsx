@@ -1,14 +1,10 @@
 import { PageHeader } from "@/components/page-header";
-import { getQueryErrorMessage, stackoverflowModule } from "@/data";
+import { useSource } from "@/contexts/SourceContext";
+import { sourceUiModules } from "@/sources/registry";
 
 export default function PreviewPage() {
-  const stackPreviewQuery = stackoverflowModule.queries.useStackOverflowPreviewQuery(
-    "questions",
-    {
-      page: 1,
-      page_size: 10,
-    },
-  );
+  const { source } = useSource();
+  const PreviewModule = sourceUiModules[source].preview;
 
   return (
     <section className="space-y-6">
@@ -17,15 +13,7 @@ export default function PreviewPage() {
         subtitle="Visualize uma amostra dos dados antes do processamento."
       />
 
-      {stackPreviewQuery.isPending && <p>Carregando preview...</p>}
-
-      {stackPreviewQuery.isError && (
-        <p>{getQueryErrorMessage(stackPreviewQuery.error, "Erro ao carregar preview.")}</p>
-      )}
-
-      {stackPreviewQuery.isSuccess && (
-        <pre>{JSON.stringify(stackPreviewQuery.data, null, 2)}</pre>
-      )}
+      <PreviewModule />
     </section>
   );
 }

@@ -1,4 +1,6 @@
-export type Source = "github" | "jira" | "stackoverflow";
+import type { SourceId } from "@/sources";
+
+export type Source = SourceId;
 
 // Sections para cada source (preview)
 export type GithubSection = "issues" | "pull-requests" | "commits" | "users";

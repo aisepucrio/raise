@@ -6,8 +6,9 @@ import {
   Home,
   type LucideIcon,
 } from "lucide-react";
-import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { sourceOptions, type SourceId } from "@/sources";
+import { useSource } from "@/contexts/SourceContext";
 import { Button } from "../button";
 import { FormSelect } from "../form";
 import SidebarNavItem from "./SidebarNavItem";
@@ -37,7 +38,7 @@ const isActiveRoute = (pathname: string, routePath: string) => {
 export default function Sidebar() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const [sourceFilter, setSourceFilter] = useState("all");
+  const { source, setSource } = useSource();
   const apiDocsUrl = import.meta.env.VITE_API_URL;
 
   return (
@@ -68,15 +69,17 @@ export default function Sidebar() {
 
         <FormSelect
           id="sidebar-source-filter"
-          value={sourceFilter}
-          onChange={(event) => setSourceFilter(event.target.value)}
+          value={source}
+          onChange={(event) => setSource(event.target.value as SourceId)}
           wrapperClassName="-ml-6 w-[calc(85%+1.5rem)]"
           className="min-h-10 rounded-none rounded-r-md py-2 text-left"
           aria-label="Selecionar origem"
         >
-          <option value="github">GitHub</option>
-          <option value="jira">Jira</option>
-          <option value="stackoverflow">Stack Overflow</option>
+          {sourceOptions.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.label}
+            </option>
+          ))}
         </FormSelect>
 
         <nav className="flex flex-col gap-1">

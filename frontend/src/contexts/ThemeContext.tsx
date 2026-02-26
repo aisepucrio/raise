@@ -1,3 +1,5 @@
+/* Contexto para compartilhar/trocar o theme selecionado globalmente na aplicação. */
+
 import {
   createContext,
   useContext,

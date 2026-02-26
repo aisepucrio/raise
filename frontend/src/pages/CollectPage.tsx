@@ -1,7 +1,10 @@
 import { PageHeader } from "@/components/page-header";
+import { useSource } from "@/contexts/SourceContext";
+import { sourceUiModules } from "@/sources/registry";
 
 export default function CollectPage() {
-  const sources = ["GitHub", "Jira", "Stack Overflow", "Docs internos"];
+  const { source } = useSource();
+  const CollectModule = sourceUiModules[source].collect;
 
   return (
     <section className="space-y-6">
@@ -9,6 +12,8 @@ export default function CollectPage() {
         title="Collect"
         subtitle="Configure e dispare coletas nas fontes integradas."
       />
+
+      <CollectModule />
     </section>
   );
 }
