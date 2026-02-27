@@ -1,4 +1,4 @@
-import { type ReactNode, useId } from "react";
+import { type ReactNode, useEffect, useEffectEvent, useId } from "react";
 import { X } from "lucide-react";
 
 type ModalShellProps = {
@@ -6,6 +6,7 @@ type ModalShellProps = {
   onClose: () => void;
   title: string;
   subtitle?: string;
+  initialFocusRef?: { current: HTMLElement | null };
   children: ReactNode;
 };
 
@@ -14,9 +15,33 @@ export function ModalShell({
   onClose,
   title,
   subtitle,
+  initialFocusRef,
   children,
 }: ModalShellProps) {
   const titleId = useId();
+  const onCloseEvent = useEffectEvent(onClose);
+
+  // Foca o elemento inicial quando o modal é aberto e adiciona um listener para fechar o modal com a tecla Escape.
+  useEffect(() => {
+    if (!open) return;
+
+    const timeoutId = window.setTimeout(() => {
+      initialFocusRef?.current?.focus();
+    }, 0);
+
+    const handleEscape = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onCloseEvent();
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [open, initialFocusRef]);
 
   if (!open) return null;
 
@@ -35,11 +60,16 @@ export function ModalShell({
       >
         <div className="mb-3 flex items-start justify-between gap-2">
           <div>
-            <h2 id={titleId} className="text-base font-semibold text-(--color-secondary)">
+            <h2
+              id={titleId}
+              className="text-base font-semibold text-(--color-secondary)"
+            >
               {title}
             </h2>
             {subtitle ? (
-              <p className="text-sm text-(--color-secondary-muted)">{subtitle}</p>
+              <p className="text-sm text-(--color-secondary-muted)">
+                {subtitle}
+              </p>
             ) : null}
           </div>
 
