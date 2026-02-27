@@ -10,7 +10,7 @@ export default function CollectPage() {
     <section className="space-y-6">
       <PageHeader
         title="Collect"
-        subtitle="Configure e dispare coletas nas fontes integradas."
+        subtitle="Configure and start collection jobs for the integrated data sources."
       />
 
       <CollectModule />

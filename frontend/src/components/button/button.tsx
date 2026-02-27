@@ -20,6 +20,7 @@ type ButtonBaseProps = Pick<
   text?: string;
   icon?: ReactNode;
   iconSide?: "left" | "right";
+  size?: "default" | "sm";
   fullWidth?: boolean;
   className?: string;
   variant?: "default" | "selectable";
@@ -44,6 +45,7 @@ function Button({
   text,
   icon,
   iconSide = "left",
+  size = "default",
   fullWidth = true,
   variant = "default",
   selected = false,
@@ -71,6 +73,7 @@ function Button({
     <button
       data-slot="button"
       data-variant={variant}
+      data-size={size}
       data-selected={isSelectable ? String(selected) : undefined}
       id={id}
       type={type}
@@ -88,8 +91,12 @@ function Button({
         "enabled:cursor-pointer disabled:cursor-not-allowed",
         "focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-secondary-strong)",
         isIconOnly
-          ? "w-11 min-h-11 px-0 py-0"
-          : "min-h-11 px-3.5 py-2.5",
+          ? size === "sm"
+            ? "w-9 min-h-9 px-0 py-0"
+            : "w-11 min-h-11 px-0 py-0"
+          : size === "sm"
+            ? "min-h-9 px-3 py-1.5"
+            : "min-h-11 px-3.5 py-2.5",
         fullWidth && !isIconOnly ? "w-full" : null,
         isSelectable
           ? selected
