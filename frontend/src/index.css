@@ -72,12 +72,32 @@
   --color-primary-inverse: var(--color-secondary);
   --color-secondary-inverse: var(--color-primary);
 
-  /* Variações genéricas reutilizáveis (por cor, não por componente). */
-  --color-secondary-subtle: color-mix(in srgb, var(--color-secondary) 14%, transparent);
-  --color-secondary-soft: color-mix(in srgb, var(--color-secondary) 22%, transparent);
-  --color-secondary-mid: color-mix(in srgb, var(--color-secondary) 50%, transparent);
-  --color-secondary-muted: color-mix(in srgb, var(--color-secondary) 70%, transparent);
-  --color-secondary-strong: color-mix(in srgb, var(--color-secondary) 90%, transparent);
+  /* Variações genéricas reutilizáveis */
+  --color-secondary-subtle: color-mix(
+    in srgb,
+    var(--color-secondary) 14%,
+    transparent
+  );
+  --color-secondary-soft: color-mix(
+    in srgb,
+    var(--color-secondary) 22%,
+    transparent
+  );
+  --color-secondary-mid: color-mix(
+    in srgb,
+    var(--color-secondary) 50%,
+    transparent
+  );
+  --color-secondary-muted: color-mix(
+    in srgb,
+    var(--color-secondary) 70%,
+    transparent
+  );
+  --color-secondary-strong: color-mix(
+    in srgb,
+    var(--color-secondary) 90%,
+    transparent
+  );
   --color-secondary-inverse-muted: color-mix(
     in srgb,
     var(--color-secondary-inverse) 65%,
