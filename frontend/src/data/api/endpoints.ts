@@ -1,18 +1,10 @@
-import type { SourceId } from "@/sources";
+import type { SectionIdBySource, SourceId } from "@/sources";
 
 export type Source = SourceId;
-
-// Sections para cada source (preview)
-export type GithubSection = "issues" | "pull-requests" | "commits" | "users";
-export type JiraSection = "users" | "issues" | "comments" | "sprints";
-export type StackOverflowSection = "questions";
-
-/* Mapa Source -> Sections válidas */
-type SectionBySource = {
-  github: GithubSection;
-  jira: JiraSection;
-  stackoverflow: StackOverflowSection;
-};
+export type SectionBySource = SectionIdBySource;
+export type GithubSection = SectionBySource["github"];
+export type JiraSection = SectionBySource["jira"];
+export type StackOverflowSection = SectionBySource["stackoverflow"];
 
 export const endpoints = {
   // ==> OVERVIEW
