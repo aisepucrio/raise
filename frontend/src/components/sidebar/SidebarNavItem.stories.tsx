@@ -16,6 +16,16 @@ const meta = {
   tags: ["autodocs"],
   argTypes: {
     onClick: { action: "clicked" },
+    subItems: {
+      control: false,
+      description:
+        "Subitens opcionais. Quando informado, o item principal vira expansível e exibe uma seta à direita.",
+    },
+    defaultExpanded: {
+      control: "boolean",
+      description:
+        "Define o estado inicial de expansão quando o item possui `subItems`.",
+    },
     icon: {
       control: { type: "select" },
       options: Object.keys(iconOptions),
@@ -28,12 +38,13 @@ const meta = {
     active: false,
     icon: Home,
     onClick: noop,
+    defaultExpanded: false,
   },
   parameters: {
     docs: {
       description: {
         component:
-          "Item de navegação da sidebar com estados `active`/hover, ícone e `aria-current` quando representa a rota atual.",
+          "Item de navegação da sidebar com estados `active`/hover, ícone e `aria-current` quando representa a rota atual. Também suporta `subItems` (sem ícone e menores), com expansão/retração por seta.",
       },
     },
   },
@@ -66,6 +77,28 @@ export const RotuloLongo: Story = {
   },
 };
 
+export const ComSubitens: Story = {
+  args: {
+    label: "Preview",
+    icon: Eye,
+    active: false,
+    defaultExpanded: false,
+    subItems: [
+      { label: "Resumo", active: true, onClick: noop },
+      { label: "Detalhes", active: false, onClick: noop },
+      { label: "Histórico", active: false, onClick: noop },
+    ],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Quando `subItems` é informado, o item principal exibe seta (cima/baixo) e abre os subitens ao clicar.",
+      },
+    },
+  },
+};
+
 export const EmContexto: Story = {
   render: () => {
     return (
@@ -88,6 +121,15 @@ export const EmContexto: Story = {
           icon={Briefcase}
           active={false}
           onClick={noop}
+        />
+        <SidebarNavItem
+          label="Preview"
+          icon={Eye}
+          active={false}
+          subItems={[
+            { label: "Resumo", active: false, onClick: noop },
+            { label: "Detalhes", active: true, onClick: noop },
+          ]}
         />
       </>
     );
