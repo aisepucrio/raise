@@ -184,5 +184,8 @@
 /* Mantém o ícone nativo de date alinhado com o tema do app. */
 input[type="date"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
-  filter: var(--color-date-picker-indicator-filter);
+  filter: var(
+    --date-picker-indicator-filter,
+    var(--color-date-picker-indicator-filter)
+  );
 }

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import FormFieldBase, { formControlBaseClassName } from "./FormFieldBase";
+import FormFieldBase, { getFormControlClassName } from "./FormFieldBase";
 
 const meta = {
   title: "Components/Form/FormFieldBase",
@@ -20,7 +20,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Componente base que organiza label, conteúdo do campo e mensagens de apoio/erro.",
+          "Componente base que organiza label, conteúdo do campo e mensagens de apoio/erro. A separação visual das variantes `outlined` e `filled` dos controles fica centralizada em `getFormControlClassName`, reutilizada pelos campos de formulário.",
       },
     },
   },
@@ -28,7 +28,7 @@ const meta = {
     <FormFieldBase {...args}>
       <input
         id={args.htmlFor}
-        className={formControlBaseClassName}
+        className={getFormControlClassName("outlined")}
         placeholder="Campo renderizado como child"
       />
     </FormFieldBase>
@@ -56,4 +56,32 @@ export const SemLabel: Story = {
     htmlFor: undefined,
     hint: "Também funciona sem label para layouts específicos.",
   },
+};
+
+export const ComparacaoOutlinedEFilled: Story = {
+  args: {
+    label: undefined,
+    htmlFor: undefined,
+    hint: undefined,
+    error: undefined,
+  },
+  render: () => (
+    <div className="grid max-w-md gap-4">
+      <FormFieldBase label="Outlined" htmlFor="field-base-outlined">
+        <input
+          id="field-base-outlined"
+          className={getFormControlClassName("outlined")}
+          placeholder="Variante outlined"
+        />
+      </FormFieldBase>
+
+      <FormFieldBase label="Filled" htmlFor="field-base-filled">
+        <input
+          id="field-base-filled"
+          className={getFormControlClassName("filled")}
+          placeholder="Variante filled"
+        />
+      </FormFieldBase>
+    </div>
+  ),
 };

@@ -69,6 +69,7 @@ export default function Sidebar() {
 
         <FormSelect
           id="sidebar-source-filter"
+          variant="filled"
           value={source}
           onChange={(event) => setSource(event.target.value as SourceId)}
           wrapperClassName="-ml-6 w-[calc(85%+1.5rem)]"

@@ -7,6 +7,10 @@ const meta = {
   tags: ["autodocs"],
   argTypes: {
     wrapperClassName: { control: false },
+    variant: {
+      control: { type: "inline-radio" },
+      options: ["outlined", "filled"],
+    },
     onChange: { action: "changed" },
   },
   args: {
@@ -19,7 +23,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Input nativo encapsulado com `FormFieldBase`, usando estilos e mensagens padronizadas.",
+          "Input nativo encapsulado com `FormFieldBase`, usando estilos e mensagens padronizadas. Suporta as variantes `outlined` (padrão) e `filled` com contrato visual compartilhado em `components/form`.",
       },
     },
   },
@@ -58,5 +62,15 @@ export const Desabilitado: Story = {
     defaultValue: "STNL-001",
     disabled: true,
     hint: "Exemplo de estado desabilitado.",
+  },
+};
+
+export const VarianteFilled: Story = {
+  args: {
+    id: "form-input-filled",
+    label: "Busca",
+    placeholder: "Pesquisar por repositório",
+    variant: "filled",
+    hint: "Exemplo com a variante filled.",
   },
 };

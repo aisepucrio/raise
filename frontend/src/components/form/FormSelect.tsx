@@ -4,7 +4,8 @@ import { useRef, useState } from "react";
 import type { KeyboardEvent, ReactNode, SelectHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 import FormFieldBase, {
-  formControlBaseClassName,
+  getFormControlClassName,
+  type FormControlVariant,
   type FormFieldLabelPosition,
 } from "./FormFieldBase";
 
@@ -14,6 +15,7 @@ type FormSelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
   error?: string;
   wrapperClassName?: string;
   labelPosition?: FormFieldLabelPosition;
+  variant?: FormControlVariant;
   children: ReactNode;
 };
 
@@ -25,10 +27,12 @@ export default function FormSelect({
   required,
   wrapperClassName,
   labelPosition = "top",
+  variant = "outlined",
   className,
   children,
   ...props
 }: FormSelectProps) {
+  const isFilledVariant = variant === "filled";
   const [isOpenLike, setIsOpenLike] = useState(false);
   const lastOpenPointerDownAtRef = useRef<number>(0);
 
@@ -59,7 +63,12 @@ export default function FormSelect({
     >
       <div className="relative">
         <motion.span
-          className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-[color:var(--color-secondary-inverse)]"
+          className={cn(
+            "pointer-events-none absolute inset-y-0 left-3 flex items-center",
+            isFilledVariant
+              ? "text-[color:var(--color-secondary-inverse)]"
+              : "text-(--color-secondary-muted)",
+          )}
           aria-hidden="true"
           animate={{ rotate: isOpenLike ? 90 : 0 }}
           transition={{ duration: 0.16, ease: "easeOut" }}
@@ -86,7 +95,7 @@ export default function FormSelect({
           onChange={() => setIsOpenLike(false)}
           onKeyDown={handleKeyDown}
           className={cn(
-            formControlBaseClassName,
+            getFormControlClassName(variant),
             "appearance-none pl-9 pr-3",
             className,
           )}

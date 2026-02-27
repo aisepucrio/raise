@@ -7,6 +7,10 @@ const meta = {
   tags: ["autodocs"],
   argTypes: {
     wrapperClassName: { control: false },
+    variant: {
+      control: { type: "inline-radio" },
+      options: ["outlined", "filled"],
+    },
     onChange: { action: "changed" },
   },
   args: {
@@ -18,7 +22,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Campo de data (`input type=\"date\"`) encapsulado com o mesmo padrão de label/hint/erro.",
+          "Campo de data (`input type=\"date\"`) encapsulado com o mesmo padrão de label/hint/erro. O componente documenta as variantes `outlined` e `filled`, com ajuste visual do ícone de calendário em cada modo.",
       },
     },
   },
@@ -43,5 +47,14 @@ export const ComErro: Story = {
     required: true,
     error: "Informe uma data válida.",
     hint: undefined,
+  },
+};
+
+export const VarianteFilled: Story = {
+  args: {
+    id: "form-date-filled-variant",
+    variant: "filled",
+    defaultValue: "2026-02-27",
+    hint: "Exemplo com a variante filled.",
   },
 };

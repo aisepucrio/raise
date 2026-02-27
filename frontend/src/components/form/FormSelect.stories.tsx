@@ -8,6 +8,10 @@ const meta = {
   argTypes: {
     children: { control: false },
     wrapperClassName: { control: false },
+    variant: {
+      control: { type: "inline-radio" },
+      options: ["outlined", "filled"],
+    },
     onChange: { action: "changed" },
   },
   args: {
@@ -30,7 +34,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Select nativo com ícone animado (`motion`) e o mesmo padrão visual dos demais campos.",
+          "Select nativo com ícone animado (`motion`) e o mesmo padrão visual dos demais campos. A separação entre variantes `outlined` e `filled` também se aplica aqui, incluindo ajuste de contraste do ícone.",
       },
     },
   },
@@ -55,5 +59,14 @@ export const PreSelecionado: Story = {
     id: "form-select-selected",
     defaultValue: "jira",
     hint: "Exemplo com valor inicial.",
+  },
+};
+
+export const VarianteFilled: Story = {
+  args: {
+    id: "form-select-filled",
+    defaultValue: "github",
+    variant: "filled",
+    hint: "Exemplo com a variante filled.",
   },
 };

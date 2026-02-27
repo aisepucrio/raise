@@ -1,7 +1,8 @@
-import type { InputHTMLAttributes } from "react";
+import { forwardRef, type InputHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 import FormFieldBase, {
-  formControlBaseClassName,
+  getFormControlClassName,
+  type FormControlVariant,
   type FormFieldLabelPosition,
 } from "./FormFieldBase";
 
@@ -11,20 +12,25 @@ type FormInputProps = InputHTMLAttributes<HTMLInputElement> & {
   error?: string;
   wrapperClassName?: string;
   labelPosition?: FormFieldLabelPosition;
+  variant?: FormControlVariant;
 };
 
-export default function FormInput({
-  id,
-  label,
-  hint,
-  error,
-  required,
-  wrapperClassName,
-  labelPosition = "top",
-  className,
-  type = "text",
-  ...props
-}: FormInputProps) {
+const FormInput = forwardRef<HTMLInputElement, FormInputProps>(function FormInput(
+  {
+    id,
+    label,
+    hint,
+    error,
+    required,
+    wrapperClassName,
+    labelPosition = "top",
+    variant = "outlined",
+    className,
+    type = "text",
+    ...props
+  },
+  ref,
+) {
   return (
     <FormFieldBase
       label={label}
@@ -36,15 +42,18 @@ export default function FormInput({
       labelPosition={labelPosition}
     >
       <input
+        ref={ref}
         id={id}
         type={type}
         required={required}
         className={cn(
-          formControlBaseClassName,
+          getFormControlClassName(variant),
           className,
         )}
         {...props}
       />
     </FormFieldBase>
   );
-}
+});
+
+export default FormInput;
