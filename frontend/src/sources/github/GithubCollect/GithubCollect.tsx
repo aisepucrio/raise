@@ -125,7 +125,7 @@ export default function GithubCollect() {
       toast.success(undefined, {
         description: "GitHub collection started successfully.",
       });
-      navigate("/jobs");
+      navigate("/jobs?source=github");
     } catch (error) {
       // Em caso de erro, extrai a mensagem de erro e exibe uma notificação de falha.
       const message = getQueryErrorMessage(

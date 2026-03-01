@@ -1,9 +1,11 @@
 import { PageHeader } from "@/components/page-header";
-import { useSource } from "@/contexts/SourceContext";
+import { useSearchParams } from "react-router-dom";
+import { resolveSourceId } from "@/lib/source-section-resolver";
 import { sourceUiModules } from "@/sources/registry";
 
 export default function OverviewPage() {
-  const { source } = useSource();
+  const [searchParams] = useSearchParams();
+  const source = resolveSourceId(searchParams.get("source"));
   const OverviewModule = sourceUiModules[source].overview;
 
   return (

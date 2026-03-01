@@ -5,19 +5,16 @@ import { RouterProvider } from "react-router-dom";
 import { router } from "./router";
 import { queryClient } from "./data/query/client";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import { SourceProvider } from "./contexts/SourceContext";
 import { Toast } from "./components/toast";
 import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <ThemeProvider>
-      <SourceProvider>
-        <QueryClientProvider client={queryClient}>
-          <RouterProvider router={router} />
-          <Toast closeButton richColors position="top-center" />
-        </QueryClientProvider>
-      </SourceProvider>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+        <Toast closeButton richColors position="top-center" />
+      </QueryClientProvider>
     </ThemeProvider>
   </React.StrictMode>,
 );
