@@ -14,15 +14,15 @@ import {
   sourceOptions,
   type SourceId,
 } from "@/sources";
-import { Button } from "../button";
-import { FormSelect } from "../form";
-import SidebarNavItem from "./SidebarNavItem";
+import { Button } from "@/components/button";
+import { FormSelect } from "@/components/form";
+import SidebarNavItem from "@/components/sidebar/SidebarNavItem";
 import {
   buildSidebarSearch,
   isSidebarItemActive,
   resolveSidebarRouteContext,
 } from "./sidebarNavigation";
-import ThemeSwitcher from "./ThemeSwitcher";
+import ThemeSwitcher from "@/components/sidebar/ThemeSwitcher";
 
 // Tipo para itens da sidebar.
 type SidebarRouteItem = {
