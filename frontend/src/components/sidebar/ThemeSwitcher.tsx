@@ -1,7 +1,7 @@
 import { Moon, Sun } from "lucide-react";
 import { Switch } from "../switch/switch";
 import { cn } from "@/lib/utils";
-import { useAppTheme } from "@/contexts/ThemeContext";
+import { useAppTheme } from "@/lib/theme-context";
 
 export default function ThemeSwitcher() {
   const { theme, setTheme } = useAppTheme();

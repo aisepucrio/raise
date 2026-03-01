@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ThemeProvider, useAppTheme } from "@/contexts/ThemeContext";
+import { ThemeProvider, useAppTheme } from "@/lib/theme-context";
 
 import { Toast, toast, type ToastProps } from "./index";
 

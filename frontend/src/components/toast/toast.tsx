@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
 
-import { useAppTheme } from "@/contexts/ThemeContext";
+import { useAppTheme } from "@/lib/theme-context";
 import { cn } from "@/lib/utils";
 
 const defaultIcons: NonNullable<ToasterProps["icons"]> = {

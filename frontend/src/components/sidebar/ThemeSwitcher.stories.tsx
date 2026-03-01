@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ThemeProvider } from "@/contexts/ThemeContext";
+import { ThemeProvider } from "@/lib/theme-context";
 import ThemeSwitcher from "./ThemeSwitcher";
 
 type ThemeName = "light" | "dark";
