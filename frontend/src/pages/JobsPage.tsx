@@ -152,7 +152,7 @@ export default function JobsPage() {
   }
 
   return (
-    <section>
+    <section className="flex h-full min-h-0 flex-col overflow-hidden">
       {/* Cabeçalho principal da tela: contexto rápido do que esta página exibe. */}
       <PageHeader
         title="Jobs"
@@ -160,7 +160,7 @@ export default function JobsPage() {
       />
 
       {/* Ações globais da tela: ordenação visual e recarga da consulta. */}
-      <div className="mb-4 flex flex-wrap justify-end gap-2">
+      <div className="mb-4 flex shrink-0 flex-wrap justify-end gap-2">
         <Button
           fullWidth={false}
           className="min-h-8.5 px-3 py-1"
@@ -189,123 +189,127 @@ export default function JobsPage() {
       </div>
 
       {/* Card/bloco principal que agrupa feedbacks, tabela e controles de paginação. */}
-      <section className="space-y-4 rounded-xl border-2 border-(--color-secondary-soft) p-4">
+      <section className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden rounded-xl border-2 border-(--color-secondary-soft) p-4">
         {/* Erro da listagem: falha ao buscar jobs (query principal da página). */}
         {jobsQuery.isError ? (
-          <p className="text-sm text-(--color-red)">
+          <p className="shrink-0 text-sm text-(--color-red)">
             {getQueryErrorMessage(jobsQuery.error, "Failed to load jobs.")}
           </p>
         ) : null}
 
         {/* Tabela de jobs (campos crus da API, com data/status formatados por componentes dedicados). */}
-        <Table>
-          {/* Cabeçalho das colunas visíveis na listagem. */}
-          <TableHeader>
-            <TableRow>
-              <TableHead>Project</TableHead>
-              <TableHead className="w-[40%]">Description</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-
-          <TableBody>
-            {/* Estado de carregamento inicial da query: ocupa a linha inteira da tabela. */}
-            {jobsQuery.isPending ? (
+        <div className="min-h-0 flex-1 overflow-auto">
+          <Table>
+            {/* Cabeçalho das colunas visíveis na listagem. */}
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={5} className="py-2">
-                  <div className="h-16">
-                    <Loader />
-                  </div>
-                </TableCell>
+                <TableHead>Project</TableHead>
+                <TableHead className="w-[40%]">Description</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ) : null}
+            </TableHeader>
 
-            {/* Estado vazio: query concluída sem registros para exibir. */}
-            {!jobsQuery.isPending && paginatedJobs.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="py-6 text-center">
-                  No jobs found.
-                </TableCell>
-              </TableRow>
-            ) : null}
+            <TableBody>
+              {/* Estado de carregamento inicial da query: ocupa a linha inteira da tabela. */}
+              {jobsQuery.isPending ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="py-2">
+                    <div className="h-16">
+                      <Loader />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : null}
 
-            {/* Linhas de dados paginadas: renderiza apenas o recorte da página atual. */}
-            {!jobsQuery.isPending &&
-              paginatedJobs.map((job) => {
-                // O componente de status centraliza cor/label e também expõe as ações válidas.
-                const statusInfo = getFormatStatusItemInfo(job.status);
-                const canStop = statusInfo.actions.stopActionActive;
-                const canRestart = statusInfo.actions.restartActionActive;
+              {/* Estado vazio: query concluída sem registros para exibir. */}
+              {!jobsQuery.isPending && paginatedJobs.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="py-6 text-center">
+                    No jobs found.
+                  </TableCell>
+                </TableRow>
+              ) : null}
 
-                return (
-                  <TableRow key={job.task_id}>
-                    {/* Project */}
-                    <TableCell className="font-medium">
-                      {job.repository ?? ""}
-                    </TableCell>
-                    {/* Description (quebra linha se muito grande) */}
-                    <TableCell className="max-w-160 whitespace-normal wrap-break-word">
-                      {job.operation ?? ""}
-                    </TableCell>
-                    {/* Data */}
-                    <TableCell>
-                      <FormatDateItem
-                        value={job.created_at_formatted ?? job.created_at}
-                      />
-                    </TableCell>
-                    {/* Status */}
-                    <TableCell>
-                      <FormatStatusItem status={job.status} />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {/* Ações da linha: só aparecem quando o status permite. */}
-                      <div className="flex justify-end gap-2">
-                        {canStop ? (
-                          <Button
-                            fullWidth={false}
-                            className="w-9 min-h-8.5 px-0 py-0"
-                            icon={<Square />}
-                            aria-label={`Stop job ${job.task_id}`}
-                            title="Stop job"
-                            onClick={() => void handleStopJob(job.task_id)}
-                            disabled={isRowActionPending}
-                          />
-                        ) : null}
+              {/* Linhas de dados paginadas: renderiza apenas o recorte da página atual. */}
+              {!jobsQuery.isPending &&
+                paginatedJobs.map((job) => {
+                  // O componente de status centraliza cor/label e também expõe as ações válidas.
+                  const statusInfo = getFormatStatusItemInfo(job.status);
+                  const canStop = statusInfo.actions.stopActionActive;
+                  const canRestart = statusInfo.actions.restartActionActive;
 
-                        {canRestart ? (
-                          <Button
-                            fullWidth={false}
-                            className="w-9 min-h-8.5 px-0 py-0"
-                            icon={<RotateCcw />}
-                            aria-label={`Restart job ${job.task_id}`}
-                            title="Restart job"
-                            onClick={() => void handleRestartJob(job.task_id)}
-                            disabled={isRowActionPending}
-                          />
-                        ) : null}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-          </TableBody>
-        </Table>
+                  return (
+                    <TableRow key={job.task_id}>
+                      {/* Project */}
+                      <TableCell className="font-medium">
+                        {job.repository ?? ""}
+                      </TableCell>
+                      {/* Description (quebra linha se muito grande) */}
+                      <TableCell className="max-w-160 whitespace-normal wrap-break-word">
+                        {job.operation ?? ""}
+                      </TableCell>
+                      {/* Data */}
+                      <TableCell>
+                        <FormatDateItem
+                          value={job.created_at_formatted ?? job.created_at}
+                        />
+                      </TableCell>
+                      {/* Status */}
+                      <TableCell>
+                        <FormatStatusItem status={job.status} />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {/* Ações da linha: só aparecem quando o status permite. */}
+                        <div className="flex justify-end gap-2">
+                          {canStop ? (
+                            <Button
+                              fullWidth={false}
+                              className="w-9 min-h-8.5 px-0 py-0"
+                              icon={<Square />}
+                              aria-label={`Stop job ${job.task_id}`}
+                              title="Stop job"
+                              onClick={() => void handleStopJob(job.task_id)}
+                              disabled={isRowActionPending}
+                            />
+                          ) : null}
+
+                          {canRestart ? (
+                            <Button
+                              fullWidth={false}
+                              className="w-9 min-h-8.5 px-0 py-0"
+                              icon={<RotateCcw />}
+                              aria-label={`Restart job ${job.task_id}`}
+                              title="Restart job"
+                              onClick={() => void handleRestartJob(job.task_id)}
+                              disabled={isRowActionPending}
+                            />
+                          ) : null}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+            </TableBody>
+          </Table>
+        </div>
 
         {/* Rodapé reutilizável de paginação da tabela. */}
-        <TablePaginationFooter
-          currentPage={currentPage}
-          rowsPerPage={rowsPerPage}
-          totalItems={totalItems}
-          itemsLabel="jobs"
-          rowsPerPageSelectId="jobs-rows-per-page"
-          onPageChange={setCurrentPage}
-          onRowsPerPageChange={(nextRowsPerPage) => {
-            setRowsPerPage(nextRowsPerPage);
-            setCurrentPage(1);
-          }}
-        />
+        <div className="shrink-0">
+          <TablePaginationFooter
+            currentPage={currentPage}
+            rowsPerPage={rowsPerPage}
+            totalItems={totalItems}
+            itemsLabel="jobs"
+            rowsPerPageSelectId="jobs-rows-per-page"
+            onPageChange={setCurrentPage}
+            onRowsPerPageChange={(nextRowsPerPage) => {
+              setRowsPerPage(nextRowsPerPage);
+              setCurrentPage(1);
+            }}
+          />
+        </div>
       </section>
     </section>
   );

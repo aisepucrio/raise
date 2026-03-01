@@ -18,13 +18,15 @@ export default function PreviewPage() {
   const PreviewModule = previewModules[section];
 
   return (
-    <section className="space-y-6">
+    <section className="flex h-full min-h-0 flex-col gap-2 overflow-hidden">
       <PageHeader
         title="Preview"
         subtitle="Vizualize sample data for each section to verify collection and transformation results."
       />
 
-      <PreviewModule />
+      <div className="min-h-0 flex-1 overflow-hidden">
+        <PreviewModule />
+      </div>
     </section>
   );
 }

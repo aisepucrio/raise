@@ -9,13 +9,17 @@ export default function CollectPage() {
   const CollectModule = sourceUiModules[source].collect;
 
   return (
-    <section className="space-y-6">
+    <section className="flex h-full min-h-0 flex-col gap-2">
       <PageHeader
         title="Collect"
         subtitle="Configure and start collection jobs for the integrated data sources."
       />
 
-      <CollectModule />
+      <div className="min-h-0 flex-1 overflow-auto">
+        <div className="flex min-h-full flex-col justify-center">
+          <CollectModule />
+        </div>
+      </div>
     </section>
   );
 }
