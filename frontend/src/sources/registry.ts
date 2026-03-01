@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import type { SectionIdBySource, SourceId } from "./index";
+import type { SectionPreviewIdBySource, SourceId } from "./index";
 import GithubCollect from "./github/GithubCollect";
 import GithubOverview from "./github/GithubOverview";
 import {
@@ -41,12 +41,12 @@ export const sourceUiModules: Record<SourceId, SourceUiModuleSet> = {
   },
 };
 
-// Mapeia cada sourceId para módulos de Preview por section.
+// Mapeia cada sourceId para módulos de Preview por sectionPreview.
 type SourcePreviewUiModuleSet = {
-  [S in SourceId]: Record<SectionIdBySource[S], ComponentType>;
+  [S in SourceId]: Record<SectionPreviewIdBySource[S], ComponentType>;
 };
 
-export const sourcePreviewUiModules: SourcePreviewUiModuleSet = {
+export const sourceSectionPreviewUiModules: SourcePreviewUiModuleSet = {
   github: {
     issues: GithubPreviewIssues,
     "pull-requests": GithubPreviewPullRequests,

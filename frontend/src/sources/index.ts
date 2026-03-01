@@ -1,8 +1,8 @@
 // Sources disponíveis na aplicação.
 export const sourceIds = ["github", "jira", "stackoverflow"] as const;
 
-// Sections disponíveis para cada source.
-export const sectionIdsBySource = {
+// Sections de preview disponíveis para cada source.
+export const sectionPreviewIdsBySource = {
   github: ["issues", "pull-requests", "commits", "users"],
   jira: ["users", "issues", "comments", "sprints"],
   stackoverflow: ["questions"],
@@ -11,9 +11,9 @@ export const sectionIdsBySource = {
 // Tipo que representa os IDs das sources.
 export type SourceId = (typeof sourceIds)[number];
 
-// Tipo que representa os IDs das sections para cada source.
-export type SectionIdBySource = {
-  [S in SourceId]: (typeof sectionIdsBySource)[S][number];
+// Tipo que representa os IDs das sections de preview para cada source.
+export type SectionPreviewIdBySource = {
+  [S in SourceId]: (typeof sectionPreviewIdsBySource)[S][number];
 };
 
 // Labels para cada source, usados na UI.
@@ -23,9 +23,9 @@ export const sourceLabels: Record<SourceId, string> = {
   stackoverflow: "Stack Overflow",
 };
 
-// Labels para cada section de cada source, usados na UI.
-export const sectionLabelsBySource: {
-  [S in SourceId]: Record<SectionIdBySource[S], string>;
+// Labels para cada section de preview de cada source, usados na UI.
+export const sectionPreviewLabelsBySource: {
+  [S in SourceId]: Record<SectionPreviewIdBySource[S], string>;
 } = {
   github: {
     issues: "Issues",
@@ -47,13 +47,13 @@ export const sectionLabelsBySource: {
 // Source default para a aplicação, usada no início da aplicação.
 export const defaultSourceId: SourceId = sourceIds[0];
 
-// Section default para cada source, usada quando a section não é especificada (quando se troca de source, por exemplo).
-export const defaultSectionIdBySource: {
-  [S in SourceId]: SectionIdBySource[S];
+// Section de preview default para cada source, usada quando a section não é especificada (quando se troca de source, por exemplo).
+export const defaultSectionPreviewIdBySource: {
+  [S in SourceId]: SectionPreviewIdBySource[S];
 } = {
-  github: sectionIdsBySource.github[0],
-  jira: sectionIdsBySource.jira[0],
-  stackoverflow: sectionIdsBySource.stackoverflow[0],
+  github: sectionPreviewIdsBySource.github[0],
+  jira: sectionPreviewIdsBySource.jira[0],
+  stackoverflow: sectionPreviewIdsBySource.stackoverflow[0],
 };
 
 // Mapeia id e label. Útil para dropdowns e formulários.
@@ -62,23 +62,23 @@ export const sourceOptions = sourceIds.map((id) => ({
   label: sourceLabels[id],
 }));
 
-// Mapeia id e label para sections de cada source. Útil para dropdowns e formulários.
-export const sectionOptionsBySource = {
-  github: sectionIdsBySource.github.map((id) => ({
+// Mapeia id e label para sections de preview de cada source. Útil para dropdowns e formulários.
+export const sectionPreviewOptionsBySource = {
+  github: sectionPreviewIdsBySource.github.map((id) => ({
     id,
-    label: sectionLabelsBySource.github[id],
+    label: sectionPreviewLabelsBySource.github[id],
   })),
-  jira: sectionIdsBySource.jira.map((id) => ({
+  jira: sectionPreviewIdsBySource.jira.map((id) => ({
     id,
-    label: sectionLabelsBySource.jira[id],
+    label: sectionPreviewLabelsBySource.jira[id],
   })),
-  stackoverflow: sectionIdsBySource.stackoverflow.map((id) => ({
+  stackoverflow: sectionPreviewIdsBySource.stackoverflow.map((id) => ({
     id,
-    label: sectionLabelsBySource.stackoverflow[id],
+    label: sectionPreviewLabelsBySource.stackoverflow[id],
   })),
 } as const satisfies {
   [S in SourceId]: readonly {
-    id: SectionIdBySource[S];
+    id: SectionPreviewIdBySource[S];
     label: string;
   }[];
 };

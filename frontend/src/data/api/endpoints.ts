@@ -1,7 +1,7 @@
-import type { SectionIdBySource, SourceId } from "@/sources";
+import type { SectionPreviewIdBySource, SourceId } from "@/sources";
 
 export type Source = SourceId;
-export type SectionBySource = SectionIdBySource;
+export type SectionBySource = SectionPreviewIdBySource;
 export type GithubSection = SectionBySource["github"];
 export type JiraSection = SectionBySource["jira"];
 export type StackOverflowSection = SectionBySource["stackoverflow"];
