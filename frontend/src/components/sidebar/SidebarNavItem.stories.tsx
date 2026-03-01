@@ -19,7 +19,7 @@ const meta = {
     subItems: {
       control: false,
       description:
-        "Subitens opcionais. Quando informado, o item principal vira expansível e exibe uma seta à direita.",
+        "Subitens opcionais (props do `SidebarNavSubItem`). Quando informado, o item principal vira expansível e exibe uma seta à direita.",
     },
     defaultExpanded: {
       control: "boolean",
@@ -44,7 +44,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Item de navegação da sidebar com estados `active`/hover, ícone e `aria-current` quando representa a rota atual. Também suporta `subItems` (sem ícone e menores), com expansão/retração por seta.",
+          "Item principal de navegação da sidebar com estados `active`/hover, ícone e `aria-current` quando representa a rota atual. Também suporta agrupamento de `subItems` com expansão/retração por seta.",
       },
     },
   },
@@ -93,7 +93,7 @@ export const ComSubitens: Story = {
     docs: {
       description: {
         story:
-          "Quando `subItems` é informado, o item principal exibe seta (cima/baixo) e abre os subitens ao clicar.",
+          "Quando `subItems` é informado, o item principal exibe seta (cima/baixo) e abre a lista de subitens ao clicar.",
       },
     },
   },
@@ -109,7 +109,12 @@ export const EmContexto: Story = {
           active={false}
           onClick={noop}
         />
-        <SidebarNavItem label="Preview" icon={Eye} active={true} onClick={noop} />
+        <SidebarNavItem
+          label="Preview"
+          icon={Eye}
+          active={true}
+          onClick={noop}
+        />
         <SidebarNavItem
           label="Collect"
           icon={Download}

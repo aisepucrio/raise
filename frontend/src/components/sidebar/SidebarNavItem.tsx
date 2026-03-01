@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
 import { ChevronUp, type LucideIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
+import SidebarNavSubItem, {
+  type SidebarNavSubItemProps,
+} from "./SidebarNavSubItem";
 
-export type SidebarNavSubItem = {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-};
+export type SidebarNavSubItem = SidebarNavSubItemProps;
 
 type SidebarNavItemProps = {
   label: string;
@@ -17,6 +16,10 @@ type SidebarNavItemProps = {
   defaultExpanded?: boolean;
 };
 
+/**
+ * Item principal de navegação da sidebar.
+ * Pode funcionar como ação simples ou como agrupador expansível de subitens.
+ */
 export default function SidebarNavItem({
   label,
   active,
@@ -82,7 +85,7 @@ export default function SidebarNavItem({
         {hasSubItems && expanded ? (
           <motion.div
             key="sidebar-sub-items"
-            className="overflow-hidden"
+            className="-ml-6 w-[calc(100%+1.5rem)] overflow-hidden"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
@@ -90,22 +93,10 @@ export default function SidebarNavItem({
           >
             <div className="flex flex-col">
               {subItems.map((subItem, index) => (
-                <button
+                <SidebarNavSubItem
                   key={`${subItem.label}-${index}`}
-                  type="button"
-                  onClick={subItem.onClick}
-                  aria-current={subItem.active ? "page" : undefined}
-                  className={[
-                    "-ml-6 w-[calc(78%+1.5rem)] self-start rounded-none border-0 border-r-2 border-r-transparent px-12 py-1.5 text-left",
-                    "text-[0.95rem] font-medium transition-colors duration-150",
-                    "focus-visible:outline-none",
-                    subItem.active
-                      ? "border-r-(--color-secondary-mid) bg-(--color-secondary-strong) text-(--color-secondary-inverse)"
-                      : "bg-transparent opacity-85 hover:bg-(--color-secondary-soft)",
-                  ].join(" ")}
-                >
-                  {subItem.label}
-                </button>
+                  {...subItem}
+                />
               ))}
             </div>
           </motion.div>
