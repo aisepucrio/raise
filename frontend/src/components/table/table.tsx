@@ -1,21 +1,38 @@
 import * as React from "react";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-function Table({ className, ...props }: React.ComponentProps<"table">) {
+type TableProps = React.ComponentProps<"table"> & {
+  withContainer?: boolean;
+  containerClassName?: string;
+};
+
+function Table({
+  className,
+  withContainer = true,
+  containerClassName,
+  ...props
+}: TableProps) {
+  const tableElement = (
+    <table
+      data-slot="table"
+      className={cn(
+        "w-full caption-bottom text-sm text-(--color-secondary)",
+        className,
+      )}
+      {...props}
+    />
+  );
+
+  if (!withContainer) return tableElement;
+
   return (
     <div
       data-slot="table-container"
-      className="relative w-full overflow-x-auto"
+      className={cn("relative w-full overflow-x-auto", containerClassName)}
     >
-      <table
-        data-slot="table"
-        className={cn(
-          "w-full caption-bottom text-sm text-(--color-secondary)",
-          className,
-        )}
-        {...props}
-      />
+      {tableElement}
     </div>
   );
 }
@@ -82,6 +99,70 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
   );
 }
 
+export type TableSortDirection = "asc" | "desc" | null;
+
+type TableSortableHeadProps = React.ComponentProps<"th"> & {
+  sortDirection?: TableSortDirection;
+  onSort?: (() => void) | null;
+  showSortIcon?: boolean;
+  buttonClassName?: string;
+  iconClassName?: string;
+};
+
+function TableSortableHead({
+  className,
+  sortDirection = null,
+  onSort,
+  showSortIcon = true,
+  buttonClassName,
+  iconClassName,
+  children,
+  title,
+  ...props
+}: TableSortableHeadProps) {
+  const isSortable = typeof onSort === "function";
+
+  if (!isSortable) {
+    return (
+      <TableHead className={className} title={title} {...props}>
+        {children}
+      </TableHead>
+    );
+  }
+
+  const SortIcon =
+    sortDirection === "asc"
+      ? ArrowUp
+      : sortDirection === "desc"
+        ? ArrowDown
+        : ArrowUpDown;
+
+  return (
+    <TableHead className={className} {...props}>
+      <button
+        type="button"
+        className={cn(
+          "inline-flex items-center gap-1 text-left font-bold",
+          buttonClassName,
+        )}
+        onClick={onSort}
+        title={title}
+      >
+        <span>{children}</span>
+        {showSortIcon ? (
+          <SortIcon
+            className={cn(
+              "size-3.5",
+              sortDirection === null && "opacity-65",
+              iconClassName,
+            )}
+          />
+        ) : null}
+      </button>
+    </TableHead>
+  );
+}
+
 function TableCell({ className, ...props }: React.ComponentProps<"td">) {
   return (
     <td
@@ -114,6 +195,7 @@ export {
   TableBody,
   TableFooter,
   TableHead,
+  TableSortableHead,
   TableRow,
   TableCell,
   TableCaption,

@@ -1,5 +1,7 @@
 import type { CSSProperties } from "react";
+import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import type { TableSortDirection } from "./table";
 
 import {
   Table,
@@ -9,6 +11,7 @@ import {
   TableFooter,
   TableHead,
   TableHeader,
+  TableSortableHead,
   TableRow,
 } from "./table";
 
@@ -73,6 +76,48 @@ function DemoTable({
           </TableRow>
         </TableFooter>
       ) : null}
+    </Table>
+  );
+}
+
+function SortableHeadDemo() {
+  const [sortDirection, setSortDirection] = useState<TableSortDirection>(null);
+
+  function handleToggleSort() {
+    setSortDirection((current) => {
+      if (current === null) return "asc";
+      if (current === "asc") return "desc";
+      return null;
+    });
+  }
+
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableSortableHead
+            sortDirection={sortDirection}
+            onSort={handleToggleSort}
+            title="Sort by fatura"
+          >
+            Fatura
+          </TableSortableHead>
+          <TableHead>Cliente</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead className="text-right">Valor</TableHead>
+        </TableRow>
+      </TableHeader>
+
+      <TableBody>
+        {rows.map((row) => (
+          <TableRow key={row.id}>
+            <TableCell className="font-medium">{row.id}</TableCell>
+            <TableCell>{row.cliente}</TableCell>
+            <TableCell>{row.status}</TableCell>
+            <TableCell className="text-right">{row.valor}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
     </Table>
   );
 }
@@ -173,6 +218,18 @@ export const ComparacaoDeModo: Story = {
       description: {
         story:
           "Mostra a tabela usando os tokens definidos em `src/index.css`, com troca de contraste e fundos por tema.",
+      },
+    },
+  },
+};
+
+export const ColunaOrdenavel: Story = {
+  render: () => <SortableHeadDemo />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Exemplo de `TableSortableHead` com ícones de ordenação opcionais (`asc`, `desc` e estado neutro).",
       },
     },
   },
