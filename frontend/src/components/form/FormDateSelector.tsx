@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes } from "react";
+import type { ChangeEvent, InputHTMLAttributes } from "react";
 import { Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import FormFieldBase, {
@@ -25,6 +25,9 @@ export default function FormDateSelector({
   error,
   required,
   disabled,
+  min,
+  max,
+  onChange,
   wrapperClassName,
   labelPosition = "top",
   variant = "outlined",
@@ -32,6 +35,15 @@ export default function FormDateSelector({
   ...props
 }: FormDateSelectorProps) {
   const isFilledVariant = variant === "filled";
+
+  function handleChange(event: ChangeEvent<HTMLInputElement>) {
+    const isOutOfRange =
+      event.currentTarget.validity.rangeUnderflow ||
+      event.currentTarget.validity.rangeOverflow;
+
+    if (isOutOfRange) return;
+    onChange?.(event);
+  }
 
   return (
     <FormFieldBase
@@ -49,6 +61,9 @@ export default function FormDateSelector({
           type="date"
           required={required}
           disabled={disabled}
+          min={min}
+          max={max}
+          onChange={handleChange}
           className={cn(
             getFormControlClassName(variant),
             "relative pr-10",
