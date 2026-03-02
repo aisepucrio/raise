@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invalidateJobsQueries } from "../../query/invalidation";
 import { githubService } from "./githubService";
-import type { GithubCollectBody } from "./githubService";
+import type { GithubCollectBody, GithubExportBody } from "./githubService";
 
 // Inicia uma coleta de GitHub e atualiza a lista global de jobs.
 export function useGithubCollectMutation() {
@@ -16,6 +16,6 @@ export function useGithubCollectMutation() {
 // Exporta dados de preview do GitHub no formato padrão atual (json).
 export function useGithubExportMutation() {
   return useMutation({
-    mutationFn: () => githubService.exportPreview(),
+    mutationFn: (body: GithubExportBody) => githubService.exportPreview(body),
   });
 }

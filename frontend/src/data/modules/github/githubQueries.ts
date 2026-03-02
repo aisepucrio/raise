@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { GithubSection } from "../../api/endpoints";
 import { queryKeys } from "../../query/keys";
 import { githubService } from "./githubService";
@@ -29,7 +29,8 @@ export function useGithubDateRangeQuery(
   params?: GithubDateRangeParams,
   options?: HookQueryOptions,
 ) {
-  const isEnabled = (options?.enabled ?? true) && Boolean(params?.repository_id);
+  const isEnabled =
+    (options?.enabled ?? true) && Boolean(params?.repository_id);
 
   return useQuery({
     queryKey: queryKeys.github.dateRange(params),
@@ -80,6 +81,9 @@ export function useGithubPreviewQuery(
   return useQuery({
     queryKey: queryKeys.github.preview(section, params),
     enabled: options?.enabled,
-    queryFn: ({ signal }) => githubService.getPreview(section, params, { signal }),
+    // Mantém a tabela atual durante mudanças de filtro/ordenação/página.
+    placeholderData: keepPreviousData,
+    queryFn: ({ signal }) =>
+      githubService.getPreview(section, params, { signal }),
   });
 }

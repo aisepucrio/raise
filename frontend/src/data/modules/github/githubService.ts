@@ -60,6 +60,13 @@ export type GithubPreviewParams = {
   created_at__lte?: string;
 };
 
+export type GithubPreviewRow = Record<string, unknown>;
+
+export type GithubPreviewResponse = {
+  count?: number;
+  results?: GithubPreviewRow[];
+};
+
 export type GithubCollectType =
   | "metadata"
   | "issues"
@@ -73,6 +80,12 @@ export type GithubCollectBody = {
   collect_types: GithubCollectType[];
   start_date?: string;
   end_date?: string;
+};
+
+export type GithubExportBody = {
+  format: "json";
+  table: string;
+  data_type?: string;
 };
 
 export const githubService = {
@@ -111,17 +124,17 @@ export const githubService = {
     section: GithubSection,
     params: GithubPreviewParams,
     options?: RequestOptions,
-  ) =>
-    api.get(endpoints.previewList(SOURCE, section), {
+  ): Promise<GithubPreviewResponse> =>
+    api.get<GithubPreviewResponse>(endpoints.previewList(SOURCE, section), {
       params,
       signal: options?.signal,
-    }),
+    }) as Promise<GithubPreviewResponse>,
 
   // ModalDownload (Preview): exporta no formato padrão atual (json).
-  exportPreview: (options?: RequestOptions) =>
+  exportPreview: (body: GithubExportBody, options?: RequestOptions) =>
     api.post(
       endpoints.export(SOURCE),
-      { format: "json" },
+      body,
       {
         responseType: "blob",
         signal: options?.signal,
