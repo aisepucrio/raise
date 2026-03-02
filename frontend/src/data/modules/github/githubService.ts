@@ -56,8 +56,8 @@ export type GithubPreviewParams = {
   date__gte?: string;
   date__lte?: string;
   // Usado em `issues` e `pull-requests`.
-  created_at__gte?: string;
-  created_at__lte?: string;
+  github_created_at__gte?: string;
+  github_created_at__lte?: string;
 };
 
 export type GithubPreviewRow = Record<string, unknown>;
@@ -132,14 +132,10 @@ export const githubService = {
 
   // ModalDownload (Preview): exporta no formato padrão atual (json).
   exportPreview: (body: GithubExportBody, options?: RequestOptions) =>
-    api.post(
-      endpoints.export(SOURCE),
-      body,
-      {
-        responseType: "blob",
-        signal: options?.signal,
-      },
-    ),
+    api.post(endpoints.export(SOURCE), body, {
+      responseType: "blob",
+      signal: options?.signal,
+    }),
 
   // Collect: inicia a coleta de GitHub via endpoint padronizado.
   collect: (body: GithubCollectBody, options?: RequestOptions) =>
