@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { Search } from "lucide-react";
 import FormInput from "./FormInput";
 
 const meta = {
@@ -7,6 +8,11 @@ const meta = {
   tags: ["autodocs"],
   argTypes: {
     wrapperClassName: { control: false },
+    icon: { control: false },
+    iconPosition: {
+      control: { type: "inline-radio" },
+      options: ["left", "right"],
+    },
     variant: {
       control: { type: "inline-radio" },
       options: ["outlined", "filled"],
@@ -72,5 +78,15 @@ export const VarianteFilled: Story = {
     placeholder: "Pesquisar por repositório",
     variant: "filled",
     hint: "Exemplo com a variante filled.",
+  },
+};
+
+export const ComIcone: Story = {
+  args: {
+    id: "form-input-icon",
+    label: "Search",
+    placeholder: "Type...",
+    icon: <Search className="size-4" />,
+    hint: "Exemplo com icone opcional.",
   },
 };

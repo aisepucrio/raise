@@ -1,4 +1,4 @@
-import { forwardRef, type InputHTMLAttributes } from "react";
+import { forwardRef, type InputHTMLAttributes, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import FormFieldBase, {
   getFormControlClassName,
@@ -10,6 +10,8 @@ type FormInputProps = InputHTMLAttributes<HTMLInputElement> & {
   label?: string;
   hint?: string;
   error?: string;
+  icon?: ReactNode;
+  iconPosition?: "left" | "right";
   wrapperClassName?: string;
   labelPosition?: FormFieldLabelPosition;
   variant?: FormControlVariant;
@@ -21,6 +23,8 @@ const FormInput = forwardRef<HTMLInputElement, FormInputProps>(function FormInpu
     label,
     hint,
     error,
+    icon,
+    iconPosition = "left",
     required,
     wrapperClassName,
     labelPosition = "top",
@@ -41,17 +45,34 @@ const FormInput = forwardRef<HTMLInputElement, FormInputProps>(function FormInpu
       className={wrapperClassName}
       labelPosition={labelPosition}
     >
-      <input
-        ref={ref}
-        id={id}
-        type={type}
-        required={required}
-        className={cn(
-          getFormControlClassName(variant),
-          className,
-        )}
-        {...props}
-      />
+      <div className="relative">
+        <input
+          ref={ref}
+          id={id}
+          type={type}
+          required={required}
+          className={cn(
+            getFormControlClassName(variant),
+            icon && (iconPosition === "left" ? "pl-10" : "pr-10"),
+            className,
+          )}
+          {...props}
+        />
+
+        {icon ? (
+          <span
+            aria-hidden="true"
+            className={cn(
+              "pointer-events-none absolute inset-y-0 flex items-center text-(--color-secondary-muted)",
+              iconPosition === "left" ? "left-3.5" : "right-3.5",
+              variant === "filled" &&
+                "text-[color:var(--color-secondary-inverse-muted)]",
+            )}
+          >
+            {icon}
+          </span>
+        ) : null}
+      </div>
     </FormFieldBase>
   );
 });
