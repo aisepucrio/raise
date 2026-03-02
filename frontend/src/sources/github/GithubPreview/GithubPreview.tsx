@@ -4,6 +4,10 @@ import { Download } from "lucide-react";
 import { Button } from "@/components/button";
 import { ColumnVisibilityFilter } from "@/components/column-visibility-filter";
 import { CodePreviewModal } from "@/components/code-preview-modal";
+import {
+  isDateOutsideRange,
+  resolveDateBound,
+} from "@/components/format-date-item";
 import { FormDateSelector, FormSelect } from "@/components/form";
 import { Loader } from "@/components/loader";
 import { SearchBar } from "@/components/search-bar";
@@ -70,25 +74,6 @@ function buildDateFilterParams(
   };
 }
 
-function getEarliestDate(a?: string, b?: string) {
-  if (!a) return b;
-  if (!b) return a;
-  return a <= b ? a : b;
-}
-
-function getLatestDate(a?: string, b?: string) {
-  if (!a) return b;
-  if (!b) return a;
-  return a >= b ? a : b;
-}
-
-function isDateOutsideRange(value: string, min?: string, max?: string) {
-  if (!value) return false;
-  if (min && value < min) return true;
-  if (max && value > max) return true;
-  return false;
-}
-
 export function GithubPreview({
   idPrefix,
   previewSection,
@@ -150,8 +135,8 @@ export function GithubPreview({
 
   const minDate = toDateInputValue(dateRangeQuery.data?.minDate);
   const maxDate = toDateInputValue(dateRangeQuery.data?.maxDate);
-  const startDateMax = getEarliestDate(maxDate, endDate || undefined);
-  const endDateMin = getLatestDate(minDate, startDate || undefined);
+  const startDateMax = resolveDateBound([maxDate, endDate], "min");
+  const endDateMin = resolveDateBound([minDate, startDate], "max");
 
   // Query param de ordenação (server-side).
   const ordering = useMemo(() => {

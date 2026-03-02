@@ -3,6 +3,8 @@ type FormatDateItemProps = {
   locale?: string;
 };
 
+export type DateBoundMode = "min" | "max";
+
 // Tenta parsear formatos comuns vindos da API/UI sem depender do parser nativo em casos ambíguos.
 function parseDateValue(value?: string | null): Date | null {
   if (typeof value !== "string") return null;
@@ -54,6 +56,33 @@ export function formatDateItemValue(
     day: "numeric",
     year: "numeric",
   }).format(parsedDate);
+}
+
+// Resolve um limite de data a partir de uma lista (útil para combinar limites dinâmicos).
+export function resolveDateBound(
+  values: Array<string | null | undefined>,
+  mode: DateBoundMode,
+) {
+  const validValues = values.filter(Boolean) as string[];
+  if (validValues.length === 0) return undefined;
+
+  return validValues.reduce((currentValue, nextValue) =>
+    mode === "min"
+      ? nextValue < currentValue
+        ? nextValue
+        : currentValue
+      : nextValue > currentValue
+        ? nextValue
+        : currentValue,
+  );
+}
+
+// Verifica se uma data está fora de um intervalo [min, max].
+export function isDateOutsideRange(value: string, min?: string, max?: string) {
+  if (!value) return false;
+  if (min && value < min) return true;
+  if (max && value > max) return true;
+  return false;
 }
 
 export function FormatDateItem({
