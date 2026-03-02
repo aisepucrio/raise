@@ -7,13 +7,13 @@ import { getQueryErrorMessage } from "@/data";
 import type { GithubOverviewResponse } from "@/data/modules/github/githubService";
 import {
   buildOverviewMetricCardItems,
-  buildOverviewSelectOptions,
   buildLineSeriesFromTimeSeries,
   getOverviewSidebarGridRowsStyle,
   type OverviewMetricCardConfig,
   resolveOverviewGraphInterval,
   toDateInputValue,
 } from "@/sources/shared/OverviewShared";
+import { buildSelectOptions } from "@/sources/shared/AllShared";
 import {
   useGithubDateRangeByRepositoryQuery,
   useGithubGraphQuery,
@@ -112,7 +112,7 @@ export default function GithubOverview() {
   const graphData = graphQuery.data;
 
   // Dados derivados prontos para renderização no select.
-  const repositoryOptions = buildOverviewSelectOptions(
+  const repositoryOptions = buildSelectOptions(
     (catalogData ?? overviewData)?.repositories,
     {
       getValue: (repository) => repository.id,

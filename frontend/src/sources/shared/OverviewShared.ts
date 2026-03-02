@@ -19,12 +19,6 @@ type BuildLineSeriesFromTimeSeriesOptions = {
   labelFormatter?: (seriesKey: string) => string;
 };
 
-// Formato simples usado pelos selects das telas de overview.
-export type OverviewSelectOption = {
-  value: string;
-  label: string;
-};
-
 // Configuração declarativa de card:
 // - `title`: texto visível no InfoBox
 // - `getValue`: como buscar a métrica no payload do endpoint
@@ -78,32 +72,6 @@ export function formatOverviewStatValue(
   if (value === undefined) return isLoading ? "..." : "-";
 
   return new Intl.NumberFormat(locale).format(value);
-}
-
-// Mapeia itens vindos do backend para o formato de opção usado por `FormSelect`.
-//
-// Por que existe:
-// - evita repetir `array.map(...)` em cada source (GitHub/Jira/StackOverflow)
-// - deixa explícito quais campos viram `value` e `label`
-//
-// Exemplo:
-// `buildOverviewSelectOptions(repositories, {`
-// `  getValue: (item) => item.id,`
-// `  getLabel: (item) => item.repository,`
-// `})`
-export function buildOverviewSelectOptions<TItem>(
-  items: readonly TItem[] | null | undefined,
-  config: {
-    getValue: (item: TItem) => string | number;
-    getLabel: (item: TItem) => string;
-  },
-): OverviewSelectOption[] {
-  const safeItems = Array.isArray(items) ? items : [];
-
-  return safeItems.map((item) => ({
-    value: String(config.getValue(item)),
-    label: config.getLabel(item),
-  }));
 }
 
 // Converte uma configuração declarativa de métricas em itens prontos para o `InfoBoxGrid`.
