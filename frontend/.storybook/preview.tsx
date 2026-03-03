@@ -1,7 +1,7 @@
 import type { Preview } from "@storybook/react-vite";
 import "../src/index.css";
 
-const preview: Preview = {
+const globalLayout: Preview = {
   parameters: {
     layout: "centered",
     controls: {
@@ -20,7 +20,8 @@ const preview: Preview = {
     (Story) => (
       <div
         style={{
-          width: "min(560px, 92vw)",
+          width: "100%",
+          minWidth: "min(1440px, 98vw)",
           padding: "1rem",
           borderRadius: "12px",
           background: "var(--color-app-bg)",
@@ -33,4 +34,4 @@ const preview: Preview = {
   ],
 };
 
-export default preview;
+export default globalLayout;
