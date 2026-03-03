@@ -42,20 +42,17 @@ type PreviewTableProps = {
   onRowsPerPageChange: (nextRowsPerPage: number) => void;
 };
 
+// Gera uma chave estável para cada linha da tabela usando o valor da primeira coluna ou fallback para índice.
+// Utilizado para chave id estável (paginação, ordenação).
 function resolvePreviewRowKey(row: PreviewRow, rowIndex: number) {
-  const stableValue =
-    row.id ??
-    row._id ??
-    row.uuid ??
-    row.key ??
-    row.node_id ??
-    row.question_id ??
-    row.issue_id ??
-    row.comment_id ??
-    row.commit_id ??
-    row.sha;
+  const [firstColumn] = Object.keys(row);
+  const stableValue = firstColumn ? row[firstColumn] : undefined;
 
-  if (stableValue !== null && stableValue !== undefined && String(stableValue)) {
+  if (
+    stableValue !== null &&
+    stableValue !== undefined &&
+    String(stableValue)
+  ) {
     return `preview-row-${String(stableValue)}`;
   }
 
@@ -128,7 +125,9 @@ export function PreviewTable({
                             <TableSortableHead
                               key={`head-${column}`}
                               sortDirection={
-                                isColumnSorted ? (sortState?.direction ?? null) : null
+                                isColumnSorted
+                                  ? (sortState?.direction ?? null)
+                                  : null
                               }
                               onSort={() => onSort(column)}
                               title={`Sort by ${column}`}
@@ -144,7 +143,10 @@ export function PreviewTable({
               </div>
 
               {/* Body da tabela (scrollável) */}
-              <div className="min-h-0 flex-1 overflow-auto" onScroll={handleBodyScroll}>
+              <div
+                className="min-h-0 flex-1 overflow-auto"
+                onScroll={handleBodyScroll}
+              >
                 <Table withContainer={false} className="w-full min-w-max">
                   <colgroup>
                     {tableColumns.map((column) => (
@@ -186,7 +188,8 @@ export function PreviewTable({
                               typeof value === "object" && value !== null;
                             const rawText = toPreviewString(value);
                             const displayText =
-                              typeof value === "string" && isIsoDateString(value)
+                              typeof value === "string" &&
+                              isIsoDateString(value)
                                 ? formatIsoDate(value)
                                 : rawText || "-";
                             const isLong = displayText.length > 100;
@@ -195,7 +198,10 @@ export function PreviewTable({
                               : displayText;
 
                             return (
-                              <TableCell key={`${rowIndex}-${column}`} className="max-w-88">
+                              <TableCell
+                                key={`${rowIndex}-${column}`}
+                                className="max-w-88"
+                              >
                                 {isObjectLike ? (
                                   // Objetos/arrays são exibidos no modal via botão para evitar poluição na célula.
                                   <Button
