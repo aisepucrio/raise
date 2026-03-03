@@ -10,7 +10,7 @@ export default function GithubPreviewUsers() {
       loadErrorMessage="Failed to load GitHub users."
       exportTable="githubuser"
       exportFileNamePrefix="github-users-preview"
-      dateFilterField="date"
+      showDateFilters={false}
     />
   );
 }

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { JiraSection } from "../../api/endpoints";
 import { queryKeys } from "../../query/keys";
 import { jiraService } from "./jiraService";
@@ -78,6 +78,8 @@ export function useJiraPreviewQuery(
   return useQuery({
     queryKey: queryKeys.jira.preview(section, params),
     enabled: options?.enabled,
+    // Mantém a tabela atual durante mudanças de filtro/ordenação/página.
+    placeholderData: keepPreviousData,
     queryFn: ({ signal }) => jiraService.getPreview(section, params, { signal }),
   });
 }

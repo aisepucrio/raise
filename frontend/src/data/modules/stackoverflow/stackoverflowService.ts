@@ -19,6 +19,25 @@ export type StackOverflowPreviewParams = {
   creation_date__lte?: string;
 };
 
+// Resposta do dashboard/overview (cards + lista de perguntas).
+export type StackOverflowOverviewQuestion = {
+  id?: string | number;
+  question_id?: string | number;
+  title?: string;
+  question_title?: string;
+  question?: string;
+  display?: string;
+};
+
+export type StackOverflowOverviewResponse = {
+  questions_count?: number;
+  answers_count?: number;
+  comments_count?: number;
+  tags_count?: number;
+  questions?: StackOverflowOverviewQuestion[];
+  time_mined?: string | null;
+};
+
 export type StackOverflowOverviewParams = DateFilterRange & { question_id?: string };
 export type StackOverflowDateRangeParams = { question_id: string };
 export type StackOverflowGraphParams = DateFilterRange & {
@@ -32,13 +51,23 @@ export type StackOverflowCollectBody = {
   tags?: string;
 };
 
+export type StackOverflowPreviewRow = Record<string, unknown>;
+
+export type StackOverflowPreviewResponse = {
+  count?: number;
+  results?: StackOverflowPreviewRow[];
+};
+
 export const stackoverflowService = {
   // Overview e ItemSwitcher: cards do dashboard e lista de perguntas.
-  getOverview: (params?: StackOverflowOverviewParams, options?: RequestOptions) =>
-    api.get(endpoints.dashboard(SOURCE), {
+  getOverview: (
+    params?: StackOverflowOverviewParams,
+    options?: RequestOptions,
+  ): Promise<StackOverflowOverviewResponse> =>
+    api.get<StackOverflowOverviewResponse>(endpoints.dashboard(SOURCE), {
       params,
       signal: options?.signal,
-    }),
+    }) as Promise<StackOverflowOverviewResponse>,
 
   // Overview e Preview: faixa de datas para limitar filtros por pergunta.
   getDateRange: (
@@ -62,11 +91,11 @@ export const stackoverflowService = {
     section: StackOverflowSection,
     params: StackOverflowPreviewParams,
     options?: RequestOptions,
-  ) =>
-    api.get(endpoints.previewList(SOURCE, section), {
+  ): Promise<StackOverflowPreviewResponse> =>
+    api.get<StackOverflowPreviewResponse>(endpoints.previewList(SOURCE, section), {
       params,
       signal: options?.signal,
-    }),
+    }) as Promise<StackOverflowPreviewResponse>,
 
   // ModalDownload (Preview): exporta no formato padrão atual (json).
   exportPreview: (options?: RequestOptions) =>

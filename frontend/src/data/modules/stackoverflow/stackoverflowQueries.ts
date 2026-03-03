@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { StackOverflowSection } from "../../api/endpoints";
 import { queryKeys } from "../../query/keys";
 import { stackoverflowService } from "./stackoverflowService";
@@ -80,6 +80,8 @@ export function useStackOverflowPreviewQuery(
   return useQuery({
     queryKey: queryKeys.stackoverflow.preview(section, params),
     enabled: options?.enabled,
+    // Mantém a tabela atual durante mudanças de filtro/ordenação/página.
+    placeholderData: keepPreviousData,
     queryFn: ({ signal }) =>
       stackoverflowService.getPreview(section, params, { signal }),
   });

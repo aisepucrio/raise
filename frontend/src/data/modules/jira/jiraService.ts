@@ -16,6 +16,24 @@ export type JiraGraphParams = DateFilterRange & {
   project_id?: string;
 };
 
+// Resposta do dashboard/overview (cards + lista de projetos)
+export type JiraOverviewProject = {
+  id?: string | number;
+  project?: string;
+  project_key?: string;
+  key?: string;
+  name?: string;
+};
+
+export type JiraOverviewResponse = {
+  users_count?: number;
+  issues_count?: number;
+  comments_count?: number;
+  sprints_count?: number;
+  projects?: JiraOverviewProject[];
+  time_mined?: string | null;
+};
+
 export type JiraPreviewParams = {
   page: number;
   page_size: number;
@@ -34,6 +52,13 @@ export type JiraPreviewParams = {
   created__lte?: string;
 };
 
+export type JiraPreviewRow = Record<string, unknown>;
+
+export type JiraPreviewResponse = {
+  count?: number;
+  results?: JiraPreviewRow[];
+};
+
 export type JiraProject = { jira_domain: string; project_key: string };
 export type JiraCollectBody = {
   projects: JiraProject[];
@@ -43,8 +68,14 @@ export type JiraCollectBody = {
 
 export const jiraService = {
   // Overview e ItemSwitcher: cards do dashboard e lista de projetos.
-  getOverview: (params?: JiraOverviewParams, options?: RequestOptions) =>
-    api.get(endpoints.dashboard(SOURCE), { params, signal: options?.signal }),
+  getOverview: (
+    params?: JiraOverviewParams,
+    options?: RequestOptions,
+  ): Promise<JiraOverviewResponse> =>
+    api.get<JiraOverviewResponse>(endpoints.dashboard(SOURCE), {
+      params,
+      signal: options?.signal,
+    }) as Promise<JiraOverviewResponse>,
 
   // Overview e Preview: faixa de datas para limitar filtros por projeto.
   getDateRange: (
@@ -65,11 +96,11 @@ export const jiraService = {
     section: JiraSection,
     params: JiraPreviewParams,
     options?: RequestOptions,
-  ) =>
-    api.get(endpoints.previewList(SOURCE, section), {
+  ): Promise<JiraPreviewResponse> =>
+    api.get<JiraPreviewResponse>(endpoints.previewList(SOURCE, section), {
       params,
       signal: options?.signal,
-    }),
+    }) as Promise<JiraPreviewResponse>,
 
   // ModalDownload (Preview): exporta no formato padrão atual (json).
   exportPreview: (options?: RequestOptions) =>
