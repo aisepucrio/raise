@@ -2,9 +2,12 @@ import { Download } from "lucide-react";
 
 import { Button } from "@/components/button";
 import { ColumnVisibilityFilter } from "@/components/column-visibility-filter";
-import { resolveDateBound } from "@/components/format-date-item";
-import { FormDateSelector, FormSelect } from "@/components/form";
+import { FormSelect } from "@/components/form";
 import { SearchBar } from "@/components/search-bar";
+import {
+  StartEndDateFilter,
+  type StartEndDateRange,
+} from "@/components/start-end-datefilter";
 
 type PreviewSourceOption = {
   value: string;
@@ -22,13 +25,13 @@ type PreviewHeaderLayoutVariant =
 const HEADER_GRID_CLASS_BY_VARIANT: Record<PreviewHeaderLayoutVariant, string> =
   {
     "source-date":
-      "grid grid-cols-2 gap-3 overflow-visible pb-1 md:items-end md:grid-cols-[minmax(0,1fr)_11.5rem_11.5rem] xl:grid-cols-[minmax(0,1fr)_11.5rem_11.5rem_max-content_auto_auto]",
+      "grid grid-cols-2 gap-3 overflow-visible pb-1 md:items-end md:grid-cols-[minmax(0,1fr)_23.75rem] xl:grid-cols-[minmax(0,1fr)_23.75rem_minmax(0,1fr)_max-content_auto]",
     "source-no-date":
       "grid grid-cols-2 gap-3 overflow-visible pb-1 md:items-end md:grid-cols-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_max-content_auto_auto]",
     "no-source-date":
-      "grid grid-cols-2 gap-3 overflow-visible pb-1 md:items-end md:grid-cols-[11.5rem_11.5rem] xl:grid-cols-[11.5rem_11.5rem_minmax(0,1fr)_max-content_auto_auto]",
+      "grid grid-cols-2 gap-3 overflow-visible pb-1 md:items-end md:grid-cols-[23.75rem] xl:grid-cols-[23.75rem_minmax(0,1fr)_max-content_auto]",
     "no-source-no-date":
-      "grid grid-cols-2 gap-3 overflow-visible pb-1 md:items-end md:grid-cols-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_max-content_auto_auto]",
+      "grid grid-cols-2 gap-3 overflow-visible pb-1 md:items-end md:grid-cols-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_max-content_auto]",
   };
 
 // Classes de grid para o container das ações (barra de busca, controle de colunas e exportação).
@@ -37,11 +40,11 @@ const ACTIONS_GRID_CLASS_BY_VARIANT: Record<
   string
 > = {
   "source-date":
-    "col-span-2 grid grid-cols-2 gap-3 md:col-span-3 md:grid-cols-[minmax(0,1fr)_auto_auto] xl:contents",
+    "col-span-2 grid grid-cols-2 gap-3 md:col-span-2 md:grid-cols-[minmax(0,1fr)_auto_auto] xl:contents",
   "source-no-date":
     "col-span-2 grid grid-cols-2 gap-3 md:col-span-1 md:grid-cols-[minmax(0,1fr)_auto_auto] xl:contents",
   "no-source-date":
-    "col-span-2 grid grid-cols-2 gap-3 md:col-span-2 md:grid-cols-[minmax(0,1fr)_auto_auto] xl:contents",
+    "col-span-2 grid grid-cols-2 gap-3 md:col-span-1 md:grid-cols-[minmax(0,1fr)_auto_auto] xl:contents",
   "no-source-no-date":
     "col-span-2 grid grid-cols-2 gap-3 md:col-span-1 md:grid-cols-[minmax(0,1fr)_auto_auto] xl:contents",
 };
@@ -70,8 +73,7 @@ type PreviewHeaderProps = {
   endDate: string;
   onStartDateChange: (value: string) => void;
   onEndDateChange: (value: string) => void;
-  minDate?: string;
-  maxDate?: string;
+  dateRange?: StartEndDateRange;
   onSearchChange: (searchTerm: string) => void;
   columns: string[];
   hiddenColumns: string[];
@@ -98,8 +100,7 @@ export function PreviewHeader({
   endDate,
   onStartDateChange,
   onEndDateChange,
-  minDate,
-  maxDate,
+  dateRange,
   onSearchChange,
   columns,
   hiddenColumns,
@@ -107,13 +108,6 @@ export function PreviewHeader({
   onExport,
   isExportPending,
 }: PreviewHeaderProps) {
-  // Cálculo dos limites dinâmicos para os filtros de data (limite baseado na seleção do outro e no máximo/mínimo estabelecido pelo source).
-  const startDateMax = showDateFilters
-    ? resolveDateBound([maxDate, endDate], "min")
-    : undefined;
-  const endDateMin = showDateFilters
-    ? resolveDateBound([minDate, startDate], "max")
-    : undefined;
   const layoutVariant = resolvePreviewHeaderLayoutVariant(
     showSourceFilter,
     showDateFilters,
@@ -148,33 +142,17 @@ export function PreviewHeader({
         ) : null}
 
         {showDateFilters ? (
-          <>
-            {/* Filtro de data inicial */}
-            <div className="min-w-0 md:min-w-46">
-              <FormDateSelector
-                id={`${idPrefix}-start-date`}
-                label="Start"
-                value={startDate}
-                onChange={(event) => onStartDateChange(event.target.value)}
-                min={minDate}
-                max={startDateMax}
-                wrapperClassName="min-w-0"
-              />
-            </div>
-
-            {/* Filtro de data final */}
-            <div className="min-w-0 md:min-w-46">
-              <FormDateSelector
-                id={`${idPrefix}-end-date`}
-                label="End"
-                value={endDate}
-                onChange={(event) => onEndDateChange(event.target.value)}
-                min={endDateMin}
-                max={maxDate}
-                wrapperClassName="min-w-0"
-              />
-            </div>
-          </>
+          <div className="col-span-2 min-w-0 md:col-span-1">
+            <StartEndDateFilter
+              idPrefix={idPrefix}
+              startDate={startDate}
+              endDate={endDate}
+              onStartDateChange={onStartDateChange}
+              onEndDateChange={onEndDateChange}
+              width="compact"
+              dateRange={dateRange}
+            />
+          </div>
         ) : null}
 
         <div className={actionsContainerClassName}>

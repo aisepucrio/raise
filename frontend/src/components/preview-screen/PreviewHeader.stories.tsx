@@ -36,8 +36,7 @@ function InteractiveDemo({
         endDate={endDate}
         onStartDateChange={setStartDate}
         onEndDateChange={setEndDate}
-        minDate="2026-01-01"
-        maxDate="2026-03-31"
+        dateRange={{ minDate: "2026-01-01", maxDate: "2026-03-31" }}
         onSearchChange={setSearchTerm}
         columns={["id", "title", "author", "status", "notes"]}
         hiddenColumns={hiddenColumns}

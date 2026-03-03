@@ -30,19 +30,6 @@ export type OverviewMetricCardConfig<TData> = {
   getValue: (data: TData | undefined) => number | undefined;
 };
 
-// Normaliza uma data da API para o formato esperado por `<input type="date">`.
-export function toDateInputValue(value?: string | null): string | undefined {
-  if (!value) return undefined;
-
-  const match = value.match(/^(\d{4}-\d{2}-\d{2})/);
-  if (match) return match[1];
-
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return undefined;
-
-  return parsed.toISOString().slice(0, 10);
-}
-
 // Escolhe um intervalo de agregação para o gráfico com base no range selecionado.
 export function resolveOverviewGraphInterval(
   startDate: string,

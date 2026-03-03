@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { CircleAlert, Loader2, Plus } from "lucide-react";
 
 import { Button } from "@/components/button";
-import { FormDateSelector } from "@/components/form";
 import { RemovableTag } from "@/components/removable-tag";
 import { SelectionButton } from "@/components/selection-button";
+import { StartEndDateFilter } from "@/components/start-end-datefilter";
 import { toast } from "@/components/toast";
 import { getQueryErrorMessage } from "@/data";
 import { useGithubCollectMutation } from "@/data/modules/github/githubMutations";
@@ -208,25 +208,15 @@ export default function GithubCollect() {
               </div>
             ) : null}
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <FormDateSelector
-                id="github-collect-start-date"
-                label="Start"
-                value={startDate}
-                onChange={(event) => setStartDate(event.target.value)}
-                max={endDate || undefined}
-                wrapperClassName="min-w-0"
-              />
-
-              <FormDateSelector
-                id="github-collect-end-date"
-                label="Finish"
-                value={endDate}
-                onChange={(event) => setEndDate(event.target.value)}
-                min={startDate || undefined}
-                wrapperClassName="min-w-0"
-              />
-            </div>
+            <StartEndDateFilter
+              idPrefix="github-collect"
+              startDate={startDate}
+              endDate={endDate}
+              onStartDateChange={setStartDate}
+              onEndDateChange={setEndDate}
+              startLabel="Start"
+              endLabel="Finish"
+            />
           </section>
 
           <section className="space-y-3">

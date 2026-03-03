@@ -1,14 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
-import { FormDateSelector, FormSelect } from "@/components/form";
+import { FormSelect } from "@/components/form";
 import { InfoBoxGrid, type InfoBoxGridItem } from "@/components/info-box";
 import { LineChart } from "@/components/line-chart";
+import { StartEndDateFilter } from "@/components/start-end-datefilter";
 import { getQueryErrorMessage } from "@/data";
 import {
   buildLineSeriesFromTimeSeries,
   getOverviewSidebarGridRowsStyle,
   resolveOverviewGraphInterval,
-  toDateInputValue,
   type LabeledTimeSeriesPayload,
   type OverviewGraphInterval,
 } from "@/sources/shared/OverviewShared";
@@ -118,12 +118,6 @@ export function OverviewScreen<
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  // Validação simples para evitar requests com intervalo invertido.
-  const dateOrderError =
-    startDate && endDate && startDate > endDate
-      ? "Start date must be less than or equal to end date."
-      : undefined;
-
   // Params compartilhados pelos endpoints de overview (cards) com filtros opcionais.
   const overviewParams = useMemo(
     () => buildOverviewParams({ selectedSourceId, startDate, endDate }),
@@ -131,9 +125,7 @@ export function OverviewScreen<
   );
 
   // Overview filtrado: alimenta cards e metadados do painel lateral.
-  const overviewQuery = useOverviewQuery(overviewParams, {
-    enabled: !dateOrderError,
-  });
+  const overviewQuery = useOverviewQuery(overviewParams);
 
   // Série temporal do gráfico (usa o mesmo conjunto de filtros).
   const graphParams = useMemo(
@@ -146,26 +138,12 @@ export function OverviewScreen<
       }),
     [buildGraphParams, selectedSourceId, startDate, endDate],
   );
-  const graphQuery = useGraphQuery(graphParams, {
-    enabled: !dateOrderError,
-  });
+  const graphQuery = useGraphQuery(graphParams);
 
   // Faixa de datas válida por item selecionado (repositório/projeto).
   const dateRangeQuery = useDateRangeBySourceQuery(selectedSourceId || undefined, {
     enabled: Boolean(selectedSourceId),
   });
-  const minDate = toDateInputValue(dateRangeQuery.data?.minDate);
-  const maxDate = toDateInputValue(dateRangeQuery.data?.maxDate);
-
-  // Se o item muda, remove datas que saíram do range permitido.
-  useEffect(() => {
-    if (!selectedSourceId) return;
-
-    if (minDate && startDate && startDate < minDate) setStartDate("");
-    if (maxDate && startDate && startDate > maxDate) setStartDate("");
-    if (minDate && endDate && endDate < minDate) setEndDate("");
-    if (maxDate && endDate && endDate > maxDate) setEndDate("");
-  }, [selectedSourceId, minDate, maxDate, startDate, endDate]);
 
   const graphTimeSeries = (
     graphQuery.data as
@@ -196,7 +174,7 @@ export function OverviewScreen<
       {/* Coluna esquerda: filtros + gráfico */}
       <section className="flex min-h-168 min-w-0 flex-col rounded-xl border-2 border-(--color-secondary-soft) bg-(--color-primary) xl:min-h-0 xl:h-full xl:max-h-full">
         {/* Linha de filtros (item + intervalo de datas) */}
-        <div className="grid gap-3 border-b-2 border-(--color-secondary-soft) p-4 md:grid-cols-2 xl:grid-cols-[2fr_1fr_1fr]">
+        <div className="grid gap-3 border-b-2 border-(--color-secondary-soft) p-4 md:grid-cols-2 xl:grid-cols-[2fr_minmax(0,2fr)]">
           <FormSelect
             id={`${idPrefix}-source`}
             label={sourceFilterLabel}
@@ -213,26 +191,15 @@ export function OverviewScreen<
             ))}
           </FormSelect>
 
-          <FormDateSelector
-            id={`${idPrefix}-start-date`}
-            label="Start date"
-            value={startDate}
-            onChange={(event) => setStartDate(event.target.value)}
-            min={minDate}
-            max={endDate || maxDate}
-            wrapperClassName="min-w-0"
-            error={dateOrderError}
-          />
-
-          <FormDateSelector
-            id={`${idPrefix}-end-date`}
-            label="End date"
-            value={endDate}
-            onChange={(event) => setEndDate(event.target.value)}
-            min={startDate || minDate}
-            max={maxDate}
-            wrapperClassName="min-w-0"
-            error={dateOrderError}
+          <StartEndDateFilter
+            idPrefix={idPrefix}
+            startDate={startDate}
+            endDate={endDate}
+            onStartDateChange={setStartDate}
+            onEndDateChange={setEndDate}
+            startLabel="Start date"
+            endLabel="End date"
+            dateRange={selectedSourceId ? dateRangeQuery.data : undefined}
           />
         </div>
 
@@ -240,14 +207,12 @@ export function OverviewScreen<
         <div className="min-h-0 flex-1 overflow-auto p-2 sm:p-3">
           <LineChart
             title={chartTitle}
-            data={dateOrderError ? [] : graphSeries}
-            loading={!dateOrderError && graphQuery.isPending}
+            data={graphSeries}
+            loading={graphQuery.isPending}
             error={graphErrorMessage}
             yLabel="Items"
             height={430}
-            emptyMessage={
-              dateOrderError ?? chartEmptyMessage
-            }
+            emptyMessage={chartEmptyMessage}
             colors={OVERVIEW_CHART_COLORS}
           />
         </div>

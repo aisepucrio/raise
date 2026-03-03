@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { CodePreviewModal } from "@/components/code-preview-modal";
-import { isDateOutsideRange } from "@/components/format-date-item";
 import { toast } from "@/components/toast";
 import { getQueryErrorMessage } from "@/data";
-import { toDateInputValue } from "@/sources/shared/OverviewShared";
 import {
   downloadPreviewExportFile,
   type PreviewRow,
@@ -137,13 +135,6 @@ export function PreviewScreen<
       })
     : { data: undefined };
 
-  const minDate = showDateFilters
-    ? toDateInputValue(dateRangeQuery.data?.minDate)
-    : undefined;
-  const maxDate = showDateFilters
-    ? toDateInputValue(dateRangeQuery.data?.maxDate)
-    : undefined;
-
   // Query param de ordenação (server-side).
   const ordering = useMemo(() => {
     if (!sortState?.field) return undefined;
@@ -156,22 +147,6 @@ export function PreviewScreen<
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedSourceId, startDate, endDate, search, ordering]);
-
-  // Ao trocar o filtro principal, limpa datas que ficarem fora da faixa disponível.
-  useEffect(() => {
-    if (!showDateFilters) return;
-    if (!showSourceFilter) return;
-    if (!selectedSourceId) return;
-
-    setStartDate((currentStartDate) =>
-      isDateOutsideRange(currentStartDate, minDate, maxDate)
-        ? ""
-        : currentStartDate,
-    );
-    setEndDate((currentEndDate) =>
-      isDateOutsideRange(currentEndDate, minDate, maxDate) ? "" : currentEndDate,
-    );
-  }, [showDateFilters, showSourceFilter, selectedSourceId, minDate, maxDate]);
 
   // Monta o payload da query de preview baseado nos estados de filtros, paginação e ordenação.
   const previewParams = useMemo(
@@ -328,8 +303,7 @@ export function PreviewScreen<
         endDate={endDate}
         onStartDateChange={setStartDate}
         onEndDateChange={setEndDate}
-        minDate={minDate}
-        maxDate={maxDate}
+        dateRange={showDateFilters ? dateRangeQuery.data : undefined}
         onSearchChange={setSearch}
         columns={columns}
         hiddenColumns={hiddenColumns}
