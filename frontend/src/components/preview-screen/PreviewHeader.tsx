@@ -25,7 +25,7 @@ type PreviewHeaderLayoutVariant =
 const HEADER_GRID_CLASS_BY_VARIANT: Record<PreviewHeaderLayoutVariant, string> =
   {
     "source-date":
-      "grid grid-cols-2 gap-3 overflow-visible pb-1 md:items-end md:grid-cols-[minmax(0,1fr)_23.75rem] xl:grid-cols-[minmax(0,1fr)_23.75rem_minmax(0,1fr)_max-content_auto]",
+      "grid grid-cols-2 gap-3 overflow-visible pb-1 md:items-end md:grid-cols-[minmax(0,1fr)_23.75rem] xl:grid-cols-[minmax(0,1fr)_23.75rem_max-content_auto_auto]",
     "source-no-date":
       "grid grid-cols-2 gap-3 overflow-visible pb-1 md:items-end md:grid-cols-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_max-content_auto_auto]",
     "no-source-date":
@@ -127,8 +127,8 @@ export function PreviewHeader({
               label={sourceFilterLabel}
               value={selectedSourceId}
               onChange={(event) => onSelectedSourceIdChange(event.target.value)}
-              wrapperClassName="min-w-0"
-              className="font-semibold"
+              wrapperClassName="w-full min-w-0"
+              className="w-full font-semibold"
               disabled={isSourceListPending && sourceOptions.length === 0}
             >
               <option value="">{allSourcesOptionLabel}</option>
