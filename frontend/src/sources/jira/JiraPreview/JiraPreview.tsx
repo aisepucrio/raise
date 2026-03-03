@@ -11,10 +11,8 @@ import {
   useJiraOverviewQuery,
   useJiraPreviewQuery,
 } from "@/data/modules/jira/jiraQueries";
-import type {
-  JiraOverviewProject,
-  JiraPreviewParams,
-} from "@/data/modules/jira/jiraService";
+import { buildSelectOptions } from "@/sources/shared/AllShared";
+import type { JiraPreviewParams } from "@/data/modules/jira/jiraService";
 
 type JiraPreviewDateFilterField = "created" | "updated_at" | "sprint";
 
@@ -55,28 +53,6 @@ function buildDateFilterParams(
   };
 }
 
-function resolveJiraProjectValue(project: JiraOverviewProject) {
-  const rawValue =
-    project.id ?? project.project_key ?? project.key ?? project.project ?? null;
-
-  if (rawValue === null || rawValue === undefined) return "";
-
-  return String(rawValue);
-}
-
-function resolveJiraProjectLabel(
-  project: JiraOverviewProject,
-  fallbackValue: string,
-) {
-  return (
-    project.project ??
-    project.name ??
-    project.project_key ??
-    project.key ??
-    fallbackValue
-  );
-}
-
 export function JiraPreview({
   idPrefix,
   previewSection,
@@ -95,21 +71,10 @@ export function JiraPreview({
 
   // Opções do select de projetos no formato padrão do FormSelect.
   const projectOptions = useMemo(() => {
-    const projects = Array.isArray(overviewData?.projects)
-      ? overviewData.projects
-      : [];
-
-    return projects
-      .map((project) => {
-        const value = resolveJiraProjectValue(project);
-        if (!value) return null;
-
-        return {
-          value,
-          label: resolveJiraProjectLabel(project, value),
-        };
-      })
-      .filter(Boolean) as { value: string; label: string }[];
+    return buildSelectOptions(overviewData?.projects, {
+      getValue: (project) => project.name,
+      getLabel: (project) => project.name,
+    });
   }, [overviewData?.projects]);
 
   // Monta o payload da query de preview baseado nos estados compartilhados do PreviewScreen.

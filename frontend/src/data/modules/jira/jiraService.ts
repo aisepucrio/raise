@@ -18,11 +18,8 @@ export type JiraGraphParams = DateFilterRange & {
 
 // Resposta do dashboard/overview (cards + lista de projetos)
 export type JiraOverviewProject = {
-  id?: string | number;
-  project?: string;
-  project_key?: string;
-  key?: string;
-  name?: string;
+  id: string;
+  name: string;
 };
 
 export type JiraOverviewResponse = {
@@ -30,6 +27,7 @@ export type JiraOverviewResponse = {
   issues_count?: number;
   comments_count?: number;
   sprints_count?: number;
+  projects_count?: number;
   projects?: JiraOverviewProject[];
   time_mined?: string | null;
 };
