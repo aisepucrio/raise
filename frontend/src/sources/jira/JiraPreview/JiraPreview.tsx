@@ -1,9 +1,14 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
-  PreviewScreen,
-  type PreviewScreenBuildParamsInput,
-} from "@/components/preview-screen";
+  PreviewCellModal,
+  PreviewHeader,
+  PreviewTable,
+  PreviewWrapper,
+  type PreviewSortState,
+} from "@/components/preview";
+import { SourceSelectFilter } from "@/components/source-select-filter";
+import { StartEndDateFilter } from "@/components/start-end-datefilter";
 import type { JiraSection } from "@/data/api/endpoints";
 import { useJiraExportMutation } from "@/data/modules/jira/jiraMutations";
 import {
@@ -11,8 +16,17 @@ import {
   useJiraOverviewQuery,
   useJiraPreviewQuery,
 } from "@/data/modules/jira/jiraQueries";
-import { buildSelectOptions } from "@/sources/shared/AllShared";
 import type { JiraPreviewParams } from "@/data/modules/jira/jiraService";
+import { buildSelectOptions } from "@/sources/shared/AllShared";
+import {
+  isPreviewSortInvalid,
+  resolvePreviewOrdering,
+  resolvePreviewTableState,
+  runPreviewExportWithFeedback,
+  showPreviewErrorToast,
+  togglePreviewSortState,
+  type PreviewBuildParamsInput,
+} from "@/sources/shared/PreviewShared";
 
 type JiraPreviewDateFilterField = "created" | "updated_at" | "sprint";
 
@@ -33,6 +47,7 @@ function buildDateFilterParams(
   startDate: string,
   endDate: string,
 ): Partial<JiraPreviewParams> {
+  // Mapeia o campo de data da UI para os filtros aceitos pela API.
   if (dateFilterField === "sprint") {
     return {
       ...(startDate ? { startDate__gte: startDate } : {}),
@@ -64,34 +79,69 @@ export function JiraPreview({
   dateFilterField,
   showDateFilters = true,
 }: JiraPreviewProps) {
-  // Queries e actions da tela.
+  // filtros da tela
+  const [selectedSourceId, setSelectedSourceId] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [search, setSearch] = useState("");
+
+  // paginação e ordenação
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [sortState, setSortState] = useState<PreviewSortState>(null);
+
+  // modal de célula
+  const [isCellModalOpen, setIsCellModalOpen] = useState(false);
+  const [selectedCellValue, setSelectedCellValue] = useState<unknown>(null);
+
+  // colunas ocultas
+  const [hiddenColumns, setHiddenColumns] = useState<string[]>([]);
+
   const { data: overviewData, isPending: isProjectListPending } =
     useJiraOverviewQuery();
   const previewExportMutation = useJiraExportMutation();
 
-  // Opções do select de projetos no formato padrão do FormSelect.
-  const projectOptions = useMemo(() => {
-    return buildSelectOptions(overviewData?.projects, {
-      getValue: (project) => project.name,
-      getLabel: (project) => project.name,
-    });
-  }, [overviewData?.projects]);
+  // Converte projects do overview para o formato do select.
+  const projectOptions = useMemo(
+    () =>
+      buildSelectOptions(overviewData?.projects, {
+        getValue: (project) => project.name,
+        getLabel: (project) => project.name,
+      }),
+    [overviewData?.projects],
+  );
 
-  // Monta o payload da query de preview baseado nos estados compartilhados do PreviewScreen.
+  // Busca intervalo de datas do project selecionado para limitar o date picker.
+  const dateRangeQuery = useJiraDateRangeByProjectQuery(
+    selectedSourceId || undefined,
+    {
+      enabled: showDateFilters,
+    },
+  );
+
+  // Traduz sort local para o campo ordering usado pela API.
+  const ordering = useMemo(() => resolvePreviewOrdering(sortState), [sortState]);
+
+  // filtros mudaram, volta para primeira página.
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedSourceId, startDate, endDate, search, ordering]);
+
   const buildPreviewParams = useCallback(
     ({
       page,
-      rowsPerPage,
-      selectedSourceId,
-      search,
-      ordering,
+      rowsPerPage: nextRowsPerPage,
+      selectedSourceId: nextSelectedSourceId,
+      search: searchTerm,
+      ordering: orderingValue,
       dateFilters,
-    }: PreviewScreenBuildParamsInput): JiraPreviewParams => ({
+    }: PreviewBuildParamsInput): JiraPreviewParams => ({
+      // Concentra a conversão dos estados da tela em params de request.
       page,
-      page_size: rowsPerPage,
-      ...(selectedSourceId ? { project: selectedSourceId } : {}),
-      ...(search ? { search } : {}),
-      ...(ordering ? { ordering } : {}),
+      page_size: nextRowsPerPage,
+      ...(nextSelectedSourceId ? { project: nextSelectedSourceId } : {}),
+      ...(searchTerm ? { search: searchTerm } : {}),
+      ...(orderingValue ? { ordering: orderingValue } : {}),
       ...(showDateFilters && dateFilterField && dateFilters
         ? buildDateFilterParams(
             dateFilterField,
@@ -103,31 +153,161 @@ export function JiraPreview({
     [showDateFilters, dateFilterField],
   );
 
+  // Memoiza os params finais para evitar novas queries sem mudança real.
+  const previewParams = useMemo(
+    () =>
+      buildPreviewParams({
+        page: currentPage,
+        rowsPerPage,
+        selectedSourceId,
+        search,
+        ordering,
+        dateFilters: showDateFilters
+          ? {
+              startDate,
+              endDate,
+            }
+          : undefined,
+      }),
+    [
+      buildPreviewParams,
+      currentPage,
+      rowsPerPage,
+      selectedSourceId,
+      search,
+      ordering,
+      showDateFilters,
+      startDate,
+      endDate,
+    ],
+  );
+
+  // Busca os dados da tabela com os filtros/paginação ativos.
+  const previewQuery = useJiraPreviewQuery(previewSection, previewParams);
+  const rows = previewQuery.data?.results ?? [];
+  const totalItems = previewQuery.data?.count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
+
+  // evita página inválida quando o total muda.
+  useEffect(() => {
+    if (currentPage <= totalPages) return;
+    setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
+
+  // Deriva todas as colunas visíveis e configuração da tabela a partir dos rows.
+  const { columns, visibleColumns, tableColumns } = useMemo(
+    () => resolvePreviewTableState(rows, hiddenColumns),
+    [rows, hiddenColumns],
+  );
+
+  // limpa sort quando a coluna some ou é ocultada.
+  useEffect(() => {
+    if (!isPreviewSortInvalid(sortState, columns, hiddenColumns)) return;
+    setSortState(null);
+  }, [sortState, columns, hiddenColumns]);
+
+  // Exibe erro de preview.
+  useEffect(() => {
+    if (!previewQuery.isError) return;
+    showPreviewErrorToast(previewQuery.error, loadErrorMessage);
+  }, [previewQuery.isError, previewQuery.error, loadErrorMessage]);
+
+  // Prepara a request de export deste preview.
   const requestExportPayload = useCallback(
     () => previewExportMutation.mutateAsync(),
     [previewExportMutation],
   );
 
+  async function handleExport() {
+    await runPreviewExportWithFeedback({
+      execute: requestExportPayload,
+      fileNamePrefix: exportFileNamePrefix,
+      successMessage: exportSuccessMessage,
+    });
+  }
+
+  // Alterna asc/desc da coluna clicada.
+  function handleSort(field: string) {
+    if (!field) return;
+    setSortState((currentSortState) =>
+      togglePreviewSortState(currentSortState, field),
+    );
+  }
+
+  // Abre modal para visualizar o conteúdo completo da célula.
+  function handleOpenCellPreview(value: unknown) {
+    setSelectedCellValue(value);
+    setIsCellModalOpen(true);
+  }
+
   return (
-    <PreviewScreen
-      idPrefix={idPrefix}
-      previewSection={previewSection}
-      sourceFilterLabel="Project"
-      allSourcesOptionLabel="All projects"
-      sourceOptions={projectOptions}
-      isSourceListPending={isProjectListPending}
-      itemsLabel={itemsLabel}
-      emptyStateMessage={emptyStateMessage}
-      loadErrorMessage={loadErrorMessage}
-      exportFileNamePrefix={exportFileNamePrefix}
-      exportSuccessMessage={exportSuccessMessage}
-      showDateFilters={showDateFilters}
-      useDateRangeBySourceQuery={useJiraDateRangeByProjectQuery}
-      usePreviewBySourceQuery={useJiraPreviewQuery}
-      buildPreviewParams={buildPreviewParams}
-      requestExportPayload={requestExportPayload}
-      isExportPending={previewExportMutation.isPending}
-    />
+    <PreviewWrapper>
+      {/* Header fixo com ações globais e filtros do source */}
+      <PreviewHeader
+        idPrefix={idPrefix}
+        onSearchChange={setSearch}
+        columns={columns}
+        hiddenColumns={hiddenColumns}
+        onHiddenColumnsChange={setHiddenColumns}
+        onExport={() => void handleExport()}
+        isExportPending={previewExportMutation.isPending}
+      >
+        {/* Filtros específicos do Jira */}
+        <SourceSelectFilter
+          id={`${idPrefix}-source`}
+          label="Project"
+          value={selectedSourceId}
+          onChange={setSelectedSourceId}
+          options={projectOptions}
+          allOptionLabel="All projects"
+          isOptionsPending={isProjectListPending}
+          wrapperClassName="min-w-0 flex-1 xl:min-w-44"
+          className="font-semibold"
+        />
+
+        {showDateFilters ? (
+          <div className="shrink-0">
+            <StartEndDateFilter
+              idPrefix={idPrefix}
+              startDate={startDate}
+              endDate={endDate}
+              onStartDateChange={setStartDate}
+              onEndDateChange={setEndDate}
+              width="compact"
+              dateRange={dateRangeQuery.data}
+            />
+          </div>
+        ) : null}
+      </PreviewHeader>
+
+      {/* Tabela principal com ordenação, paginação e preview de células */}
+      <PreviewTable
+        rows={rows}
+        visibleColumns={visibleColumns}
+        tableColumns={tableColumns}
+        sortState={sortState}
+        onSort={handleSort}
+        onOpenCellPreview={handleOpenCellPreview}
+        isTablePending={previewQuery.isPending}
+        emptyStateMessage={emptyStateMessage}
+        currentPage={currentPage}
+        rowsPerPage={rowsPerPage}
+        totalItems={totalItems}
+        itemsLabel={itemsLabel}
+        onPageChange={setCurrentPage}
+        onRowsPerPageChange={(nextRowsPerPage) => {
+          setRowsPerPage(nextRowsPerPage);
+          setCurrentPage(1);
+        }}
+      />
+
+      {/* Modal para exibir valores longos de célula sem quebrar layout da tabela */}
+      <PreviewCellModal
+        open={isCellModalOpen}
+        onClose={() => setIsCellModalOpen(false)}
+        value={selectedCellValue}
+      />
+    </PreviewWrapper>
   );
 }
 

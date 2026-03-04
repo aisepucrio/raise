@@ -42,8 +42,7 @@ type PreviewTableProps = {
   onRowsPerPageChange: (nextRowsPerPage: number) => void;
 };
 
-// Gera uma chave estável para cada linha da tabela usando o valor da primeira coluna ou fallback para índice.
-// Utilizado para chave id estável (paginação, ordenação).
+// Gera chave estável por linha.
 function resolvePreviewRowKey(row: PreviewRow, rowIndex: number) {
   const [firstColumn] = Object.keys(row);
   const stableValue = firstColumn ? row[firstColumn] : undefined;
@@ -75,10 +74,10 @@ export function PreviewTable({
   onPageChange,
   onRowsPerPageChange,
 }: PreviewTableProps) {
-  // Referência do container de cabeçalho para sincronizar scroll horizontal.
+  // Referência do header para sincronizar o scroll horizontal.
   const headerScrollRef = useRef<HTMLDivElement | null>(null);
 
-  // Sincroniza scroll horizontal do cabeçalho com o corpo da tabela.
+  // Sincroniza scroll entre body e header.
   function handleBodyScroll(event: UIEvent<HTMLDivElement>) {
     if (!headerScrollRef.current) return;
     headerScrollRef.current.scrollLeft = event.currentTarget.scrollLeft;
@@ -88,15 +87,15 @@ export function PreviewTable({
     <section className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden rounded-xl border-2 border-(--color-secondary-soft) p-4">
       <div className="min-h-0 flex-1 overflow-hidden">
         {isTablePending ? (
-          // Estado inicial de carregamento da tabela.
+          // Estado de carregamento.
           <div className="h-full">
             <Loader />
           </div>
         ) : (
           <>
-            {/* Tabela em duas partes: header fixo + body com scroll vertical/horizontal. */}
+            {/* Header fixo + body com scroll */}
             <div className="flex h-full min-h-0 flex-col">
-              {/* Header da tabela (sem scroll vertical) */}
+              {/* Header da tabela */}
               <div
                 ref={headerScrollRef}
                 className="overflow-hidden border-b border-(--color-secondary-soft)"
@@ -114,10 +113,10 @@ export function PreviewTable({
                   <TableHeader>
                     <TableRow>
                       {visibleColumns.length === 0 ? (
-                        // Header de fallback quando todas as colunas foram ocultadas.
+                        // Fallback quando todas as colunas estão ocultas.
                         <TableHead>No columns selected</TableHead>
                       ) : (
-                        // Header normal com ordenação server-side por coluna.
+                        // Header ordenável por coluna.
                         visibleColumns.map((column) => {
                           const isColumnSorted = sortState?.field === column;
 
@@ -142,7 +141,7 @@ export function PreviewTable({
                 </Table>
               </div>
 
-              {/* Body da tabela (scrollável) */}
+              {/* Body da tabela */}
               <div
                 className="min-h-0 flex-1 overflow-auto"
                 onScroll={handleBodyScroll}
@@ -159,7 +158,7 @@ export function PreviewTable({
 
                   <TableBody>
                     {visibleColumns.length === 0 ? (
-                      // Fallback quando nenhuma coluna está visível.
+                      // Fallback sem colunas visíveis.
                       <TableRow>
                         <TableCell
                           colSpan={1}
@@ -169,7 +168,7 @@ export function PreviewTable({
                         </TableCell>
                       </TableRow>
                     ) : rows.length === 0 ? (
-                      // Empty state quando filtros não retornam dados.
+                      // Empty state sem dados.
                       <TableRow>
                         <TableCell
                           colSpan={Math.max(visibleColumns.length, 1)}
@@ -203,7 +202,7 @@ export function PreviewTable({
                                 className="max-w-88"
                               >
                                 {isObjectLike ? (
-                                  // Objetos/arrays são exibidos no modal via botão para evitar poluição na célula.
+                                  // Objetos/arrays abrem no modal.
                                   <Button
                                     text="Show"
                                     fullWidth={false}
@@ -212,7 +211,7 @@ export function PreviewTable({
                                     onClick={() => onOpenCellPreview(value)}
                                   />
                                 ) : (
-                                  // Campos primitivos podem ser clicados para abrir versão completa no modal.
+                                  // Primitivos também abrem no modal.
                                   <button
                                     type="button"
                                     className="max-w-full cursor-pointer text-left whitespace-normal wrap-break-word text-(--color-secondary) hover:underline"
@@ -237,7 +236,7 @@ export function PreviewTable({
       </div>
 
       {!isTablePending ? (
-        // Paginação é exibida apenas quando a tabela já carregou.
+        // Paginação só após carregar.
         <div className="shrink-0">
           <TablePaginationFooter
             currentPage={currentPage}

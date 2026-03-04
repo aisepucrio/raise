@@ -1,4 +1,7 @@
-import { FormSelect } from "@/components/form";
+import {
+  SourceSelectFilter,
+  type SourceSelectOption,
+} from "@/components/source-select-filter";
 import { StartEndDateFilter } from "@/components/start-end-datefilter";
 
 export type OverviewDateRange = {
@@ -6,16 +9,11 @@ export type OverviewDateRange = {
   maxDate?: string;
 };
 
-export type OverviewSourceOption = {
-  value: string;
-  label: string;
-};
-
 type OverviewFiltersProps = {
   idPrefix: string;
   sourceFilterLabel: string;
   allSourcesOptionLabel: string;
-  sourceOptions: OverviewSourceOption[];
+  sourceOptions: SourceSelectOption[];
   selectedSourceId: string;
   onSourceChange: (value: string) => void;
   startDate: string;
@@ -43,21 +41,16 @@ export function OverviewFilters({
 }: OverviewFiltersProps) {
   return (
     <div className="grid gap-3 border-b-2 border-(--color-secondary-soft) p-4 md:grid-cols-2 xl:grid-cols-[2fr_minmax(0,2fr)]">
-      <FormSelect
+      <SourceSelectFilter
         id={`${idPrefix}-source`}
         label={sourceFilterLabel}
         value={selectedSourceId}
-        onChange={(event) => onSourceChange(event.target.value)}
+        onChange={onSourceChange}
+        options={sourceOptions}
+        allOptionLabel={allSourcesOptionLabel}
+        isOptionsPending={isSourceListPending}
         wrapperClassName="min-w-0"
-        disabled={isSourceListPending && sourceOptions.length === 0}
-      >
-        <option value="">{allSourcesOptionLabel}</option>
-        {sourceOptions.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </FormSelect>
+      />
 
       <StartEndDateFilter
         idPrefix={idPrefix}

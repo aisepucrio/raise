@@ -1,10 +1,45 @@
+import { toast } from "@/components/toast";
+import { getQueryErrorMessage } from "@/data";
+
 export type PreviewRow = Record<string, unknown>;
+
+export type PreviewDateFilters = {
+  startDate: string;
+  endDate: string;
+};
+
+export type PreviewBuildParamsInput = {
+  page: number;
+  rowsPerPage: number;
+  selectedSourceId?: string;
+  search: string;
+  ordering?: string;
+  dateFilters?: PreviewDateFilters;
+};
+
+type PreviewSortStateLike = {
+  field: string;
+  direction: "asc" | "desc";
+} | null;
 
 type DownloadPreviewExportFileOptions = {
   exportPayload: unknown;
   fileNamePrefix: string;
   extension?: string;
   mimeType?: string;
+};
+
+type PreviewTableState = {
+  columns: string[];
+  visibleColumns: string[];
+  tableColumns: string[];
+};
+
+type RunPreviewExportWithFeedbackOptions = {
+  execute: () => Promise<unknown>;
+  fileNamePrefix: string;
+  successMessage: string;
+  errorFallbackMessage?: string;
 };
 
 // Detecta strings de data em formato ISO para melhorar exibição na tabela.
@@ -79,6 +114,115 @@ export function downloadPreviewExportFile({
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(objectUrl);
+}
+
+// Exibe erro de preview com fallback padrão.
+export function showPreviewErrorToast(
+  error: unknown,
+  fallbackMessage: string,
+): void {
+  toast.error(undefined, {
+    description: getQueryErrorMessage(error, fallbackMessage),
+  });
+}
+
+// Executa export com feedback padrão de sucesso/erro.
+export async function runPreviewExportWithFeedback({
+  execute,
+  fileNamePrefix,
+  successMessage,
+  errorFallbackMessage = "Failed to export preview.",
+}: RunPreviewExportWithFeedbackOptions): Promise<void> {
+  try {
+    const exportPayload = await execute();
+    downloadPreviewExportFile({
+      exportPayload,
+      fileNamePrefix,
+    });
+
+    toast.success(undefined, {
+      description: successMessage,
+    });
+  } catch (error) {
+    showPreviewErrorToast(error, errorFallbackMessage);
+  }
+}
+
+// Converte estado de sort para formato esperado pelo backend.
+export function resolvePreviewOrdering(sortState: PreviewSortStateLike) {
+  if (!sortState?.field) return undefined;
+
+  return sortState.direction === "asc"
+    ? sortState.field
+    : `-${sortState.field}`;
+}
+
+// Alterna estado de sort para uma coluna.
+export function togglePreviewSortState(
+  currentSortState: PreviewSortStateLike,
+  field: string,
+): PreviewSortStateLike {
+  if (!currentSortState || currentSortState.field !== field) {
+    return { field, direction: "asc" };
+  }
+
+  return {
+    field,
+    direction: currentSortState.direction === "asc" ? "desc" : "asc",
+  };
+}
+
+// Resolve colunas disponíveis com base no payload atual.
+function collectPreviewColumns(rows: PreviewRow[]) {
+  const keys = new Set<string>();
+  rows.forEach((row) => {
+    Object.keys(row).forEach((key) => keys.add(key));
+  });
+  return Array.from(keys);
+}
+
+// Remove colunas ocultas selecionadas pelo usuário.
+function filterPreviewVisibleColumns(
+  columns: string[],
+  hiddenColumns: string[],
+) {
+  return columns.filter((column) => !hiddenColumns.includes(column));
+}
+
+// Garante fallback quando todas as colunas estiverem ocultas.
+function resolvePreviewTableColumns(visibleColumns: string[]) {
+  return visibleColumns.length > 0 ? visibleColumns : ["_fallback"];
+}
+
+// Valida se o sort atual ainda existe entre as colunas visíveis.
+export function isPreviewSortInvalid(
+  sortState: PreviewSortStateLike,
+  columns: string[],
+  hiddenColumns: string[],
+) {
+  if (!sortState) return false;
+  if (columns.length === 0) return false;
+
+  return (
+    !columns.includes(sortState.field) ||
+    hiddenColumns.includes(sortState.field)
+  );
+}
+
+// Resolve colunas da tabela a partir das linhas e das colunas ocultas.
+export function resolvePreviewTableState(
+  rows: PreviewRow[],
+  hiddenColumns: string[],
+): PreviewTableState {
+  const columns = collectPreviewColumns(rows);
+  const visibleColumns = filterPreviewVisibleColumns(columns, hiddenColumns);
+  const tableColumns = resolvePreviewTableColumns(visibleColumns);
+
+  return {
+    columns,
+    visibleColumns,
+    tableColumns,
+  };
 }
 
 // Heurística de largura por tipo de coluna para reduzir cortes visuais.
