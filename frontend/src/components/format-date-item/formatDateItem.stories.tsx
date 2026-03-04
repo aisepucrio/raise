@@ -13,7 +13,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Componente simples para exibir datas em formato amigável (ex.: `Feb 2, 2026`) com fallback para o valor original quando não for possível parsear.",
+          "Componente para exibir datas em formato legível com fallback para o valor original.",
       },
     },
   },

@@ -19,7 +19,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Sidebar de métricas do overview. Ajusta automaticamente o grid vertical conforme o número de cards.",
+          "Seção lateral para exibir métricas em cards.",
       },
     },
   },

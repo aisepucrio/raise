@@ -18,7 +18,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Cabeçalho do collect com título, descrição contextual e ação primária para abrir modal de inclusão.",
+          "Cabeçalho de coleta com título, descrição e ação principal.",
       },
     },
   },

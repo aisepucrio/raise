@@ -35,7 +35,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Alternador de tema da sidebar. Usa o `Switch` na variante `theme-toggle`, consome `ThemeContext` e sincroniza as classes `.light`/`.dark` no `document.documentElement`.",
+          "Controle para alternar entre tema claro e escuro.",
       },
     },
   },
@@ -49,8 +49,7 @@ export const Padrao: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          "Exibe o componente em contexto de sidebar. O usuário pode alternar entre light/dark e o componente atualiza o tema global do app.",
+        story: "Exemplo padrão de uso no contexto da sidebar.",
       },
     },
   },
@@ -62,8 +61,7 @@ export const InicialLight: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          "Força a inicialização em light para validar layout, cores e largura fluida do switch entre os ícones.",
+        story: "Inicia o componente em tema claro.",
       },
     },
   },
@@ -75,8 +73,7 @@ export const InicialDark: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          "Força a inicialização em dark para conferir contraste dos ícones, track e thumb no tema escuro.",
+        story: "Inicia o componente em tema escuro.",
       },
     },
   },

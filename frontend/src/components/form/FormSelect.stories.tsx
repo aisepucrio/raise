@@ -34,7 +34,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Select nativo com ícone animado (`motion`) e o mesmo padrão visual dos demais campos. A separação entre variantes `outlined` e `filled` também se aplica aqui, incluindo ajuste de contraste do ícone.",
+          "Campo select com o mesmo padrão visual e de validação dos demais campos de formulário.",
       },
     },
   },

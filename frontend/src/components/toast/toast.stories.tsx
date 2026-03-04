@@ -120,8 +120,7 @@ const meta = {
     style: { control: false },
     theme: {
       control: false,
-      description:
-        "O tema é sincronizado automaticamente com as classes `.light`/`.dark` do root do app.",
+      description: "Tema visual usado pelo container de toasts.",
     },
     toastOptions: { control: false },
   },
@@ -130,7 +129,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Componente `Toast` baseado no `Sonner` (usado pelo ecossistema shadcn/ui) para exibir feedbacks temporários de sucesso, erro, aviso e informações rápidas.",
+          "Componente `Toast` baseado no `Sonner` para exibir feedbacks temporários.",
       },
     },
   },
@@ -148,8 +147,7 @@ export const Playground: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          "Use os botões para disparar toasts e alternar entre `light`/`dark` aplicados no `document.documentElement`.",
+        story: "Use os botões para disparar exemplos de toast e alternar o tema.",
       },
     },
   },

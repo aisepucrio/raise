@@ -24,7 +24,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Componente de botão baseado em `button` nativo, com visual padrão do app (rounded-md, sem shadow) e API enxuta para texto, ícone e posição do ícone, incluindo suporte a botão somente com ícone.",
+          "Botão reutilizável com suporte a texto, ícone e estados comuns.",
       },
     },
   },

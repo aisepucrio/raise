@@ -39,7 +39,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Bloco de período do collect com aviso opcional e filtro compartilhado de datas (start/end).",
+          "Seção de período com seleção de data inicial/final e aviso opcional.",
       },
     },
   },

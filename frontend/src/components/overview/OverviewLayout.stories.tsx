@@ -14,7 +14,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Grid base da tela de overview com coluna principal (filtros + gráfico) e sidebar de métricas.",
+          "Layout principal do overview com área de conteúdo e área lateral.",
       },
     },
   },

@@ -11,7 +11,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Wrapper visual base das telas de collect. Centraliza largura, borda e espaçamento do bloco principal.",
+          "Container base para organizar o conteúdo da tela de coleta.",
       },
     },
   },

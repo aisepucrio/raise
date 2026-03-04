@@ -82,7 +82,7 @@ const meta = {
       },
       description: {
         component:
-          "Gráfico de linha baseado em `@nivo/line`, sem dependência de MUI. O componente usa tokens de cor do app definidos em `src/index.css` para título, eixos, grid, tooltip, legendas e estados (`loading`, erro e vazio), respeitando light/dark automaticamente.",
+          "Gráfico de linha baseado em `@nivo/line` para exibir séries temporais com estados de carregamento, erro e vazio.",
       },
     },
   },
@@ -115,8 +115,7 @@ export const MultiplasSeries: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          "Exemplo com três séries e legendas ativas para demonstrar contraste, grid e interação de hover.",
+        story: "Exemplo com múltiplas séries no mesmo gráfico.",
       },
     },
   },
@@ -130,8 +129,7 @@ export const Loading: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          "Estado de carregamento sem MUI usando o `Loader` compartilhado do app.",
+        story: "Exibe o estado de carregamento.",
       },
     },
   },
@@ -145,8 +143,7 @@ export const Erro: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          "Exibe apenas o texto de erro no gráfico e dispara `toast.error` como feedback global.",
+        story: "Exibe o estado de erro do gráfico.",
       },
     },
   },
@@ -160,8 +157,7 @@ export const SemDados: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          "Estado vazio com estilo mínimo, mantendo legibilidade e contraste pelo tema global.",
+        story: "Exibe o estado vazio quando não há pontos para mostrar.",
       },
     },
   },

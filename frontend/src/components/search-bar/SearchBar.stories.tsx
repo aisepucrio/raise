@@ -34,7 +34,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Barra de busca reutilizavel com debounce interno, icone de lupa e modo expandivel opcional com animacao suave.",
+          "Barra de busca com debounce interno e opção de modo expansível.",
       },
     },
   },

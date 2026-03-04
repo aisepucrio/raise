@@ -132,7 +132,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Componente de tabela vindo do `shadcn/ui`, mantido no formato composável (`Table`, `TableHeader`, `TableBody`, `TableRow`, etc.). Foi adaptado para usar tokens de cor do app definidos em `src/index.css`, então responde ao tema claro/escuro sem precisar de variantes próprias. Pode ser usado para tabelas simples, com `caption`, `footer`, destaque de linha via `data-state='selected'` e overflow horizontal automático pelo wrapper.",
+          "Componente de tabela baseado no `shadcn/ui`, com estrutura composável para cabeçalho, corpo, rodapé e estados de linha.",
       },
     },
   },
@@ -157,8 +157,7 @@ export const ComCaptionERodape: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          "Exibe `caption` e `footer`, úteis para contexto da tabela e somatórios/resumos.",
+        story: "Exemplo com caption e rodapé.",
       },
     },
   },
@@ -169,8 +168,7 @@ export const LinhaSelecionada: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          "O destaque visual usa `data-state=\"selected\"` na `TableRow`, padrão comum do ecossistema shadcn.",
+        story: "Mostra o estado de linha selecionada.",
       },
     },
   },
@@ -181,8 +179,7 @@ export const ColunaOrdenavel: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          "Exemplo de `TableSortableHead` com ícones de ordenação opcionais (`asc`, `desc` e estado neutro).",
+        story: "Exemplo de cabeçalho com ordenação.",
       },
     },
   },

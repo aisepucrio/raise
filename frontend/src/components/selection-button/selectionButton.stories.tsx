@@ -20,7 +20,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Botão de seleção (toggle) para opções de formulário. Suporta uso não-controlado (`defaultPressed`) e controlado (`pressed` + `onPressedChange`) e reaproveita o visual `selectable` do botão base.",
+          "Botão de seleção do tipo toggle para opções de formulário.",
       },
     },
   },
@@ -71,8 +71,7 @@ export const ControladoExternamente: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          "Exemplo controlado: o estado ativo pode ser alterado pelo clique no próprio botão ou por um controle externo.",
+        story: "Exemplo com estado controlado por um componente externo.",
       },
     },
   },

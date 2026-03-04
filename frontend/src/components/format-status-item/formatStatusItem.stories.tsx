@@ -16,7 +16,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Formata o status bruto vindo da API de jobs, aplicando label amigável, cor por tema e regras de ações internas (stop/restart).",
+          "Exibe um status com rótulo amigável e cor consistente.",
       },
     },
   },

@@ -34,7 +34,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Componente `Switch` derivado de shadcn/ui (Radix UI), adaptado para usar os tokens contextuais do app (`primary`/`secondary`) com inversão por modo.",
+          "Componente `Switch` derivado de shadcn/ui (Radix UI), com tamanhos e variantes para diferentes contextos.",
       },
     },
   },
@@ -66,8 +66,7 @@ export const ThemeToggle: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          "Variação usada no `ThemeSwitcher`, com track/thumb invertidos de forma consistente entre estados. (não é vizualizavel por aqui)",
+        story: "Exemplo da variante `theme-toggle`.",
       },
     },
   },
@@ -87,8 +86,7 @@ export const LarguraCustomizada: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          'Exemplo com `trackWidth="100%"` ocupando toda a largura disponível do container pai.',
+        story: "Exemplo com largura customizada do track.",
       },
     },
   },

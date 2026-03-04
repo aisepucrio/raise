@@ -20,7 +20,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Componente base que organiza label, conteúdo do campo e mensagens de apoio/erro. A separação visual das variantes `outlined` e `filled` dos controles fica centralizada em `getFormControlClassName`, reutilizada pelos campos de formulário.",
+          "Componente base para organizar label, conteúdo do campo e mensagens de apoio ou erro.",
       },
     },
   },

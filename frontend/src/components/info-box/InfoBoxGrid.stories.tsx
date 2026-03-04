@@ -26,7 +26,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Grid responsivo para agrupar `InfoBox` com gap/padding padronizados e cores em zebra por padrão (vertical em telas pequenas e em múltiplas colunas em telas maiores).",
+          "Grid responsivo para exibir múltiplos cards de métrica.",
       },
     },
   },
@@ -56,8 +56,7 @@ export const ComCoresExplicitas: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          "Quando `color` é informado em um item, o grid respeita a cor explícita e não aplica zebra naquele card.",
+        story: "Quando a cor é definida no item, ela é usada diretamente.",
       },
     },
   },

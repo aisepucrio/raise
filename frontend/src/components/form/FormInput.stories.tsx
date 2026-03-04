@@ -29,7 +29,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Input nativo encapsulado com `FormFieldBase`, usando estilos e mensagens padronizadas. Suporta as variantes `outlined` (padrão) e `filled` com contrato visual compartilhado em `components/form`.",
+          "Campo de texto com label, hint e erro no padrão visual do formulário.",
       },
     },
   },

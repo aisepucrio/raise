@@ -17,7 +17,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Shell visual de modal reutilizável com overlay escurecido, painel com borda, cabeçalho (título/subtítulo) e botão de fechar. O conteúdo interno fica a cargo do consumidor.",
+          "Estrutura base de modal com overlay, cabeçalho e área de conteúdo customizável.",
       },
     },
   },

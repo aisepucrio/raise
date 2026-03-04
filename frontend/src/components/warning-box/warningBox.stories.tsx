@@ -25,7 +25,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Caixa de aviso sem botão de fechar. Usa variantes fixas de cor (`default`, `success`, `info`, `warning`, `error`) e largura configurável (`full` ou `auto`).",
+          "Caixa de aviso com variantes de status e largura configurável.",
       },
     },
   },

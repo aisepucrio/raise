@@ -54,7 +54,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Popover reutilizável para mostrar/ocultar colunas de uma tabela. Ele centraliza contagem de colunas visíveis, seleção por checkbox e ações rápidas de show/hide all.",
+          "Menu para mostrar ou ocultar colunas de uma tabela.",
       },
     },
   },

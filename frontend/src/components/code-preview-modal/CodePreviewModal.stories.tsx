@@ -58,7 +58,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Modal reutilizável para inspeção de conteúdo (texto ou objeto) com syntax highlight em JSON e ação de copiar para clipboard. Requer `ThemeProvider` para resolver o tema de syntax highlight.",
+          "Modal para inspecionar conteúdo em texto ou JSON, com opção de copiar.",
       },
     },
   },

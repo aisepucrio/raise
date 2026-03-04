@@ -93,7 +93,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Filtro compartilhado de intervalo de datas (start/end). Aplica sempre o bloqueio `start <= end` e, quando recebe `dateRange`, normaliza datas vindas da API, limpa valores fora da faixa e recalcula os limites automaticamente quando o range muda.",
+          "Filtro de intervalo de datas com validação entre início e fim e suporte a limites mínimo/máximo.",
       },
     },
   },
@@ -117,4 +117,3 @@ export const LarguraMinima: Story = {
 export const ComDateRangeDinamico: Story = {
   render: () => <InteractiveDateRangeDemo />,
 };
-

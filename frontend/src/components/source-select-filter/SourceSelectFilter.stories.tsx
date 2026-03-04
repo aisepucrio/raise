@@ -40,7 +40,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Select reutilizável de source (repository/project/etc) para linhas de filtro do overview e preview.",
+          "Select para escolher uma fonte dentro de uma linha de filtros.",
       },
     },
   },

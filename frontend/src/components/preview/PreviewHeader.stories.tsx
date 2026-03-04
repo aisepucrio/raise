@@ -95,7 +95,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Header do preview com ações fixas (search, columns e export). Filtros opcionais entram por `children`.",
+          "Cabeçalho de preview com busca, controle de colunas e exportação, além de filtros opcionais.",
       },
     },
   },

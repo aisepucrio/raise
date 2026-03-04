@@ -10,7 +10,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Cabeçalho simples de página com título, subtítulo e divisor inferior. Utilizado no cabeçalho das páginas.",
+          "Cabeçalho de página com título, subtítulo e separador inferior.",
       },
     },
   },

@@ -16,7 +16,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Tag removível usada em listagem de itens. Exibe o texto e um botão circular com ícone de remoção.",
+          "Tag com ação de remoção para listas de itens selecionados.",
       },
     },
   },

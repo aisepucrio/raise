@@ -94,7 +94,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Bloco reutilizável de tabela de preview com header ordenável, corpo com fallback/empty state, modal trigger por célula e rodapé de paginação.",
+          "Tabela de preview com ordenação, estados de carregamento/vazio e paginação.",
       },
     },
   },

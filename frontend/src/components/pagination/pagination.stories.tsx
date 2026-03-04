@@ -165,7 +165,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Componente de paginação vindo do `shadcn/ui`, mantido no formato composável (`Pagination`, `PaginationContent`, `PaginationItem`, `PaginationLink`, etc.). Neste projeto ele foi adaptado para usar o `Button` da aplicação (`src/components/button/button.tsx`) no lugar do botão do shadcn e para consumir tokens de tema definidos em `src/index.css`, respondendo ao modo claro/escuro automaticamente. É útil para paginar tabelas, listas e grids de cards.",
+          "Componente de paginação baseado no `shadcn/ui`, organizado em partes composáveis para navegação entre páginas.",
       },
     },
   },
@@ -186,8 +186,7 @@ export const Padrao: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          "Exemplo interativo: clique em páginas, anterior/próximo para ver o estado selecionado alternando.",
+        story: "Exemplo interativo de navegação entre páginas.",
       },
     },
   },
@@ -203,8 +202,7 @@ export const PrimeiraEPaginaFinalDesabilitamNavegacao: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          "Os controles `PaginationPrevious` e `PaginationNext` repassam `disabled` para o `Button` da app, preservando o estado visual e acessibilidade.",
+        story: "Mostra os estados desabilitados na primeira e na última página.",
       },
     },
   },
@@ -215,8 +213,7 @@ export const UsoComTabela: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          "Exemplo comum de uso junto à `Table`: resumo de resultados + paginação na área inferior da tabela.",
+        story: "Exemplo de uso da paginação junto com uma tabela.",
       },
     },
   },

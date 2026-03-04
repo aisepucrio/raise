@@ -41,7 +41,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Área do gráfico principal do overview com espaçamento, altura e paleta padronizados.",
+          "Seção principal do gráfico na tela de overview.",
       },
     },
   },

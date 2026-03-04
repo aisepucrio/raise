@@ -19,7 +19,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Ação final do collect. Exibe estado pendente com ícone de loading e desabilita o envio quando necessário.",
+          "Bloco de ações finais da coleta, com estados normal, pendente e desabilitado.",
       },
     },
   },

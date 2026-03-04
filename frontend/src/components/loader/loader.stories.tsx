@@ -10,7 +10,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Loader padrão para qualquer interface de carregamento, centralizado no contêiner pai, com resize simples via `clamp(...)` ",
+          "Indicador de carregamento centralizado que se adapta ao tamanho do contêiner.",
       },
     },
   },
@@ -28,8 +28,7 @@ export const Padrao: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          "Uso comum em uma área de carregamento: o loader ocupa o espaço do pai e permanece centralizado.",
+        story: "Exemplo básico de uso em uma área de carregamento.",
       },
     },
   },
@@ -52,8 +51,7 @@ export const ResizePorContainer: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          "Mostra o resize simples com `clamp(...)` conforme o tamanho do contêiner, mantendo centralização.",
+        story: "Mostra o comportamento em contêineres com tamanhos diferentes.",
       },
     },
   },

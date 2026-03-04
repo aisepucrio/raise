@@ -24,7 +24,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Card simples para métricas com título e número, usando tokens de cor do tema definidos em `src/index.css`.",
+          "Card para exibir uma métrica com título e valor.",
       },
     },
   },

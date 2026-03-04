@@ -64,7 +64,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Bloco de filtros da tela de overview. Combina select da source com range de datas compartilhado.",
+          "Bloco de filtros com seleção de fonte e intervalo de datas.",
       },
     },
   },

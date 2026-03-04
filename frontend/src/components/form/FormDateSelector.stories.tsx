@@ -22,7 +22,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Campo de data (`input type=\"date\"`) encapsulado com o mesmo padrão de label/hint/erro. O componente documenta as variantes `outlined` e `filled`, com ajuste visual do ícone de calendário em cada modo.",
+          "Campo de data com label, hint e erro no mesmo padrão dos campos de formulário.",
       },
     },
   },

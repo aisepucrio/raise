@@ -51,7 +51,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Rodapé reutilizável para tabelas com resumo de faixa, paginação centralizada e seletor de quantidade por página. Centraliza o layout e cálculos básicos da paginação visual.",
+          "Rodapé de tabela com resumo de itens, paginação e seletor de linhas por página.",
       },
     },
   },

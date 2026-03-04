@@ -19,7 +19,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Subitem de navegação da sidebar. Representa ações internas de um item principal expandível, com estilo compacto e `aria-current` quando ativo.",
+          "Subitem de navegação para listas hierárquicas da sidebar.",
       },
     },
   },

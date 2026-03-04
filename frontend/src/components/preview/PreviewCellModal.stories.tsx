@@ -22,7 +22,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Modal padrão para mostrar o conteúdo completo de uma célula do preview.",
+          "Modal para exibir o conteúdo completo de uma célula.",
       },
     },
   },

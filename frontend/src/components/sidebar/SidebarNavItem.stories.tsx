@@ -19,12 +19,11 @@ const meta = {
     subItems: {
       control: false,
       description:
-        "Subitens opcionais (props do `SidebarNavSubItem`). Quando informado, o item principal vira expansível e exibe uma seta à direita.",
+        "Lista opcional de subitens para exibição hierárquica.",
     },
     defaultExpanded: {
       control: "boolean",
-      description:
-        "Define o estado inicial de expansão quando o item possui `subItems`.",
+      description: "Define o estado inicial de expansão.",
     },
     icon: {
       control: { type: "select" },
@@ -44,7 +43,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Item principal de navegação da sidebar com estados `active`/hover, ícone e `aria-current` quando representa a rota atual. Também suporta agrupamento de `subItems` com expansão/retração por seta.",
+          "Item principal da navegação da sidebar, com ícone, estado ativo e subitens opcionais.",
       },
     },
   },
@@ -92,8 +91,7 @@ export const ComSubitens: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          "Quando `subItems` é informado, o item principal exibe seta (cima/baixo) e abre a lista de subitens ao clicar.",
+        story: "Mostra o comportamento expansível quando existem subitens.",
       },
     },
   },
@@ -142,8 +140,7 @@ export const EmContexto: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          "Exemplo de composição dentro de um `nav`, mostrando o comportamento visual do item ativo em relação aos demais.",
+        story: "Exemplo com vários itens para comparar os estados visuais.",
       },
     },
   },

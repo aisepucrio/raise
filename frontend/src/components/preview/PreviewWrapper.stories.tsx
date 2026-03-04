@@ -11,7 +11,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Wrapper visual base do preview. O item principal da source (ex.: `GithubPreview`) compõe os blocos dentro dele.",
+          "Container base para organizar os blocos da tela de preview.",
       },
     },
   },

@@ -29,7 +29,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Bloco de listagem de tags removíveis usado para repositórios, projetos ou tags do collect.",
+          "Lista de tags removíveis com suporte a estado vazio.",
       },
     },
   },

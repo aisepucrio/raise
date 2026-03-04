@@ -22,7 +22,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Base simples para modais de collect com `ModalShell`, submit por Enter e ações padrão de cancelar/confirmar.",
+          "Modal de formulário com ações padrão de cancelar e confirmar.",
       },
     },
   },
