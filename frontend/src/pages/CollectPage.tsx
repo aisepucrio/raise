@@ -16,9 +16,7 @@ export default function CollectPage() {
       />
 
       <div className="min-h-0 flex-1 overflow-auto">
-        <div className="flex min-h-full flex-col justify-center">
-          <CollectModule />
-        </div>
+        <CollectModule />
       </div>
     </section>
   );

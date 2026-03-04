@@ -51,6 +51,24 @@ export type StackOverflowCollectBody = {
   tags?: string;
 };
 
+export type StackOverflowAdvancedCollectFilters = {
+  min?: number;
+  max?: number;
+  accepted?: boolean;
+  answers?: number;
+  views?: number;
+  intitle?: string;
+  closed?: boolean;
+  migrated?: boolean;
+  nottagged?: string;
+  user?: string;
+};
+
+export type StackOverflowAdvancedCollectBody = StackOverflowCollectBody & {
+  mode: "advanced";
+  filters?: StackOverflowAdvancedCollectFilters;
+};
+
 export type StackOverflowPreviewRow = Record<string, unknown>;
 
 export type StackOverflowPreviewResponse = {
@@ -107,4 +125,14 @@ export const stackoverflowService = {
   // Collect: inicia a coleta de Stack Overflow via endpoint padronizado.
   collect: (body: StackOverflowCollectBody, options?: RequestOptions) =>
     api.post(endpoints.collect(SOURCE), body, { signal: options?.signal }),
+
+  // HARDCODE TEMPORARIO: O SO AINDA USA /COLLECT/ADVANCED POR COMPATIBILIDADE COM A IMPLEMENTACAO LEGADA.
+  // FUTURO: MERGEAR COM /COLLECT USANDO APENAS PAYLOAD.
+  collectAdvanced: (
+    body: StackOverflowAdvancedCollectBody,
+    options?: RequestOptions,
+  ) =>
+    api.post(endpoints.collectAdvanced(SOURCE), body, {
+      signal: options?.signal,
+    }),
 };

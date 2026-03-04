@@ -19,6 +19,9 @@ export const endpoints = {
 
   // ==> COLLECT
   collect: (source: Source) => `/api/${source}/collect/`,
+  // HARDCODE TEMPORARIO: O SO AINDA USA /COLLECT/ADVANCED POR COMPATIBILIDADE COM A IMPLEMENTACAO LEGADA.
+  // FUTURO: MERGEAR COM /COLLECT USANDO APENAS PAYLOAD.
+  collectAdvanced: (source: Source) => `/api/${source}/collect/advanced/`,
 
   // ==> JOBS
   jobs: () => `/api/jobs/`,

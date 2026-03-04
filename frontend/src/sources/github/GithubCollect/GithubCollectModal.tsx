@@ -1,13 +1,7 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-  type KeyboardEvent,
-} from "react";
+import { useEffect, useRef, useState } from "react";
 
-import { Button } from "@/components/button";
+import { CollectFormModal } from "@/components/collect";
 import { FormInput } from "@/components/form";
-import { ModalShell } from "@/components/modal-shell";
 import { containsItemIgnoreCase } from "@/sources/shared/CollectShared";
 
 type GithubCollectModalProps = {
@@ -37,12 +31,14 @@ export default function GithubCollectModal({
   onClose,
   onAddRepository,
 }: GithubCollectModalProps) {
+  // estado local do input e mensagem de erro.
   const addRepositoryInputRef = useRef<HTMLInputElement | null>(null);
   const [repositoryInput, setRepositoryInput] = useState("");
   const [addRepositoryError, setAddRepositoryError] = useState<string | null>(
     null,
   );
 
+  // limpa estado quando o modal é fechado.
   useEffect(() => {
     if (open) return;
 
@@ -50,6 +46,7 @@ export default function GithubCollectModal({
     setAddRepositoryError(null);
   }, [open]);
 
+  // valida e confirma a inclusão de repositório.
   function handleConfirmAddRepository() {
     const normalizedRepository = normalizeRepositoryInput(repositoryInput);
 
@@ -73,55 +70,28 @@ export default function GithubCollectModal({
     onClose();
   }
 
-  function handleRepositoryInputKeyDown(
-    event: KeyboardEvent<HTMLInputElement>,
-  ) {
-    if (event.key !== "Enter") return;
-
-    event.preventDefault();
-    handleConfirmAddRepository();
-  }
-
   return (
-    <ModalShell
+    <CollectFormModal
       open={open}
       onClose={onClose}
       title="Add repository"
       subtitle="Use owner/repo or paste a GitHub URL."
       initialFocusRef={addRepositoryInputRef}
+      onConfirm={handleConfirmAddRepository}
     >
-      <div>
-        <FormInput
-          id="github-collect-repository-input"
-          ref={addRepositoryInputRef}
-          label="Repository"
-          value={repositoryInput}
-          onChange={(event) => {
-            setRepositoryInput(event.target.value);
-            if (addRepositoryError) setAddRepositoryError(null);
-          }}
-          onKeyDown={handleRepositoryInputKeyDown}
-          placeholder="owner/repo"
-          error={addRepositoryError ?? undefined}
-        />
-
-        <div className="mt-4 flex justify-end gap-2">
-          <Button
-            size="sm"
-            fullWidth={false}
-            variant="selectable"
-            selected={false}
-            text="Cancel"
-            onClick={onClose}
-          />
-          <Button
-            size="sm"
-            fullWidth={false}
-            text="Add"
-            onClick={handleConfirmAddRepository}
-          />
-        </div>
-      </div>
-    </ModalShell>
+      {/* campo único de entrada do repositório */}
+      <FormInput
+        id="github-collect-repository-input"
+        ref={addRepositoryInputRef}
+        label="Repository"
+        value={repositoryInput}
+        onChange={(event) => {
+          setRepositoryInput(event.target.value);
+          if (addRepositoryError) setAddRepositoryError(null);
+        }}
+        placeholder="owner/repo"
+        error={addRepositoryError ?? undefined}
+      />
+    </CollectFormModal>
   );
 }
