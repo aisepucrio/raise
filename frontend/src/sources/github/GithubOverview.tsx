@@ -1,17 +1,22 @@
-import { useCallback, useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import {
-  OverviewScreen,
-  type OverviewScreenBuildGraphParamsInput,
-  type OverviewScreenBuildParamsInput,
-} from "@/components/overview-screen";
+  OverviewChartSection,
+  OverviewFilters,
+  OverviewLayout,
+  OverviewStatsSection,
+} from "@/components/overview";
 import type {
   GithubGraphParams,
   GithubOverviewParams,
   GithubOverviewResponse,
 } from "@/data/modules/github/githubService";
 import {
-  buildOverviewMetricCardItems,
+  buildOverviewEndpointParams,
+  buildOverviewGraphEndpointParams,
+  buildScopedOverviewMetricCardItems,
+  resolveOverviewGraphPresentation,
+  resolveOverviewGraphInterval,
   type OverviewMetricCardConfig,
 } from "@/sources/shared/OverviewShared";
 import { buildSelectOptions } from "@/sources/shared/AllShared";
@@ -45,10 +50,15 @@ const REPOSITORY_CARD_CONFIG: readonly OverviewMetricCardConfig<GithubOverviewRe
   ];
 
 export default function GithubOverview() {
-  // Query base usada para popular o select (lista completa de repositórios).
+  // Filtros controlados pela própria tela (não ficam na URL).
+  const [selectedRepositoryId, setSelectedRepositoryId] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
+  // Catálogo usado apenas para montar o select de repositórios.
   const repositoryCatalogQuery = useGithubOverviewQuery();
 
-  // Dados derivados prontos para renderização no select.
+  // Adapta payload da API para o formato padrão de opções da UI.
   const repositoryOptions = useMemo(
     () =>
       buildSelectOptions(repositoryCatalogQuery.data?.repositories, {
@@ -58,79 +68,87 @@ export default function GithubOverview() {
     [repositoryCatalogQuery.data?.repositories],
   );
 
-  // Monta o payload da query de overview baseado nos filtros compartilhados do `OverviewScreen`.
-  const buildOverviewParams = useCallback(
-    ({
-      selectedSourceId,
-      startDate,
-      endDate,
-    }: OverviewScreenBuildParamsInput): GithubOverviewParams | undefined =>
-      selectedSourceId || startDate || endDate
-        ? {
-            ...(selectedSourceId ? { repository_id: selectedSourceId } : {}),
-            ...(startDate ? { start_date: startDate } : {}),
-            ...(endDate ? { end_date: endDate } : {}),
-          }
-        : undefined,
-    [],
+  // Params da query de overview (cards).
+  const overviewParams = useMemo(
+    () =>
+      buildOverviewEndpointParams<GithubOverviewParams>(
+        {
+          selectedSourceId: selectedRepositoryId,
+          startDate,
+          endDate,
+        },
+        "repository_id",
+      ),
+    [selectedRepositoryId, startDate, endDate],
+  );
+  const overviewQuery = useGithubOverviewQuery(overviewParams);
+
+  // Série temporal usa os mesmos filtros + intervalo derivado do range.
+  const graphParams = useMemo(
+    () =>
+      buildOverviewGraphEndpointParams<GithubGraphParams>(
+        {
+          selectedSourceId: selectedRepositoryId,
+          startDate,
+          endDate,
+          interval: resolveOverviewGraphInterval(startDate, endDate),
+        },
+        "repository_id",
+      ),
+    [selectedRepositoryId, startDate, endDate],
+  );
+  const graphQuery = useGithubGraphQuery(graphParams);
+
+  // O próprio hook já:
+  // - normaliza string vazia para `undefined`
+  // - só habilita a query quando há `repository_id`
+  const dateRangeQuery = useGithubDateRangeByRepositoryQuery(
+    selectedRepositoryId,
   );
 
-  // Monta o payload da query de gráfico baseado nos filtros compartilhados do `OverviewScreen`.
-  const buildGraphParams = useCallback(
-    ({
-      selectedSourceId,
-      startDate,
-      endDate,
-      interval,
-    }: OverviewScreenBuildGraphParamsInput): GithubGraphParams => ({
-      interval,
-      ...(selectedSourceId ? { repository_id: selectedSourceId } : {}),
-      ...(startDate ? { start_date: startDate } : {}),
-      ...(endDate ? { end_date: endDate } : {}),
-    }),
-    [],
+  const { graphSeries, graphErrorMessage } = resolveOverviewGraphPresentation(
+    graphQuery,
+    "Failed to load the GitHub chart.",
   );
 
-  // Converte a configuração declarativa dos cards nos itens consumidos pelo `InfoBoxGrid`.
-  const buildInfoBoxItems = useCallback(
-    ({
-      overviewData,
-      isOverviewPending,
-      isSourceScoped,
-    }: {
-      overviewData: GithubOverviewResponse | undefined;
-      isOverviewPending: boolean;
-      isSourceScoped: boolean;
-    }) => {
-      const activeCardConfig = isSourceScoped
-        ? REPOSITORY_CARD_CONFIG
-        : ALL_REPOSITORIES_CARD_CONFIG;
-
-      return buildOverviewMetricCardItems(
-        overviewData,
-        isOverviewPending,
-        activeCardConfig,
-      );
-    },
-    [],
-  );
+  // Modo scoped = um repositório específico selecionado.
+  const isRepositoryScoped = Boolean(selectedRepositoryId);
+  const infoBoxItems = buildScopedOverviewMetricCardItems({
+    overviewData: overviewQuery.data,
+    isOverviewPending: overviewQuery.isPending,
+    isSourceScoped: isRepositoryScoped,
+    allScopeConfig: ALL_REPOSITORIES_CARD_CONFIG,
+    sourceScopeConfig: REPOSITORY_CARD_CONFIG,
+  });
 
   return (
-    <OverviewScreen
-      idPrefix="github-overview"
-      sourceFilterLabel="Repository"
-      allSourcesOptionLabel="All repositories"
-      sourceOptions={repositoryOptions}
-      isSourceListPending={repositoryCatalogQuery.isPending}
-      chartTitle="GitHub Activity"
-      chartErrorMessage="Failed to load the GitHub chart."
-      chartEmptyMessage="No series found for the selected filters."
-      useOverviewQuery={useGithubOverviewQuery}
-      useGraphQuery={useGithubGraphQuery}
-      useDateRangeBySourceQuery={useGithubDateRangeByRepositoryQuery}
-      buildOverviewParams={buildOverviewParams}
-      buildGraphParams={buildGraphParams}
-      buildInfoBoxItems={buildInfoBoxItems}
+    <OverviewLayout
+      filters={
+        <OverviewFilters
+          idPrefix="github-overview"
+          sourceFilterLabel="Repository"
+          allSourcesOptionLabel="All repositories"
+          sourceOptions={repositoryOptions}
+          selectedSourceId={selectedRepositoryId}
+          onSourceChange={setSelectedRepositoryId}
+          startDate={startDate}
+          endDate={endDate}
+          onStartDateChange={setStartDate}
+          onEndDateChange={setEndDate}
+          isSourceListPending={repositoryCatalogQuery.isPending}
+          dateRange={dateRangeQuery.data}
+        />
+      }
+      chart={
+        <OverviewChartSection
+          title="GitHub Activity"
+          data={graphSeries}
+          loading={graphQuery.isPending}
+          error={graphErrorMessage}
+          emptyMessage="No series found for the selected filters."
+        />
+      }
+      stats={<OverviewStatsSection items={infoBoxItems} />}
     />
   );
 }

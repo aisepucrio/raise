@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import type { LineSeries } from "@/components/line-chart";
+import { getQueryErrorMessage } from "@/data";
 
 // Intervalos suportados pelos endpoints de gráfico de overview.
 export type OverviewGraphInterval = "day" | "month" | "year";
@@ -29,6 +30,24 @@ export type OverviewMetricCardConfig<TData> = {
   title: string;
   getValue: (data: TData | undefined) => number | undefined;
 };
+
+type OverviewFilterParamsInput = {
+  selectedSourceId: string;
+  startDate: string;
+  endDate: string;
+};
+
+type OverviewGraphFilterParamsInput = OverviewFilterParamsInput & {
+  interval: OverviewGraphInterval;
+};
+
+type OverviewGraphQueryLike = {
+  data?: unknown;
+  isError: boolean;
+  error: unknown;
+};
+
+type MutableOverviewParams = Record<string, unknown>;
 
 // Escolhe um intervalo de agregação para o gráfico com base no range selecionado.
 export function resolveOverviewGraphInterval(
@@ -88,6 +107,109 @@ export function buildOverviewMetricCardItems<TData>(
     title: item.title,
     number: formatOverviewStatValue(item.getValue(data), isLoading, locale),
   }));
+}
+
+// Monta os params de overview com source + range opcionais.
+export function buildOverviewEndpointParams<TParams extends Record<string, unknown>>(
+  input: OverviewFilterParamsInput,
+  sourceIdParamKey: Extract<keyof TParams, string>,
+): TParams | undefined {
+  const { selectedSourceId, startDate, endDate } = input;
+  const params: MutableOverviewParams = {};
+
+  // Source é opcional: quando vazio, endpoint responde no modo "all".
+  if (selectedSourceId) {
+    params[sourceIdParamKey] = selectedSourceId;
+  }
+
+  appendOptionalDateRangeFilters(params, startDate, endDate);
+
+  return Object.keys(params).length > 0 ? (params as TParams) : undefined;
+}
+
+// Monta os params de gráfico com intervalo obrigatório e filtros opcionais.
+export function buildOverviewGraphEndpointParams<
+  TParams extends { interval: OverviewGraphInterval },
+>(
+  input: OverviewGraphFilterParamsInput,
+  sourceIdParamKey: Extract<keyof TParams, string>,
+): TParams {
+  const { selectedSourceId, startDate, endDate, interval } = input;
+  // No gráfico o intervalo é obrigatório mesmo sem filtros adicionais.
+  const params: MutableOverviewParams = { interval };
+
+  if (selectedSourceId) {
+    params[sourceIdParamKey] = selectedSourceId;
+  }
+
+  appendOptionalDateRangeFilters(params, startDate, endDate);
+
+  return params as TParams;
+}
+
+// Resolve os itens de métricas alternando entre modo "all" e modo "source".
+export function buildScopedOverviewMetricCardItems<TData>(input: {
+  overviewData: TData | undefined;
+  isOverviewPending: boolean;
+  isSourceScoped: boolean;
+  allScopeConfig: readonly OverviewMetricCardConfig<TData>[];
+  sourceScopeConfig: readonly OverviewMetricCardConfig<TData>[];
+  locale?: string;
+}) {
+  const {
+    overviewData,
+    isOverviewPending,
+    isSourceScoped,
+    allScopeConfig,
+    sourceScopeConfig,
+    locale,
+  } = input;
+
+  const activeConfig = isSourceScoped ? sourceScopeConfig : allScopeConfig;
+
+  return buildOverviewMetricCardItems(
+    overviewData,
+    isOverviewPending,
+    activeConfig,
+    locale,
+  );
+}
+
+// Converte resposta da query de gráfico em série + mensagem de erro para a UI.
+export function resolveOverviewGraphPresentation(
+  graphQuery: OverviewGraphQueryLike,
+  fallbackErrorMessage: string,
+) {
+  // Endpoints de overview seguem o padrão `{ time_series: ... }`.
+  const graphTimeSeries = (
+    graphQuery.data as
+      | {
+          time_series?: LabeledTimeSeriesPayload | null;
+        }
+      | undefined
+  )?.time_series;
+
+  return {
+    graphSeries: buildLineSeriesFromTimeSeries(graphTimeSeries),
+    graphErrorMessage: graphQuery.isError
+      ? getQueryErrorMessage(graphQuery.error, fallbackErrorMessage)
+      : null,
+  };
+}
+
+// Aplica start/end somente quando preenchidos para evitar ruído nos params.
+function appendOptionalDateRangeFilters(
+  params: MutableOverviewParams,
+  startDate: string,
+  endDate: string,
+) {
+  if (startDate) {
+    params.start_date = startDate;
+  }
+
+  if (endDate) {
+    params.end_date = endDate;
+  }
 }
 
 // Adapta `{ labels, serieA: [], serieB: [] }` para o formato do `LineChart`.

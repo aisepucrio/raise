@@ -1,10 +1,11 @@
-import { useCallback, useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import {
-  OverviewScreen,
-  type OverviewScreenBuildGraphParamsInput,
-  type OverviewScreenBuildParamsInput,
-} from "@/components/overview-screen";
+  OverviewChartSection,
+  OverviewFilters,
+  OverviewLayout,
+  OverviewStatsSection,
+} from "@/components/overview";
 import type {
   JiraGraphParams,
   JiraOverviewParams,
@@ -16,7 +17,11 @@ import {
   useJiraOverviewQuery,
 } from "@/data/modules/jira/jiraQueries";
 import {
-  buildOverviewMetricCardItems,
+  buildOverviewEndpointParams,
+  buildOverviewGraphEndpointParams,
+  buildScopedOverviewMetricCardItems,
+  resolveOverviewGraphPresentation,
+  resolveOverviewGraphInterval,
   type OverviewMetricCardConfig,
 } from "@/sources/shared/OverviewShared";
 import { buildSelectOptions } from "@/sources/shared/AllShared";
@@ -41,10 +46,15 @@ const PROJECT_CARD_CONFIG: readonly OverviewMetricCardConfig<JiraOverviewRespons
   ];
 
 export default function JiraOverview() {
-  // Query base usada para popular o select (lista completa de projetos).
+  // Filtros controlados pela própria tela (não ficam na URL).
+  const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
+  // Catálogo usado apenas para montar o select de projetos.
   const projectCatalogQuery = useJiraOverviewQuery();
 
-  // Dados derivados prontos para renderização no select.
+  // Adapta payload da API para o formato padrão de opções da UI.
   const projectOptions = useMemo(
     () =>
       buildSelectOptions(projectCatalogQuery.data?.projects, {
@@ -54,79 +64,85 @@ export default function JiraOverview() {
     [projectCatalogQuery.data?.projects],
   );
 
-  // Monta o payload da query de overview baseado nos filtros compartilhados do `OverviewScreen`.
-  const buildOverviewParams = useCallback(
-    ({
-      selectedSourceId,
-      startDate,
-      endDate,
-    }: OverviewScreenBuildParamsInput): JiraOverviewParams | undefined =>
-      selectedSourceId || startDate || endDate
-        ? {
-            ...(selectedSourceId ? { project_id: selectedSourceId } : {}),
-            ...(startDate ? { start_date: startDate } : {}),
-            ...(endDate ? { end_date: endDate } : {}),
-          }
-        : undefined,
-    [],
+  // Params da query de overview (cards).
+  const overviewParams = useMemo(
+    () =>
+      buildOverviewEndpointParams<JiraOverviewParams>(
+        {
+          selectedSourceId: selectedProjectId,
+          startDate,
+          endDate,
+        },
+        "project_id",
+      ),
+    [selectedProjectId, startDate, endDate],
+  );
+  const overviewQuery = useJiraOverviewQuery(overviewParams);
+
+  // Série temporal usa os mesmos filtros + intervalo derivado do range.
+  const graphParams = useMemo(
+    () =>
+      buildOverviewGraphEndpointParams<JiraGraphParams>(
+        {
+          selectedSourceId: selectedProjectId,
+          startDate,
+          endDate,
+          interval: resolveOverviewGraphInterval(startDate, endDate),
+        },
+        "project_id",
+      ),
+    [selectedProjectId, startDate, endDate],
+  );
+  const graphQuery = useJiraGraphQuery(graphParams);
+
+  // O próprio hook já:
+  // - normaliza string vazia para `undefined`
+  // - só habilita a query quando há `project_id`
+  const dateRangeQuery = useJiraDateRangeByProjectQuery(selectedProjectId);
+
+  const { graphSeries, graphErrorMessage } = resolveOverviewGraphPresentation(
+    graphQuery,
+    "Failed to load the Jira chart.",
   );
 
-  // Monta o payload da query de gráfico baseado nos filtros compartilhados do `OverviewScreen`.
-  const buildGraphParams = useCallback(
-    ({
-      selectedSourceId,
-      startDate,
-      endDate,
-      interval,
-    }: OverviewScreenBuildGraphParamsInput): JiraGraphParams => ({
-      interval,
-      ...(selectedSourceId ? { project_id: selectedSourceId } : {}),
-      ...(startDate ? { start_date: startDate } : {}),
-      ...(endDate ? { end_date: endDate } : {}),
-    }),
-    [],
-  );
-
-  // Converte a configuração declarativa dos cards nos itens consumidos pelo `InfoBoxGrid`.
-  const buildInfoBoxItems = useCallback(
-    ({
-      overviewData,
-      isOverviewPending,
-      isSourceScoped,
-    }: {
-      overviewData: JiraOverviewResponse | undefined;
-      isOverviewPending: boolean;
-      isSourceScoped: boolean;
-    }) => {
-      const activeCardConfig = isSourceScoped
-        ? PROJECT_CARD_CONFIG
-        : ALL_PROJECTS_CARD_CONFIG;
-
-      return buildOverviewMetricCardItems(
-        overviewData,
-        isOverviewPending,
-        activeCardConfig,
-      );
-    },
-    [],
-  );
+  // Modo scoped = um projeto específico selecionado.
+  const isProjectScoped = Boolean(selectedProjectId);
+  const infoBoxItems = buildScopedOverviewMetricCardItems({
+    overviewData: overviewQuery.data,
+    isOverviewPending: overviewQuery.isPending,
+    isSourceScoped: isProjectScoped,
+    allScopeConfig: ALL_PROJECTS_CARD_CONFIG,
+    sourceScopeConfig: PROJECT_CARD_CONFIG,
+  });
 
   return (
-    <OverviewScreen
-      idPrefix="jira-overview"
-      sourceFilterLabel="Project"
-      allSourcesOptionLabel="All projects"
-      sourceOptions={projectOptions}
-      isSourceListPending={projectCatalogQuery.isPending}
-      chartTitle="Jira Activity"
-      chartErrorMessage="Failed to load the Jira chart."
-      chartEmptyMessage="No series found for the selected filters."
-      useOverviewQuery={useJiraOverviewQuery}
-      useGraphQuery={useJiraGraphQuery}
-      useDateRangeBySourceQuery={useJiraDateRangeByProjectQuery}
-      buildOverviewParams={buildOverviewParams}
-      buildGraphParams={buildGraphParams}
-      buildInfoBoxItems={buildInfoBoxItems}
+    <OverviewLayout
+      filters={
+        <OverviewFilters
+          idPrefix="jira-overview"
+          sourceFilterLabel="Project"
+          allSourcesOptionLabel="All projects"
+          sourceOptions={projectOptions}
+          selectedSourceId={selectedProjectId}
+          onSourceChange={setSelectedProjectId}
+          startDate={startDate}
+          endDate={endDate}
+          onStartDateChange={setStartDate}
+          onEndDateChange={setEndDate}
+          isSourceListPending={projectCatalogQuery.isPending}
+          dateRange={dateRangeQuery.data}
+        />
+      }
+      chart={
+        <OverviewChartSection
+          title="Jira Activity"
+          data={graphSeries}
+          loading={graphQuery.isPending}
+          error={graphErrorMessage}
+          emptyMessage="No series found for the selected filters."
+        />
+      }
+      stats={<OverviewStatsSection items={infoBoxItems} />}
     />
   );
 }
