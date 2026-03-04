@@ -1,4 +1,3 @@
-import type { CSSProperties } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Switch } from "./switch";
 
@@ -107,56 +106,4 @@ export const EstadosDesabilitados: Story = {
       />
     </div>
   ),
-};
-
-export const ComparacaoDeModo: Story = {
-  render: () => {
-    const darkModeVars = {
-      "--color-primary": "var(--color-slate-950)",
-      "--color-primary-inverse": "var(--color-indigo-500)",
-      "--color-secondary": "var(--color-indigo-500)",
-      "--color-secondary-inverse": "var(--color-slate-950)",
-    } as CSSProperties;
-
-    const lightModeVars = {
-      "--color-primary": "var(--color-slate-050)",
-      "--color-primary-inverse": "var(--color-indigo-950)",
-      "--color-secondary": "var(--color-indigo-950)",
-      "--color-secondary-inverse": "var(--color-slate-050)",
-    } as CSSProperties;
-
-    return (
-      <div className="grid gap-4 sm:grid-cols-2">
-        <section
-          className="rounded-xl border border-(--color-secondary-soft) bg-(--color-primary) p-4 text-(--color-secondary)"
-          style={darkModeVars}
-        >
-          <p className="mb-3 text-sm font-semibold">Modo escuro (app)</p>
-          <div className="flex items-center gap-3">
-            <Switch aria-label="Escuro ligado" defaultChecked trackWidth={56} />
-            <Switch aria-label="Escuro desligado" trackWidth={56} />
-          </div>
-        </section>
-
-        <section
-          className="rounded-xl border border-(--color-secondary-soft) bg-(--color-primary) p-4 text-(--color-secondary)"
-          style={lightModeVars}
-        >
-          <p className="mb-3 text-sm font-semibold">Modo claro (app)</p>
-          <div className="flex items-center gap-3">
-            <Switch aria-label="Claro ligado" defaultChecked trackWidth={56} />
-            <Switch aria-label="Claro desligado" trackWidth={56} />
-          </div>
-        </section>
-      </div>
-    );
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Mostra a inversão contextual de `primary`/`secondary` usada pelo app em cada modo.",
-      },
-    },
-  },
 };

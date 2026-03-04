@@ -1,4 +1,3 @@
-import type { CSSProperties } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 import { Loader } from "./loader";
@@ -55,60 +54,6 @@ export const ResizePorContainer: Story = {
       description: {
         story:
           "Mostra o resize simples com `clamp(...)` conforme o tamanho do contêiner, mantendo centralização.",
-      },
-    },
-  },
-};
-
-export const ComparacaoLightDark: Story = {
-  render: () => {
-    const darkVars = {
-      "--color-primary": "var(--color-slate-950)",
-      "--color-primary-inverse": "var(--color-indigo-500)",
-      "--color-secondary": "var(--color-indigo-500)",
-      "--color-secondary-inverse": "var(--color-slate-950)",
-    } as CSSProperties;
-
-    const lightVars = {
-      "--color-primary": "var(--color-slate-050)",
-      "--color-primary-inverse": "var(--color-indigo-950)",
-      "--color-secondary": "var(--color-indigo-950)",
-      "--color-secondary-inverse": "var(--color-slate-050)",
-    } as CSSProperties;
-
-    return (
-      <div className="grid gap-4 sm:grid-cols-2">
-        <section
-          className="h-36 rounded-xl border border-(--color-secondary-soft) bg-(--color-primary) p-4"
-          style={darkVars}
-        >
-          <p className="mb-2 text-sm font-semibold text-(--color-secondary)">
-            Modo escuro
-          </p>
-          <div className="h-[calc(100%_-_2rem)]">
-            <Loader />
-          </div>
-        </section>
-
-        <section
-          className="h-36 rounded-xl border border-(--color-secondary-soft) bg-(--color-primary) p-4"
-          style={lightVars}
-        >
-          <p className="mb-2 text-sm font-semibold text-(--color-secondary)">
-            Modo claro
-          </p>
-          <div className="h-[calc(100%_-_2rem)]">
-            <Loader />
-          </div>
-        </section>
-      </div>
-    );
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Exemplo rápido para validar contraste e uso de tokens de tema em light/dark.",
       },
     },
   },

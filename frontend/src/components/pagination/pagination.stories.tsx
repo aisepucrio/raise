@@ -1,4 +1,4 @@
-import { Fragment, useState, type CSSProperties } from "react";
+import { Fragment, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 import {
@@ -217,64 +217,6 @@ export const UsoComTabela: Story = {
       description: {
         story:
           "Exemplo comum de uso junto à `Table`: resumo de resultados + paginação na área inferior da tabela.",
-      },
-    },
-  },
-};
-
-export const ComparacaoDeModo: Story = {
-  render: () => {
-    const darkModeVars = {
-      "--color-primary": "var(--color-slate-950)",
-      "--color-primary-inverse": "var(--color-indigo-500)",
-      "--color-secondary": "var(--color-indigo-500)",
-      "--color-secondary-inverse": "var(--color-slate-950)",
-    } as CSSProperties;
-
-    const lightModeVars = {
-      "--color-primary": "var(--color-slate-050)",
-      "--color-primary-inverse": "var(--color-indigo-950)",
-      "--color-secondary": "var(--color-indigo-950)",
-      "--color-secondary-inverse": "var(--color-slate-050)",
-    } as CSSProperties;
-
-    return (
-      <div className="grid gap-4 xl:grid-cols-2">
-        <section
-          className="rounded-xl border border-(--color-secondary-soft) bg-(--color-primary) p-4 text-(--color-secondary)"
-          style={darkModeVars}
-        >
-          <p className="mb-3 text-sm font-semibold">Modo escuro (app)</p>
-          <div className="overflow-x-auto">
-            <InteractiveDemoPagination
-              initialPage={4}
-              totalPages={10}
-              className="min-w-max"
-            />
-          </div>
-        </section>
-
-        <section
-          className="rounded-xl border border-(--color-secondary-soft) bg-(--color-primary) p-4 text-(--color-secondary)"
-          style={lightModeVars}
-        >
-          <p className="mb-3 text-sm font-semibold">Modo claro (app)</p>
-          <div className="overflow-x-auto">
-            <InteractiveDemoPagination
-              initialPage={4}
-              totalPages={10}
-              className="min-w-max"
-            />
-          </div>
-        </section>
-      </div>
-    );
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Mostra a paginação usando tokens de `src/index.css`, incluindo estados normal, hover, ativo e desabilitado em light/dark.",
       },
     },
   },

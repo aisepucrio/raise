@@ -1,4 +1,3 @@
-import type { CSSProperties } from "react";
 import { ArrowRight, Download, Plus } from "lucide-react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
@@ -84,57 +83,5 @@ export const Desabilitado: Story = {
   args: {
     text: "Salvar alterações",
     disabled: true,
-  },
-};
-
-export const ComparacaoDeModo: Story = {
-  render: () => {
-    const darkModeVars = {
-      "--color-primary": "var(--color-slate-950)",
-      "--color-primary-inverse": "var(--color-indigo-500)",
-      "--color-secondary": "var(--color-indigo-500)",
-      "--color-secondary-inverse": "var(--color-slate-950)",
-    } as CSSProperties;
-
-    const lightModeVars = {
-      "--color-primary": "var(--color-slate-050)",
-      "--color-primary-inverse": "var(--color-indigo-950)",
-      "--color-secondary": "var(--color-indigo-950)",
-      "--color-secondary-inverse": "var(--color-slate-050)",
-    } as CSSProperties;
-
-    return (
-      <div className="grid gap-4 sm:grid-cols-2">
-        <section
-          className="rounded-xl border border-(--color-secondary-soft) bg-(--color-primary) p-4 text-(--color-secondary)"
-          style={darkModeVars}
-        >
-          <p className="mb-3 text-sm font-semibold">Modo escuro (app)</p>
-          <div className="flex items-center gap-3">
-            <Button text="Salvar" icon={<Plus />} fullWidth={false} />
-            <Button icon={<Download />} aria-label="Baixar" title="Baixar" />
-          </div>
-        </section>
-
-        <section
-          className="rounded-xl border border-(--color-secondary-soft) bg-(--color-primary) p-4 text-(--color-secondary)"
-          style={lightModeVars}
-        >
-          <p className="mb-3 text-sm font-semibold">Modo claro (app)</p>
-          <div className="flex items-center gap-3">
-            <Button text="Salvar" icon={<Plus />} fullWidth={false} />
-            <Button icon={<Download />} aria-label="Baixar" title="Baixar" />
-          </div>
-        </section>
-      </div>
-    );
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Demonstra a troca de cores baseada nos tokens do app/form sem variantes extras no componente.",
-      },
-    },
   },
 };

@@ -1,4 +1,3 @@
-import type { CSSProperties } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 import { LineChart } from "./LineChart";
@@ -163,64 +162,6 @@ export const SemDados: Story = {
       description: {
         story:
           "Estado vazio com estilo mínimo, mantendo legibilidade e contraste pelo tema global.",
-      },
-    },
-  },
-};
-
-export const ComparacaoDeModo: Story = {
-  render: () => {
-    const darkModeVars = {
-      "--color-primary": "var(--color-slate-950)",
-      "--color-primary-inverse": "var(--color-indigo-500)",
-      "--color-secondary": "var(--color-indigo-500)",
-      "--color-secondary-inverse": "var(--color-slate-950)",
-      "--color-indigo": "var(--color-indigo-200)",
-      "--color-amber": "var(--color-amber-300)",
-      "--color-teal": "var(--color-teal-300)",
-      "--color-rose": "var(--color-rose-300)",
-    } as CSSProperties;
-
-    const lightModeVars = {
-      "--color-primary": "var(--color-slate-050)",
-      "--color-primary-inverse": "var(--color-indigo-950)",
-      "--color-secondary": "var(--color-indigo-950)",
-      "--color-secondary-inverse": "var(--color-slate-050)",
-      "--color-indigo": "var(--color-indigo-400)",
-      "--color-amber": "var(--color-amber-700)",
-      "--color-teal": "var(--color-teal-700)",
-      "--color-rose": "var(--color-rose-600)",
-    } as CSSProperties;
-
-    return (
-      <div className="grid gap-4 xl:grid-cols-2">
-        <section className={storyWrapperClassName} style={darkModeVars}>
-          <p className="mb-3 text-sm font-semibold">Modo escuro (app)</p>
-          <LineChart
-            title="Queue Throughput"
-            data={queueSeries}
-            yLabel="Jobs"
-            height={380}
-          />
-        </section>
-
-        <section className={storyWrapperClassName} style={lightModeVars}>
-          <p className="mb-3 text-sm font-semibold">Modo claro (app)</p>
-          <LineChart
-            title="Queue Throughput"
-            data={queueSeries}
-            yLabel="Jobs"
-            height={380}
-          />
-        </section>
-      </div>
-    );
-  },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          "Demonstra o componente respondendo aos tokens de cor do app em light/dark sem variantes internas específicas.",
       },
     },
   },
