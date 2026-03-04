@@ -11,11 +11,9 @@ import {
 import {
   useStackOverflowCollectAdvancedMutation,
   useStackOverflowCollectMutation,
-} from "@/data/modules/stackoverflow/stackoverflowMutations";
-import type {
-  StackOverflowAdvancedCollectBody,
-  StackOverflowCollectBody,
-} from "@/data/modules/stackoverflow/stackoverflowService";
+  type StackOverflowAdvancedCollectBody,
+  type StackOverflowCollectBody,
+} from "@/data";
 import {
   mapItemsToCollectTags,
   runCollectWithFeedback,

@@ -19,12 +19,12 @@ import {
 } from "@/components/table";
 import { TablePaginationFooter } from "@/components/table-pagination-footer";
 import { toast } from "@/components/toast";
-import { getQueryErrorMessage } from "@/data";
 import {
+  getQueryErrorMessage,
+  useJobsListQuery,
   useRestartCollectionMutation,
   useStopJobMutation,
-} from "@/data/modules/jobs/jobsMutations";
-import { useJobsListQuery } from "@/data/modules/jobs/jobsQueries";
+} from "@/data";
 
 export default function JobsPage() {
   const [currentPage, setCurrentPage] = useState(1);

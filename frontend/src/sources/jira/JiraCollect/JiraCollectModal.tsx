@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { CollectFormModal } from "@/components/collect";
 import { FormInput } from "@/components/form";
-import type { JiraProject } from "@/data/modules/jira/jiraService";
+import type { JiraProject } from "@/data";
 import { containsItemIgnoreCase } from "@/sources/shared/CollectShared";
 
 export type JiraCollectModalProps = {

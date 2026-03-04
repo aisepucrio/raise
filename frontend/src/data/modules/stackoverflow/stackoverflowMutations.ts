@@ -4,7 +4,7 @@ import { stackoverflowService } from "./stackoverflowService";
 import type {
   StackOverflowAdvancedCollectBody,
   StackOverflowCollectBody,
-} from "./stackoverflowService";
+} from "./stackoverflowTypes";
 
 // Inicia uma coleta de Stack Overflow e atualiza a lista global de jobs.
 export function useStackOverflowCollectMutation() {

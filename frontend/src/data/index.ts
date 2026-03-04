@@ -1,23 +1,56 @@
-import * as githubQueries from "./modules/github/githubQueries";
-import * as githubMutations from "./modules/github/githubMutations";
+// Reexporta hooks e mutations para consumo direto via "@/data".
+export * from "./modules/github/githubQueries";
+export * from "./modules/github/githubMutations";
+export * from "./modules/jira/jiraQueries";
+export * from "./modules/jira/jiraMutations";
+export * from "./modules/jobs/jobsQueries";
+export * from "./modules/jobs/jobsMutations";
+export * from "./modules/stackoverflow/stackoverflowQueries";
+export * from "./modules/stackoverflow/stackoverflowMutations";
 
-import * as jiraQueries from "./modules/jira/jiraQueries";
-import * as jiraMutations from "./modules/jira/jiraMutations";
-
-import * as stackoverflowQueries from "./modules/stackoverflow/stackoverflowQueries";
-import * as stackoverflowMutations from "./modules/stackoverflow/stackoverflowMutations";
-
-import * as jobsQueries from "./modules/jobs/jobsQueries";
-import * as jobsMutations from "./modules/jobs/jobsMutations";
-
-// Cada módulo expõe queries e mutations com nomes explícitos.
-export const githubModule = { queries: githubQueries, mutations: githubMutations };
-export const jiraModule = { queries: jiraQueries, mutations: jiraMutations };
-export const stackoverflowModule = {
-  queries: stackoverflowQueries,
-  mutations: stackoverflowMutations,
-};
-export const jobsModule = { queries: jobsQueries, mutations: jobsMutations };
+// Reexporta os types dos módulos no mesmo ponto de entrada compartilhado.
+export type {
+  GithubCollectBody,
+  GithubCollectType,
+  GithubDateRangeParams,
+  GithubExportBody,
+  GithubGraphParams,
+  GithubGraphResponse,
+  GithubOverviewParams,
+  GithubOverviewResponse,
+  GithubPreviewParams,
+  GithubPreviewResponse,
+  GithubPreviewRow,
+  GithubRepository,
+} from "./modules/github";
+export type {
+  JiraCollectBody,
+  JiraDateRangeParams,
+  JiraGraphParams,
+  JiraOverviewParams,
+  JiraOverviewProject,
+  JiraOverviewResponse,
+  JiraPreviewParams,
+  JiraPreviewResponse,
+  JiraPreviewRow,
+  JiraProject,
+} from "./modules/jira";
+export type { JobsListItem, JobsListResponse } from "./modules/jobs";
+export type {
+  StackOverflowAdvancedCollectBody,
+  StackOverflowAdvancedCollectFilters,
+  StackOverflowCollectBody,
+  StackOverflowDateRangeParams,
+  StackOverflowGraphParams,
+  StackOverflowOverviewParams,
+  StackOverflowOverviewQuestion,
+  StackOverflowOverviewResponse,
+  StackOverflowPreviewParams,
+  StackOverflowPreviewResponse,
+  StackOverflowPreviewRow,
+} from "./modules/stackoverflow";
+export type { GithubSection, JiraSection, StackOverflowSection } from "./api/endpoints";
 
 // Helper de erro usado por componentes/telas.
 export { getQueryErrorMessage } from "./query/errors";
+export { queryClient } from "./query/client";

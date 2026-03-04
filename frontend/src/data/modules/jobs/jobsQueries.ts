@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "../../query/keys";
-import { jobsService, type JobsListResponse } from "./jobsService";
+import { jobsService } from "./jobsService";
+import type { JobsListResponse } from "./jobsTypes";
 
 // Lista os jobs de coleta globais exibidos na página de Jobs.
 export function useJobsListQuery() {

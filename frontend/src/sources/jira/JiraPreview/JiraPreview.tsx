@@ -9,14 +9,14 @@ import {
 } from "@/components/preview";
 import { SourceSelectFilter } from "@/components/source-select-filter";
 import { StartEndDateFilter } from "@/components/start-end-datefilter";
-import type { JiraSection } from "@/data/api/endpoints";
-import { useJiraExportMutation } from "@/data/modules/jira/jiraMutations";
 import {
   useJiraDateRangeByProjectQuery,
+  useJiraExportMutation,
   useJiraOverviewQuery,
   useJiraPreviewQuery,
-} from "@/data/modules/jira/jiraQueries";
-import type { JiraPreviewParams } from "@/data/modules/jira/jiraService";
+  type JiraPreviewParams,
+  type JiraSection,
+} from "@/data";
 import { buildSelectOptions } from "@/sources/shared/AllShared";
 import {
   isPreviewSortInvalid,

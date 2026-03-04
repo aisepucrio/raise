@@ -4,7 +4,7 @@ import { Check } from "lucide-react";
 import { Button } from "@/components/button";
 import { FormInput } from "@/components/form";
 import { SelectionButton } from "@/components/selection-button";
-import type { StackOverflowAdvancedCollectFilters } from "@/data/modules/stackoverflow/stackoverflowService";
+import type { StackOverflowAdvancedCollectFilters } from "@/data";
 
 type StackoverflowAdvancedFiltersFormState = {
   min: string;

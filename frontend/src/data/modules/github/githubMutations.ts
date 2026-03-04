@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invalidateJobsQueries } from "../../query/invalidation";
 import { githubService } from "./githubService";
-import type { GithubCollectBody, GithubExportBody } from "./githubService";
+import type { GithubCollectBody, GithubExportBody } from "./githubTypes";
 
 // Inicia uma coleta de GitHub e atualiza a lista global de jobs.
 export function useGithubCollectMutation() {

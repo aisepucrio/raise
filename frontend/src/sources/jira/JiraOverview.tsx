@@ -6,16 +6,14 @@ import {
   OverviewLayout,
   OverviewStatsSection,
 } from "@/components/overview";
-import type {
-  JiraGraphParams,
-  JiraOverviewParams,
-  JiraOverviewResponse,
-} from "@/data/modules/jira/jiraService";
 import {
   useJiraDateRangeByProjectQuery,
   useJiraGraphQuery,
   useJiraOverviewQuery,
-} from "@/data/modules/jira/jiraQueries";
+  type JiraGraphParams,
+  type JiraOverviewParams,
+  type JiraOverviewResponse,
+} from "@/data";
 import {
   buildOverviewEndpointParams,
   buildOverviewGraphEndpointParams,

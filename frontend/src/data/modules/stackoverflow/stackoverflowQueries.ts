@@ -9,7 +9,7 @@ import type {
   StackOverflowGraphParams,
   StackOverflowOverviewParams,
   StackOverflowPreviewParams,
-} from "./stackoverflowService";
+} from "./stackoverflowTypes";
 
 // Os hooks recebem os mesmos params do service (sem camada extra de adaptação).
 // Busca os cards do dashboard do Stack Overflow.

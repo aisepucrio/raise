@@ -8,11 +8,11 @@ import {
   CollectTagsSection,
   CollectWrapper,
 } from "@/components/collect";
-import { useJiraCollectMutation } from "@/data/modules/jira/jiraMutations";
-import type {
-  JiraCollectBody,
-  JiraProject,
-} from "@/data/modules/jira/jiraService";
+import {
+  useJiraCollectMutation,
+  type JiraCollectBody,
+  type JiraProject,
+} from "@/data";
 import {
   mapItemsToCollectTags,
   runCollectWithFeedback,

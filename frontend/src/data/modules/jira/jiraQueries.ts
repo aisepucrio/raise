@@ -9,7 +9,7 @@ import type {
   JiraGraphParams,
   JiraOverviewParams,
   JiraPreviewParams,
-} from "./jiraService";
+} from "./jiraTypes";
 
 // Os hooks recebem os mesmos params do service (sem camada extra de adaptação).
 // Busca os cards do dashboard do Jira.

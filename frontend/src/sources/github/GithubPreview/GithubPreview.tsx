@@ -9,14 +9,14 @@ import {
 } from "@/components/preview";
 import { SourceSelectFilter } from "@/components/source-select-filter";
 import { StartEndDateFilter } from "@/components/start-end-datefilter";
-import type { GithubSection } from "@/data/api/endpoints";
-import { useGithubExportMutation } from "@/data/modules/github/githubMutations";
 import {
   useGithubDateRangeByRepositoryQuery,
+  useGithubExportMutation,
   useGithubOverviewQuery,
   useGithubPreviewQuery,
-} from "@/data/modules/github/githubQueries";
-import type { GithubPreviewParams } from "@/data/modules/github/githubService";
+  type GithubPreviewParams,
+  type GithubSection,
+} from "@/data";
 import { buildSelectOptions } from "@/sources/shared/AllShared";
 import {
   isPreviewSortInvalid,

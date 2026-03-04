@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { SelectionButton } from "@/components/selection-button";
-import type { GithubCollectType } from "@/data/modules/github/githubService";
+import type { GithubCollectType } from "@/data";
 
 // tipos opcionais do github; metadata é sempre fixo no payload final.
 export type GithubOptionalCollectType = Exclude<GithubCollectType, "metadata">;

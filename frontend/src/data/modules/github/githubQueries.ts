@@ -9,7 +9,7 @@ import type {
   GithubGraphParams,
   GithubOverviewParams,
   GithubPreviewParams,
-} from "./githubService";
+} from "./githubTypes";
 
 // Os hooks recebem os mesmos params do service (sem camada extra de adaptação).
 // Busca os cards do dashboard do GitHub.

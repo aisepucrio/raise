@@ -6,11 +6,14 @@ import {
   OverviewLayout,
   OverviewStatsSection,
 } from "@/components/overview";
-import type {
-  GithubGraphParams,
-  GithubOverviewParams,
-  GithubOverviewResponse,
-} from "@/data/modules/github/githubService";
+import {
+  useGithubDateRangeByRepositoryQuery,
+  useGithubGraphQuery,
+  useGithubOverviewQuery,
+  type GithubGraphParams,
+  type GithubOverviewParams,
+  type GithubOverviewResponse,
+} from "@/data";
 import {
   buildOverviewEndpointParams,
   buildOverviewGraphEndpointParams,
@@ -20,11 +23,6 @@ import {
   type OverviewMetricCardConfig,
 } from "@/sources/shared/OverviewShared";
 import { buildSelectOptions } from "@/sources/shared/AllShared";
-import {
-  useGithubDateRangeByRepositoryQuery,
-  useGithubGraphQuery,
-  useGithubOverviewQuery,
-} from "@/data/modules/github/githubQueries";
 
 // Configuração dos cards exibidos quando não há repositório selecionado.
 // A ordem aqui é a ordem visual da coluna lateral no modo "All repositories".

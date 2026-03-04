@@ -8,8 +8,7 @@ import {
   CollectTagsSection,
   CollectWrapper,
 } from "@/components/collect";
-import { useGithubCollectMutation } from "@/data/modules/github/githubMutations";
-import type { GithubCollectBody } from "@/data/modules/github/githubService";
+import { useGithubCollectMutation, type GithubCollectBody } from "@/data";
 import {
   mapItemsToCollectTags,
   runCollectWithFeedback,
