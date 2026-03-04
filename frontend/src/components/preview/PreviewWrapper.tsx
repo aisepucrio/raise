@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-type PreviewWrapperProps = {
+export type PreviewWrapperProps = {
   children: ReactNode;
 };
 
@@ -12,5 +12,3 @@ export function PreviewWrapper({ children }: PreviewWrapperProps) {
     </section>
   );
 }
-
-export type { PreviewWrapperProps };

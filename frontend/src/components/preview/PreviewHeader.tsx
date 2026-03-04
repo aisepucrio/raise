@@ -5,7 +5,7 @@ import { Button } from "@/components/button";
 import { ColumnVisibilityFilter } from "@/components/column-visibility-filter";
 import { SearchBar } from "@/components/search-bar";
 
-type PreviewHeaderProps = {
+export type PreviewHeaderProps = {
   idPrefix: string;
   onSearchChange: (searchTerm: string) => void;
   columns: string[];
@@ -71,5 +71,3 @@ export function PreviewHeader({
     </section>
   );
 }
-
-export type { PreviewHeaderProps };

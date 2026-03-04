@@ -2,7 +2,7 @@ import { Plus } from "lucide-react";
 
 import { Button } from "@/components/button";
 
-type CollectHeaderProps = {
+export type CollectHeaderProps = {
   title: string;
   description: string;
   addButtonText: string;
@@ -32,5 +32,3 @@ export function CollectHeader({
     </div>
   );
 }
-
-export type { CollectHeaderProps };

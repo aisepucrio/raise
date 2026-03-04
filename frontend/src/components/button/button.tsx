@@ -27,11 +27,11 @@ type ButtonBaseProps = Pick<
   selected?: boolean;
 };
 
-type ButtonProps =
+export type ButtonProps =
   | (ButtonBaseProps & { text: string })
   | (ButtonBaseProps & { icon: ReactNode; "aria-label": string });
 
-function Button({
+export function Button({
   id,
   type = "button",
   disabled = false,
@@ -115,6 +115,3 @@ function Button({
     </button>
   );
 }
-
-export { Button };
-export type { ButtonProps };

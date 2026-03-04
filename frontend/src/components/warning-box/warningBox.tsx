@@ -8,10 +8,15 @@ import {
 
 import { cn } from "@/lib/utils";
 
-type WarningBoxVariant = "default" | "success" | "info" | "warning" | "error";
-type WarningBoxWidth = "full" | "auto";
+export type WarningBoxVariant =
+  | "default"
+  | "success"
+  | "info"
+  | "warning"
+  | "error";
+export type WarningBoxWidth = "full" | "auto";
 
-type WarningBoxProps = {
+export type WarningBoxProps = {
   text: string;
   variant?: WarningBoxVariant;
   width?: WarningBoxWidth;
@@ -86,5 +91,3 @@ export function WarningBox({
     </div>
   );
 }
-
-export type { WarningBoxProps, WarningBoxVariant, WarningBoxWidth };

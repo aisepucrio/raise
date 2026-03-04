@@ -4,17 +4,17 @@ import { cn } from "@/lib/utils";
 import { InfoBox } from "./InfoBox";
 import type { InfoBoxColor, InfoBoxProps } from "./InfoBox";
 
-type InfoBoxGridItem = Pick<InfoBoxProps, "title" | "number"> & {
+export type InfoBoxGridItem = Pick<InfoBoxProps, "title" | "number"> & {
   color?: InfoBoxColor;
 };
 
-type InfoBoxGridProps = {
+export type InfoBoxGridProps = {
   items: InfoBoxGridItem[];
   className?: string;
   style?: CSSProperties;
 };
 
-function InfoBoxGrid({ items, className, style }: InfoBoxGridProps) {
+export function InfoBoxGrid({ items, className, style }: InfoBoxGridProps) {
   return (
     <div
       data-slot="info-box-grid"
@@ -36,6 +36,3 @@ function InfoBoxGrid({ items, className, style }: InfoBoxGridProps) {
     </div>
   );
 }
-
-export { InfoBoxGrid };
-export type { InfoBoxGridItem, InfoBoxGridProps };

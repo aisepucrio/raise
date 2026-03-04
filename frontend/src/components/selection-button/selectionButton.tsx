@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/button";
 
-type SelectionButtonProps = {
+export type SelectionButtonProps = {
   text: string;
   pressed?: boolean;
   defaultPressed?: boolean;
@@ -52,5 +52,3 @@ export function SelectionButton({
     />
   );
 }
-
-export type { SelectionButtonProps };

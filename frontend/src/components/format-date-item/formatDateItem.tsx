@@ -1,4 +1,4 @@
-type FormatDateItemProps = {
+export type FormatDateItemProps = {
   value?: string | null;
   locale?: string;
 };
@@ -64,5 +64,3 @@ export function FormatDateItem({
 
   return <span title={typeof value === "string" ? value : undefined}>{formattedValue}</span>;
 }
-
-export type { FormatDateItemProps };

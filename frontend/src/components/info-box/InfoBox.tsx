@@ -1,8 +1,8 @@
 import { cn } from "@/lib/utils";
 
-type InfoBoxColor = "primary" | "secondary";
+export type InfoBoxColor = "primary" | "secondary";
 
-type InfoBoxProps = {
+export type InfoBoxProps = {
   title: string;
   number: number | string;
   color?: InfoBoxColor;
@@ -15,7 +15,7 @@ const colorVariants: Record<InfoBoxColor, string> = {
   secondary: "bg-(--color-secondary-muted) text-(--color-secondary-inverse)",
 };
 
-function InfoBox({
+export function InfoBox({
   title,
   number,
   color = "primary",
@@ -37,6 +37,3 @@ function InfoBox({
     </article>
   );
 }
-
-export { InfoBox };
-export type { InfoBoxColor, InfoBoxProps };

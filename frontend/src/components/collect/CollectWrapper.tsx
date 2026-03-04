@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-type CollectWrapperProps = {
+export type CollectWrapperProps = {
   children: ReactNode;
 };
 
@@ -14,5 +14,3 @@ export function CollectWrapper({ children }: CollectWrapperProps) {
     </section>
   );
 }
-
-export type { CollectWrapperProps };

@@ -20,12 +20,12 @@ import {
   type PreviewRow,
 } from "@/sources/shared/PreviewShared";
 
-type PreviewSortState = {
+export type PreviewSortState = {
   field: string;
   direction: "asc" | "desc";
 } | null;
 
-type PreviewTableProps = {
+export type PreviewTableProps = {
   rows: PreviewRow[];
   visibleColumns: string[];
   tableColumns: string[];
@@ -256,5 +256,3 @@ export function PreviewTable({
     </section>
   );
 }
-
-export type { PreviewSortState, PreviewTableProps };

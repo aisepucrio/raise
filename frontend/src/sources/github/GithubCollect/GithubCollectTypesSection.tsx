@@ -4,7 +4,7 @@ import { SelectionButton } from "@/components/selection-button";
 import type { GithubCollectType } from "@/data/modules/github/githubService";
 
 // tipos opcionais do github; metadata é sempre fixo no payload final.
-type GithubOptionalCollectType = Exclude<GithubCollectType, "metadata">;
+export type GithubOptionalCollectType = Exclude<GithubCollectType, "metadata">;
 
 const OPTIONAL_COLLECT_OPTIONS: ReadonlyArray<{
   collectType: GithubOptionalCollectType;
@@ -16,7 +16,7 @@ const OPTIONAL_COLLECT_OPTIONS: ReadonlyArray<{
   { collectType: "commits", label: "Commits" },
 ];
 
-type GithubCollectTypesSectionProps = {
+export type GithubCollectTypesSectionProps = {
   onOptionalTypesChange: (types: GithubOptionalCollectType[]) => void;
 };
 
@@ -107,5 +107,3 @@ export function GithubCollectTypesSection({
     </section>
   );
 }
-
-export type { GithubCollectTypesSectionProps, GithubOptionalCollectType };

@@ -14,7 +14,7 @@ export type FormatStatusItemInfo = {
   actions: FormatStatusItemActions;
 };
 
-type FormatStatusItemProps = {
+export type FormatStatusItemProps = {
   status?: string | null;
   className?: string;
 };
@@ -156,5 +156,3 @@ export function FormatStatusItem({ status, className }: FormatStatusItemProps) {
     </span>
   );
 }
-
-export type { FormatStatusItemProps };

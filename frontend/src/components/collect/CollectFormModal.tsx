@@ -3,7 +3,7 @@ import type { FormEvent, ReactNode } from "react";
 import { Button } from "@/components/button";
 import { ModalShell, type ModalShellProps } from "@/components/modal-shell";
 
-type CollectFormModalProps = {
+export type CollectFormModalProps = {
   open: boolean;
   onClose: () => void;
   title: string;
@@ -61,5 +61,3 @@ export function CollectFormModal({
     </ModalShell>
   );
 }
-
-export type { CollectFormModalProps };

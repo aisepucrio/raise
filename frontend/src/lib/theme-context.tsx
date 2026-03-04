@@ -55,7 +55,7 @@ function applyTheme(theme: ThemeMode) {
   root.dataset.theme = theme;
 }
 
-function ThemeProvider({ children }: { children: ReactNode }) {
+export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<ThemeMode>(resolveTheme);
 
   useEffect(() => {
@@ -78,7 +78,7 @@ function ThemeProvider({ children }: { children: ReactNode }) {
   );
 }
 
-function useAppTheme() {
+export function useAppTheme() {
   const context = useContext(ThemeContext);
 
   if (!context) {
@@ -87,5 +87,3 @@ function useAppTheme() {
 
   return context;
 }
-
-export { ThemeProvider, useAppTheme };

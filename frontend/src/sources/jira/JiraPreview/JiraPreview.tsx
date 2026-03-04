@@ -28,9 +28,9 @@ import {
   type PreviewBuildParamsInput,
 } from "@/sources/shared/PreviewShared";
 
-type JiraPreviewDateFilterField = "created" | "updated_at" | "sprint";
+export type JiraPreviewDateFilterField = "created" | "updated_at" | "sprint";
 
-type JiraPreviewProps = {
+export type JiraPreviewProps = {
   idPrefix: string;
   previewSection: JiraSection;
   itemsLabel: string;
@@ -310,5 +310,3 @@ export function JiraPreview({
     </PreviewWrapper>
   );
 }
-
-export type { JiraPreviewDateFilterField, JiraPreviewProps };

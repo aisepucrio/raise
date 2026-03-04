@@ -9,7 +9,7 @@ export type OverviewDateRange = {
   maxDate?: string;
 };
 
-type OverviewFiltersProps = {
+export type OverviewFiltersProps = {
   idPrefix: string;
   sourceFilterLabel: string;
   allSourcesOptionLabel: string;
@@ -65,5 +65,3 @@ export function OverviewFilters({
     </div>
   );
 }
-
-export type { OverviewFiltersProps };

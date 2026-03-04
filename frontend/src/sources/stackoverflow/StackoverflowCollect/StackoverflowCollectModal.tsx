@@ -4,7 +4,7 @@ import { CollectFormModal } from "@/components/collect";
 import { FormInput } from "@/components/form";
 import { containsItemIgnoreCase } from "@/sources/shared/CollectShared";
 
-type StackoverflowCollectModalProps = {
+export type StackoverflowCollectModalProps = {
   open: boolean;
   tags: readonly string[];
   onClose: () => void;
@@ -78,5 +78,3 @@ export default function StackoverflowCollectModal({
     </CollectFormModal>
   );
 }
-
-export type { StackoverflowCollectModalProps };

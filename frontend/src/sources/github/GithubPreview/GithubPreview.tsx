@@ -28,9 +28,9 @@ import {
   type PreviewBuildParamsInput,
 } from "@/sources/shared/PreviewShared";
 
-type GithubPreviewDateFilterField = "created_at" | "date";
+export type GithubPreviewDateFilterField = "created_at" | "date";
 
-type GithubPreviewProps = {
+export type GithubPreviewProps = {
   idPrefix: string;
   previewSection: GithubSection;
   itemsLabel: string;
@@ -316,5 +316,3 @@ export function GithubPreview({
     </PreviewWrapper>
   );
 }
-
-export type { GithubPreviewDateFilterField, GithubPreviewProps };

@@ -12,7 +12,7 @@ import {
 } from "@/components/pagination";
 import { cn } from "@/lib/utils";
 
-type TablePaginationFooterProps = {
+export type TablePaginationFooterProps = {
   currentPage: number;
   rowsPerPage: number;
   totalItems: number;
@@ -145,5 +145,3 @@ export function TablePaginationFooter({
     </div>
   );
 }
-
-export type { TablePaginationFooterProps };

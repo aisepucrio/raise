@@ -5,7 +5,7 @@ export type SourceSelectOption = {
   label: string;
 };
 
-type SourceSelectFilterProps = {
+export type SourceSelectFilterProps = {
   id: string;
   label: string;
   value: string;
@@ -48,5 +48,3 @@ export function SourceSelectFilter({
     </FormSelect>
   );
 }
-
-export type { SourceSelectFilterProps };

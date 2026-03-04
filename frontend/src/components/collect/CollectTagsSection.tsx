@@ -1,12 +1,12 @@
 import { RemovableTag } from "@/components/removable-tag";
 
-type CollectTag = {
+export type CollectTag = {
   id: string;
   label: string;
   onRemove: () => void;
 };
 
-type CollectTagsSectionProps = {
+export type CollectTagsSectionProps = {
   tagsHeading: string;
   tags: readonly CollectTag[];
   emptyTagsMessage: string;
@@ -45,5 +45,3 @@ export function CollectTagsSection({
     </section>
   );
 }
-
-export type { CollectTag, CollectTagsSectionProps };

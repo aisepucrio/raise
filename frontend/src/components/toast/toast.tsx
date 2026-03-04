@@ -11,6 +11,8 @@ import { Toaster as Sonner, type ToasterProps } from "sonner";
 import { useAppTheme } from "@/lib/theme-context";
 import { cn } from "@/lib/utils";
 
+export type ToastProps = ToasterProps;
+
 const defaultIcons: NonNullable<ToasterProps["icons"]> = {
   success: <CircleCheckIcon className="size-4" />,
   info: <InfoIcon className="size-4" />,
@@ -45,13 +47,13 @@ const defaultToastStyle = {
   "--border-radius": "var(--radius, 0.75rem)",
 } as CSSProperties;
 
-function Toast({
+export function Toast({
   className,
   icons,
   style,
   theme: themeProp,
   ...props
-}: ToasterProps) {
+}: ToastProps) {
   const { theme } = useAppTheme();
 
   return (
@@ -67,6 +69,3 @@ function Toast({
     />
   );
 }
-
-export { Toast };
-export type { ToasterProps as ToastProps };

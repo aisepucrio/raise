@@ -1,6 +1,6 @@
 import { X } from "lucide-react";
 
-type RemovableTagProps = {
+export type RemovableTagProps = {
   label: string;
   onRemove: () => void;
 };
@@ -21,5 +21,3 @@ export function RemovableTag({ label, onRemove }: RemovableTagProps) {
     </div>
   );
 }
-
-export type { RemovableTagProps };

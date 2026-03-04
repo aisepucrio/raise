@@ -2,7 +2,7 @@ import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/button";
 
-type CollectActionsProps = {
+export type CollectActionsProps = {
   collectButtonText: string;
   collectPendingButtonText: string;
   onCollect: () => void;
@@ -30,5 +30,3 @@ export function CollectActions({
     </div>
   );
 }
-
-export type { CollectActionsProps };

@@ -1,4 +1,4 @@
-type PageHeaderProps = {
+export type PageHeaderProps = {
   title: string;
   subtitle: string;
 };
@@ -17,5 +17,3 @@ export function PageHeader({ title, subtitle }: PageHeaderProps) {
     </header>
   );
 }
-
-export type { PageHeaderProps };

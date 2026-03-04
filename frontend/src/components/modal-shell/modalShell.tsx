@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect, useEffectEvent, useId } from "react";
 import { X } from "lucide-react";
 
-type ModalShellProps = {
+export type ModalShellProps = {
   open: boolean;
   onClose: () => void;
   title: string;
@@ -88,5 +88,3 @@ export function ModalShell({
     </div>
   );
 }
-
-export type { ModalShellProps };

@@ -5,7 +5,7 @@ import { FormInput } from "@/components/form";
 import type { JiraProject } from "@/data/modules/jira/jiraService";
 import { containsItemIgnoreCase } from "@/sources/shared/CollectShared";
 
-type JiraCollectModalProps = {
+export type JiraCollectModalProps = {
   open: boolean;
   projects: readonly JiraProject[];
   onClose: () => void;
@@ -121,5 +121,3 @@ export default function JiraCollectModal({
     </CollectFormModal>
   );
 }
-
-export type { JiraCollectModalProps };

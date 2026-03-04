@@ -22,7 +22,7 @@ import {
   type PreviewBuildParamsInput,
 } from "@/sources/shared/PreviewShared";
 
-type StackoverflowPreviewProps = {
+export type StackoverflowPreviewProps = {
   idPrefix: string;
   previewSection: StackOverflowSection;
   itemsLabel: string;
@@ -239,5 +239,3 @@ export function StackoverflowPreview({
     </PreviewWrapper>
   );
 }
-
-export type { StackoverflowPreviewProps };

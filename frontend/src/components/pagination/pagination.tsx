@@ -8,7 +8,7 @@ import {
 import { Button } from "@/components/button";
 import { cn } from "@/lib/utils";
 
-function Pagination({ className, ...props }: React.ComponentProps<"nav">) {
+export function Pagination({ className, ...props }: React.ComponentProps<"nav">) {
   return (
     <nav
       role="navigation"
@@ -20,7 +20,7 @@ function Pagination({ className, ...props }: React.ComponentProps<"nav">) {
   );
 }
 
-function PaginationContent({
+export function PaginationContent({
   className,
   ...props
 }: React.ComponentProps<"ul">) {
@@ -33,7 +33,7 @@ function PaginationContent({
   );
 }
 
-function PaginationItem({ ...props }: React.ComponentProps<"li">) {
+export function PaginationItem({ ...props }: React.ComponentProps<"li">) {
   return <li data-slot="pagination-item" {...props} />;
 }
 
@@ -49,7 +49,7 @@ type PaginationLinkProps = {
   "aria-label"?: string;
 } & PaginationButtonActionProps;
 
-function PaginationLink({
+export function PaginationLink({
   isActive,
   ...props
 }: PaginationLinkProps) {
@@ -65,7 +65,7 @@ function PaginationLink({
   );
 }
 
-function PaginationPrevious({
+export function PaginationPrevious({
   ...props
 }: PaginationButtonActionProps) {
   return (
@@ -81,7 +81,7 @@ function PaginationPrevious({
   );
 }
 
-function PaginationNext({
+export function PaginationNext({
   ...props
 }: PaginationButtonActionProps) {
   return (
@@ -97,7 +97,7 @@ function PaginationNext({
   );
 }
 
-function PaginationEllipsis({
+export function PaginationEllipsis({
   className,
   ...props
 }: React.ComponentProps<"span">) {
@@ -116,13 +116,3 @@ function PaginationEllipsis({
     </span>
   );
 }
-
-export {
-  Pagination,
-  PaginationContent,
-  PaginationLink,
-  PaginationItem,
-  PaginationPrevious,
-  PaginationNext,
-  PaginationEllipsis,
-};

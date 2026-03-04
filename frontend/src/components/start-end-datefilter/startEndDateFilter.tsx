@@ -6,9 +6,9 @@ import {
   type StartEndDateRange,
 } from "./startEndDateFilter.utils";
 
-type StartEndDateFilterWidth = "full" | "compact";
+export type StartEndDateFilterWidth = "full" | "compact";
 
-type StartEndDateFilterProps = {
+export type StartEndDateFilterProps = {
   idPrefix: string;
   startDate: string;
   endDate: string;
@@ -106,5 +106,3 @@ export function StartEndDateFilter({
     </div>
   );
 }
-
-export type { StartEndDateFilterProps, StartEndDateFilterWidth };

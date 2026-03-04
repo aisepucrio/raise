@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-type OverviewLayoutProps = {
+export type OverviewLayoutProps = {
   filters: ReactNode;
   chart: ReactNode;
   stats: ReactNode;
@@ -21,5 +21,3 @@ export function OverviewLayout({ filters, chart, stats }: OverviewLayoutProps) {
     </section>
   );
 }
-
-export type { OverviewLayoutProps };

@@ -1,7 +1,7 @@
 import { StartEndDateFilter } from "@/components/start-end-datefilter";
 import { WarningBox } from "@/components/warning-box";
 
-type CollectDateSectionProps = {
+export type CollectDateSectionProps = {
   startDate: string;
   endDate: string;
   onStartDateChange: (value: string) => void;
@@ -40,5 +40,3 @@ export function CollectDateSection({
     </section>
   );
 }
-
-export type { CollectDateSectionProps };

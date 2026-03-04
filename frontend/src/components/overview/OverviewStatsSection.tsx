@@ -1,7 +1,7 @@
 import { InfoBoxGrid, type InfoBoxGridItem } from "@/components/info-box";
 import { getOverviewSidebarGridRowsStyle } from "@/sources/shared/OverviewShared";
 
-type OverviewStatsSectionProps = {
+export type OverviewStatsSectionProps = {
   items: InfoBoxGridItem[];
 };
 
@@ -17,5 +17,3 @@ export function OverviewStatsSection({ items }: OverviewStatsSectionProps) {
     </div>
   );
 }
-
-export type { OverviewStatsSectionProps };

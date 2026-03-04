@@ -32,12 +32,12 @@ const INITIAL_ADVANCED_FILTERS_STATE: StackoverflowAdvancedFiltersFormState = {
   migrated: false,
 };
 
-type StackoverflowAdvancedFiltersSectionState = {
+export type StackoverflowAdvancedFiltersSectionState = {
   enabled: boolean;
   filters: StackOverflowAdvancedCollectFilters | undefined;
 };
 
-type StackoverflowAdvancedFiltersSectionProps = {
+export type StackoverflowAdvancedFiltersSectionProps = {
   onChange: (nextState: StackoverflowAdvancedFiltersSectionState) => void;
 };
 
@@ -236,8 +236,3 @@ export function StackoverflowAdvancedFiltersSection({
     </section>
   );
 }
-
-export type {
-  StackoverflowAdvancedFiltersSectionProps,
-  StackoverflowAdvancedFiltersSectionState,
-};

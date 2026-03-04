@@ -10,7 +10,7 @@ const OVERVIEW_CHART_COLORS = [
   "var(--color-secondary-muted)",
 ];
 
-type OverviewChartSectionProps = {
+export type OverviewChartSectionProps = {
   title: string;
   data: LineSeries[];
   loading: boolean;
@@ -41,5 +41,3 @@ export function OverviewChartSection({
     </div>
   );
 }
-
-export type { OverviewChartSectionProps };

@@ -3,7 +3,7 @@ import {
   type CodePreviewModalProps,
 } from "@/components/code-preview-modal";
 
-type PreviewCellModalProps = {
+export type PreviewCellModalProps = {
   open: boolean;
   onClose: () => void;
   value: unknown;
@@ -26,5 +26,3 @@ export function PreviewCellModal({
     />
   );
 }
-
-export type { PreviewCellModalProps };

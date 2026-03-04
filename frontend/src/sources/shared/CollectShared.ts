@@ -4,13 +4,13 @@ import { toast } from "@/components/toast";
 import { getQueryErrorMessage } from "@/data";
 import type { SourceId } from "@/sources";
 
-type CollectTagItem = {
+export type CollectTagItem = {
   id: string;
   label: string;
   onRemove: () => void;
 };
 
-type RunCollectWithFeedbackParams = {
+export type RunCollectWithFeedbackParams = {
   execute: () => Promise<unknown>;
   successDescription: string;
   errorFallbackMessage: string;
@@ -73,5 +73,3 @@ export async function runCollectWithFeedback({
     toast.error(undefined, { description: message });
   }
 }
-
-export type { CollectTagItem, RunCollectWithFeedbackParams };

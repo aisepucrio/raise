@@ -1,6 +1,6 @@
 import { Loader2Icon } from "lucide-react";
 
-function Loader() {
+export function Loader() {
   return (
     <div
       data-slot="loader"
@@ -14,5 +14,3 @@ function Loader() {
     </div>
   );
 }
-
-export { Loader };
