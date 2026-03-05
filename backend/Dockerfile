@@ -1,4 +1,7 @@
-FROM python:3.12.5-slim
+# syntax=docker/dockerfile:1
+FROM python:3.13-slim
+ENV PYTHONUNBUFFERED=1
+ENV UV_LINK_MODE=copy
 
 RUN apt-get update && apt-get install -y \
     git \
@@ -8,13 +11,13 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+ADD https://astral.sh/uv/install.sh /uv-installer.sh
+RUN sh /uv-installer.sh && rm /uv-installer.sh
+ENV PATH="/root/.local/bin/:$PATH"
+
 WORKDIR /app
+COPY --chmod=755 . /app/
+RUN uv sync --locked
 
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-
-COPY . /app
-
-RUN chmod +x start.sh
-
-CMD ["/bin/bash", "start.sh"]
+RUN chmod +x ./run.sh
+CMD ["/bin/bash", "./start.sh"]
