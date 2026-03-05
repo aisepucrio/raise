@@ -26,8 +26,6 @@ VITE_API_URL=http://localhost:8000 (ou o local do backend)
 npm run dev
 ```
 
-5. Acesse no navegador a URL mostrada no terminal (normalmente `http://localhost:5173`).
-
 ## Documentação detalhada do frontend
 
 A documentação completa de arquitetura, módulos e fluxo está em:
