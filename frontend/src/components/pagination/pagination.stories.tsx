@@ -159,7 +159,11 @@ const meta = {
   component: Pagination,
   tags: ["autodocs"],
   argTypes: {
-    className: { control: false },
+    className: {
+      control: false,
+      description: "Classe CSS adicional aplicada ao container `<nav>`.",
+      table: { type: { summary: "string" } },
+    },
   },
   parameters: {
     wrapperSize: "medium",

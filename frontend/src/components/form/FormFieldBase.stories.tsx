@@ -6,9 +6,47 @@ const meta = {
   component: FormFieldBase,
   tags: ["autodocs"],
   argTypes: {
-    children: { control: false },
-    className: { control: false },
-    htmlFor: { control: "text" },
+    label: {
+      control: { type: "text" },
+      description: "Texto do rótulo exibido acima/ao lado do campo.",
+      table: { type: { summary: "string" } },
+    },
+    htmlFor: {
+      control: { type: "text" },
+      description: "ID do campo associado ao label.",
+      table: { type: { summary: "string" } },
+    },
+    hint: {
+      control: { type: "text" },
+      description: "Mensagem de apoio exibida abaixo do campo.",
+      table: { type: { summary: "string" } },
+    },
+    error: {
+      control: { type: "text" },
+      description: "Mensagem de erro (substitui o hint quando presente).",
+      table: { type: { summary: "string" } },
+    },
+    required: {
+      control: { type: "boolean" },
+      description: "Marca o campo como obrigatório no label.",
+      table: { type: { summary: "boolean" } },
+    },
+    labelPosition: {
+      control: { type: "inline-radio" },
+      options: ["top", "left"],
+      description: "Posição visual do label em relação ao conteúdo.",
+      table: { type: { summary: "\"top\" | \"left\"" }, defaultValue: { summary: "top" } },
+    },
+    className: {
+      control: false,
+      description: "Classe CSS adicional do wrapper.",
+      table: { type: { summary: "string" } },
+    },
+    children: {
+      control: false,
+      description: "Elemento de campo renderizado dentro do container.",
+      table: { type: { summary: "ReactNode" } },
+    },
   },
   args: {
     label: "Nome do campo",
@@ -41,6 +79,13 @@ type Story = StoryObj<typeof meta>;
 
 export const ComHint: Story = {
   args: {},
+  parameters: {
+    docs: {
+      description: {
+        story: "Exemplo base com label e mensagem de apoio.",
+      },
+    },
+  },
 };
 
 export const ComErro: Story = {
@@ -49,6 +94,13 @@ export const ComErro: Story = {
     error: "Este campo é obrigatório.",
     required: true,
   },
+  parameters: {
+    docs: {
+      description: {
+        story: "Exibe estado de erro com indicação de campo obrigatório.",
+      },
+    },
+  },
 };
 
 export const SemLabel: Story = {
@@ -56,6 +108,13 @@ export const SemLabel: Story = {
     label: undefined,
     htmlFor: undefined,
     hint: "Também funciona sem label para layouts específicos.",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "Uso sem label para composições personalizadas de layout.",
+      },
+    },
   },
 };
 
@@ -85,4 +144,11 @@ export const ComparacaoOutlinedEFilled: Story = {
       </FormFieldBase>
     </div>
   ),
+  parameters: {
+    docs: {
+      description: {
+        story: "Comparação visual entre os estilos de campo `outlined` e `filled`.",
+      },
+    },
+  },
 };

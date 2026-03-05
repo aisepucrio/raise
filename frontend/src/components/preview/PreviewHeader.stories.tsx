@@ -86,9 +86,52 @@ const meta = {
   component: PreviewHeader,
   tags: ["autodocs"],
   argTypes: {
-    onSearchChange: { control: false },
-    onHiddenColumnsChange: { control: false },
-    onExport: { control: false },
+    idPrefix: {
+      control: { type: "text" },
+      description: "Prefixo usado para gerar IDs internos dos campos.",
+      table: { type: { summary: "string" } },
+    },
+    onSearchChange: {
+      control: false,
+      description: "Callback disparado quando o texto da busca muda.",
+      table: { type: { summary: "(searchTerm: string) => void" } },
+    },
+    columns: {
+      control: false,
+      description: "Lista total de colunas disponíveis no filtro de visibilidade.",
+      table: { type: { summary: "string[]" } },
+    },
+    hiddenColumns: {
+      control: false,
+      description: "Lista de colunas atualmente ocultas.",
+      table: { type: { summary: "string[]" } },
+    },
+    onHiddenColumnsChange: {
+      control: false,
+      description:
+        "Callback controlado para atualizar as colunas ocultas (valor direto ou updater).",
+      table: {
+        type: {
+          summary:
+            "(nextHiddenColumns: string[] | ((currentHiddenColumns: string[]) => string[])) => void",
+        },
+      },
+    },
+    onExport: {
+      control: false,
+      description: "Callback disparado no clique do botão Export.",
+      table: { type: { summary: "() => void" } },
+    },
+    isExportPending: {
+      control: { type: "boolean" },
+      description: "Controla estado pendente/desabilitado da exportação.",
+      table: { type: { summary: "boolean" } },
+    },
+    children: {
+      control: false,
+      description: "Área opcional para filtros extras (source, datas etc.).",
+      table: { type: { summary: "ReactNode" } },
+    },
   },
   parameters: {
     wrapperSize: "large",
@@ -116,8 +159,22 @@ type Story = StoryObj<typeof meta>;
 
 export const ComFiltros: Story = {
   render: () => <InteractiveDemo withOptionalFilters />,
+  parameters: {
+    docs: {
+      description: {
+        story: "Cabeçalho completo com filtros adicionais, busca, colunas e exportação.",
+      },
+    },
+  },
 };
 
 export const SomenteAcoesFixas: Story = {
   render: () => <InteractiveDemo withOptionalFilters={false} />,
+  parameters: {
+    docs: {
+      description: {
+        story: "Versão mínima com apenas ações fixas: busca, colunas e exportação.",
+      },
+    },
+  },
 };

@@ -7,7 +7,26 @@ const meta = {
   component: CollectHeader,
   tags: ["autodocs"],
   argTypes: {
-    onAddClick: { action: "addClick" },
+    title: {
+      control: { type: "text" },
+      description: "Título principal da seção de coleta.",
+      table: { type: { summary: "string" } },
+    },
+    description: {
+      control: { type: "text" },
+      description: "Descrição auxiliar da seção.",
+      table: { type: { summary: "string" } },
+    },
+    addButtonText: {
+      control: { type: "text" },
+      description: "Texto do botão de adicionar item.",
+      table: { type: { summary: "string" } },
+    },
+    onAddClick: {
+      action: "addClick",
+      description: "Callback disparado ao clicar em adicionar.",
+      table: { type: { summary: "() => void" } },
+    },
   },
   args: {
     title: "GitHub Collect",
@@ -35,4 +54,12 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {};
+export const Padrao: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: "Cabeçalho padrão com título, descrição e ação principal.",
+      },
+    },
+  },
+};

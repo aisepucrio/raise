@@ -30,6 +30,33 @@ const meta = {
   title: "Components/Overview/OverviewChartSection",
   component: OverviewChartSection,
   tags: ["autodocs"],
+  argTypes: {
+    title: {
+      control: { type: "text" },
+      description: "Título exibido no cabeçalho do gráfico.",
+      table: { type: { summary: "string" } },
+    },
+    data: {
+      control: false,
+      description: "Séries de dados no formato esperado pelo gráfico de linha.",
+      table: { type: { summary: "LineSeries[]" } },
+    },
+    loading: {
+      control: { type: "boolean" },
+      description: "Ativa o estado de carregamento.",
+      table: { type: { summary: "boolean" } },
+    },
+    error: {
+      control: { type: "text" },
+      description: "Mensagem de erro exibida no lugar do gráfico.",
+      table: { type: { summary: "string | null" } },
+    },
+    emptyMessage: {
+      control: { type: "text" },
+      description: "Mensagem exibida quando não há pontos para renderizar.",
+      table: { type: { summary: "string" } },
+    },
+  },
   args: {
     title: "GitHub Activity",
     data: GRAPH_DATA,
@@ -58,16 +85,38 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {};
+export const Padrao: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: "Estado padrão com dados carregados e prontos para leitura.",
+      },
+    },
+  },
+};
 
 export const Loading: Story = {
   args: {
     loading: true,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "Estado de carregamento da seção de gráfico.",
+      },
+    },
   },
 };
 
 export const Empty: Story = {
   args: {
     data: [],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "Estado vazio quando nenhum ponto retorna para os filtros.",
+      },
+    },
   },
 };

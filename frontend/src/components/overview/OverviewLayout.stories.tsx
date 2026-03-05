@@ -9,6 +9,23 @@ const meta = {
   title: "Components/Overview/OverviewLayout",
   component: OverviewLayout,
   tags: ["autodocs"],
+  argTypes: {
+    filters: {
+      control: false,
+      description: "Bloco renderizado na área superior do painel principal.",
+      table: { type: { summary: "ReactNode" } },
+    },
+    chart: {
+      control: false,
+      description: "Bloco principal de conteúdo (gráfico).",
+      table: { type: { summary: "ReactNode" } },
+    },
+    stats: {
+      control: false,
+      description: "Bloco lateral de métricas/resumo.",
+      table: { type: { summary: "ReactNode" } },
+    },
+  },
   parameters: {
     wrapperSize: "large",
     layout: "fullscreen",
@@ -39,4 +56,11 @@ export const Padrao: Story = {
       stats={<div className={panelClassName}>cards</div>}
     />
   ),
+  parameters: {
+    docs: {
+      description: {
+        story: "Exemplo estrutural com filtros, gráfico e área lateral de cards.",
+      },
+    },
+  },
 };

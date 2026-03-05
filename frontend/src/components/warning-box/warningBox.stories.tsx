@@ -12,13 +12,33 @@ const meta = {
     width: "full",
   },
   argTypes: {
+    text: {
+      control: { type: "text" },
+      description: "Mensagem exibida dentro da caixa.",
+      table: { type: { summary: "string" } },
+    },
     variant: {
       control: { type: "inline-radio" },
       options: ["default", "success", "info", "warning", "error"],
+      description: "Variante semântica/visual da caixa.",
+      table: {
+        type: {
+          summary:
+            "\"default\" | \"success\" | \"info\" | \"warning\" | \"error\"",
+        },
+        defaultValue: { summary: "warning" },
+      },
     },
     width: {
       control: { type: "inline-radio" },
       options: ["full", "auto"],
+      description: "Define se o componente ocupa toda a largura ou apenas conteúdo.",
+      table: { type: { summary: "\"full\" | \"auto\"" }, defaultValue: { summary: "full" } },
+    },
+    className: {
+      control: false,
+      description: "Classe CSS adicional aplicada ao container.",
+      table: { type: { summary: "string" } },
     },
   },
   parameters: {
@@ -42,7 +62,15 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Playground: Story = {};
+export const Playground: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: "Playground para testar texto, variante e largura.",
+      },
+    },
+  },
+};
 
 export const Variants: Story = {
   render: () => (
@@ -54,10 +82,24 @@ export const Variants: Story = {
       <WarningBox text="Failed to start collection." variant="error" />
     </div>
   ),
+  parameters: {
+    docs: {
+      description: {
+        story: "Comparação de todas as variantes visuais disponíveis.",
+      },
+    },
+  },
 };
 
 export const AutoWidth: Story = {
   args: {
     width: "auto",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "Caixa ajustada ao conteúdo com largura automática.",
+      },
+    },
   },
 };

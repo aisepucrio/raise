@@ -9,8 +9,36 @@ const meta = {
   component: ModalShell,
   tags: ["autodocs"],
   argTypes: {
-    onClose: { action: "closed" },
-    children: { control: false },
+    open: {
+      control: { type: "boolean" },
+      description: "Controla se o modal está aberto.",
+      table: { type: { summary: "boolean" } },
+    },
+    onClose: {
+      action: "closed",
+      description: "Callback disparado ao fechar o modal.",
+      table: { type: { summary: "() => void" } },
+    },
+    title: {
+      control: { type: "text" },
+      description: "Título principal do modal.",
+      table: { type: { summary: "string" } },
+    },
+    subtitle: {
+      control: { type: "text" },
+      description: "Subtítulo opcional exibido abaixo do título.",
+      table: { type: { summary: "string" } },
+    },
+    initialFocusRef: {
+      control: false,
+      description: "Referência opcional para foco inicial ao abrir.",
+      table: { type: { summary: "{ current: HTMLElement | null }" } },
+    },
+    children: {
+      control: false,
+      description: "Conteúdo interno do modal.",
+      table: { type: { summary: "ReactNode" } },
+    },
   },
   parameters: {
     wrapperSize: "medium",
@@ -63,11 +91,26 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {};
+export const Padrao: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: "Modal completo com título, subtítulo e conteúdo de formulário.",
+      },
+    },
+  },
+};
 
 export const SemSubtitulo: Story = {
   args: {
     subtitle: undefined,
     title: "Simple dialog",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "Exemplo sem subtítulo para casos de diálogo curto.",
+      },
+    },
   },
 };

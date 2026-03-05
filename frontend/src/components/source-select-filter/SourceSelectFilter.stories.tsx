@@ -34,7 +34,51 @@ const meta = {
   component: SourceSelectFilter,
   tags: ["autodocs"],
   argTypes: {
-    onChange: { control: false },
+    id: {
+      control: { type: "text" },
+      description: "ID do campo select.",
+      table: { type: { summary: "string" } },
+    },
+    label: {
+      control: { type: "text" },
+      description: "Rótulo exibido acima do select.",
+      table: { type: { summary: "string" } },
+    },
+    value: {
+      control: { type: "text" },
+      description: "Valor atualmente selecionado.",
+      table: { type: { summary: "string" } },
+    },
+    onChange: {
+      control: false,
+      description: "Callback chamado quando a opção selecionada muda.",
+      table: { type: { summary: "(value: string) => void" } },
+    },
+    options: {
+      control: false,
+      description: "Lista de opções disponíveis para seleção.",
+      table: { type: { summary: "{ value: string; label: string }[]" } },
+    },
+    allOptionLabel: {
+      control: { type: "text" },
+      description: "Texto da opção neutra (todos).",
+      table: { type: { summary: "string" } },
+    },
+    isOptionsPending: {
+      control: { type: "boolean" },
+      description: "Indica carregamento de opções.",
+      table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
+    },
+    wrapperClassName: {
+      control: false,
+      description: "Classe CSS adicional do wrapper do campo.",
+      table: { type: { summary: "string" } },
+    },
+    className: {
+      control: false,
+      description: "Classe CSS adicional aplicada ao select.",
+      table: { type: { summary: "string" } },
+    },
   },
   parameters: {
     wrapperSize: "medium",
@@ -59,6 +103,13 @@ type Story = StoryObj<typeof meta>;
 
 export const Padrao: Story = {
   render: () => <InteractiveDemo />,
+  parameters: {
+    docs: {
+      description: {
+        story: "Demonstra seleção de fonte com feedback do valor escolhido.",
+      },
+    },
+  },
 };
 
 export const CarregandoOpcoes: Story = {
@@ -70,5 +121,12 @@ export const CarregandoOpcoes: Story = {
     options: [],
     allOptionLabel: "All projects",
     isOptionsPending: true,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "Estado com lista vazia e carregamento em andamento.",
+      },
+    },
   },
 };

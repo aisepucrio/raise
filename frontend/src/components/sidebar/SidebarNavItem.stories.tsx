@@ -15,21 +15,38 @@ const meta = {
   component: SidebarNavItem,
   tags: ["autodocs"],
   argTypes: {
-    onClick: { action: "clicked" },
+    label: {
+      control: { type: "text" },
+      description: "Texto principal do item da sidebar.",
+      table: { type: { summary: "string" } },
+    },
+    active: {
+      control: { type: "boolean" },
+      description: "Marca o item como ativo.",
+      table: { type: { summary: "boolean" } },
+    },
+    onClick: {
+      action: "clicked",
+      description: "Callback disparado no clique quando não há subitens.",
+      table: { type: { summary: "() => void" } },
+    },
     subItems: {
       control: false,
       description:
         "Lista opcional de subitens para exibição hierárquica.",
+      table: { type: { summary: "{ label: string; active: boolean; onClick: () => void }[]" } },
     },
     defaultExpanded: {
       control: "boolean",
       description: "Define o estado inicial de expansão.",
+      table: { type: { summary: "boolean" } },
     },
     icon: {
       control: { type: "select" },
       options: Object.keys(iconOptions),
       mapping: iconOptions,
       description: "Ícone Lucide exibido à esquerda do rótulo.",
+      table: { type: { summary: "LucideIcon" } },
     },
   },
   args: {
@@ -62,11 +79,26 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {};
+export const Padrao: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: "Item de navegação padrão sem subitens.",
+      },
+    },
+  },
+};
 
 export const Ativo: Story = {
   args: {
     active: true,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "Mostra o destaque visual do estado ativo.",
+      },
+    },
   },
 };
 
@@ -74,6 +106,13 @@ export const RotuloLongo: Story = {
   args: {
     label: "Configurações e preferências de integração",
     icon: Briefcase,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "Compara comportamento de layout com rótulo longo.",
+      },
+    },
   },
 };
 

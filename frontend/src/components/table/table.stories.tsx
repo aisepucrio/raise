@@ -126,7 +126,21 @@ const meta = {
   component: Table,
   tags: ["autodocs"],
   argTypes: {
-    className: { control: false },
+    className: {
+      control: false,
+      description: "Classe CSS adicional aplicada ao elemento `<table>`.",
+      table: { type: { summary: "string" } },
+    },
+    withContainer: {
+      control: { type: "boolean" },
+      description: "Define se a tabela vem embrulhada em container com overflow-x.",
+      table: { type: { summary: "boolean" }, defaultValue: { summary: "true" } },
+    },
+    containerClassName: {
+      control: false,
+      description: "Classe CSS adicional do container externo (quando habilitado).",
+      table: { type: { summary: "string" } },
+    },
   },
   parameters: {
     wrapperSize: "large",
@@ -151,6 +165,13 @@ type Story = StoryObj<typeof meta>;
 
 export const Padrao: Story = {
   render: () => <DemoTable />,
+  parameters: {
+    docs: {
+      description: {
+        story: "Tabela base com cabeçalho e linhas de conteúdo.",
+      },
+    },
+  },
 };
 
 export const ComCaptionERodape: Story = {

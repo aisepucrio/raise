@@ -8,8 +8,47 @@ const meta = {
   component: SelectionButton,
   tags: ["autodocs"],
   argTypes: {
-    className: { control: false },
-    onPressedChange: { action: "pressedChange" },
+    text: {
+      control: { type: "text" },
+      description: "Texto exibido no botão toggle.",
+      table: { type: { summary: "string" } },
+    },
+    pressed: {
+      control: { type: "boolean" },
+      description: "Estado controlado do botão.",
+      table: { type: { summary: "boolean" } },
+    },
+    defaultPressed: {
+      control: { type: "boolean" },
+      description: "Estado inicial para uso não controlado.",
+      table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
+    },
+    onPressedChange: {
+      action: "pressedChange",
+      description: "Callback disparado quando o estado pressed muda.",
+      table: { type: { summary: "(pressed: boolean) => void" } },
+    },
+    size: {
+      control: { type: "inline-radio" },
+      options: ["default", "sm"],
+      description: "Tamanho visual do botão.",
+      table: { type: { summary: "\"default\" | \"sm\"" }, defaultValue: { summary: "default" } },
+    },
+    disabled: {
+      control: { type: "boolean" },
+      description: "Desabilita interação.",
+      table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
+    },
+    fullWidth: {
+      control: { type: "boolean" },
+      description: "Ocupa toda largura do container quando habilitado.",
+      table: { type: { summary: "boolean" }, defaultValue: { summary: "true" } },
+    },
+    className: {
+      control: false,
+      description: "Classe CSS adicional aplicada ao botão.",
+      table: { type: { summary: "string" } },
+    },
   },
   args: {
     text: "Issues",
@@ -37,12 +76,27 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {};
+export const Padrao: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: "Botão de seleção padrão em modo não controlado.",
+      },
+    },
+  },
+};
 
 export const PressionadoPorPadrao: Story = {
   args: {
     text: "Commits",
     defaultPressed: true,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "Inicializa com estado pressionado ativo.",
+      },
+    },
   },
 };
 
@@ -87,4 +141,11 @@ export const GrupoDeSelecao: Story = {
       <SelectionButton text="Commits" />
     </div>
   ),
+  parameters: {
+    docs: {
+      description: {
+        story: "Exemplo com múltiplos botões para seleção por categoria.",
+      },
+    },
+  },
 };

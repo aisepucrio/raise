@@ -6,21 +6,61 @@ const meta = {
   component: Switch,
   tags: ["autodocs"],
   argTypes: {
-    className: { control: false },
-    style: { control: false },
-    onCheckedChange: { action: "checkedChange" },
+    "aria-label": {
+      control: { type: "text" },
+      description: "Rótulo acessível obrigatório para leitores de tela.",
+      table: { type: { summary: "string" } },
+    },
+    checked: {
+      control: { type: "boolean" },
+      description: "Estado controlado do switch.",
+      table: { type: { summary: "boolean" } },
+    },
+    defaultChecked: {
+      control: { type: "boolean" },
+      description: "Estado inicial para uso não controlado.",
+      table: { type: { summary: "boolean" } },
+    },
+    disabled: {
+      control: { type: "boolean" },
+      description: "Desabilita interação.",
+      table: { type: { summary: "boolean" } },
+    },
+    onCheckedChange: {
+      action: "checkedChange",
+      description: "Callback disparado quando o estado do switch muda.",
+      table: { type: { summary: "(checked: boolean) => void" } },
+    },
     size: {
       control: { type: "inline-radio" },
       options: ["default", "sm"],
+      description: "Tamanho visual do switch.",
+      table: { type: { summary: "\"default\" | \"sm\"" }, defaultValue: { summary: "default" } },
     },
     variant: {
       control: { type: "inline-radio" },
       options: ["default", "theme-toggle"],
+      description: "Variante visual do switch.",
+      table: {
+        type: { summary: "\"default\" | \"theme-toggle\"" },
+        defaultValue: { summary: "default" },
+      },
     },
     trackWidth: {
       control: false,
       description:
         "Largura opcional do track (number em px ou string, ex.: `100%`).",
+      table: { type: { summary: "number | string" } },
+    },
+    className: {
+      control: false,
+      description: "Classe CSS adicional do root do switch.",
+      table: { type: { summary: "string" } },
+    },
+    style: {
+      control: false,
+      description: "Estilos inline opcionais aplicados ao root.",
+      table: { type: { summary: "CSSProperties" } },
     },
   },
   args: {
@@ -51,11 +91,26 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {};
+export const Padrao: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: "Switch padrão desligado.",
+      },
+    },
+  },
+};
 
 export const Ligado: Story = {
   args: {
     defaultChecked: true,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "Switch inicializado no estado ligado.",
+      },
+    },
   },
 };
 
@@ -105,4 +160,11 @@ export const EstadosDesabilitados: Story = {
       />
     </div>
   ),
+  parameters: {
+    docs: {
+      description: {
+        story: "Compara estados desabilitados desligado e ligado.",
+      },
+    },
+  },
 };

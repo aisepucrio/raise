@@ -6,6 +6,13 @@ const meta = {
   title: "Components/Overview/OverviewStatsSection",
   component: OverviewStatsSection,
   tags: ["autodocs"],
+  argTypes: {
+    items: {
+      control: false,
+      description: "Lista de métricas exibidas na coluna lateral.",
+      table: { type: { summary: "InfoBoxGridItem[]" } },
+    },
+  },
   args: {
     items: [
       { title: "Repositories", number: "24" },
@@ -36,7 +43,15 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {};
+export const Padrao: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: "Renderiza conjunto completo de cards de métricas.",
+      },
+    },
+  },
+};
 
 export const ComPoucosCards: Story = {
   args: {
@@ -45,5 +60,12 @@ export const ComPoucosCards: Story = {
       { title: "Users", number: "94" },
       { title: "Projects", number: "12" },
     ],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "Exemplo com quantidade reduzida de cards.",
+      },
+    },
   },
 };

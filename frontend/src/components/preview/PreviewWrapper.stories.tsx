@@ -6,6 +6,13 @@ const meta = {
   title: "Components/Preview/PreviewWrapper",
   component: PreviewWrapper,
   tags: ["autodocs"],
+  argTypes: {
+    children: {
+      control: false,
+      description: "Conteúdo interno exibido dentro do container principal.",
+      table: { type: { summary: "ReactNode" } },
+    },
+  },
   parameters: {
     wrapperSize: "large",
     layout: "fullscreen",
@@ -40,4 +47,11 @@ export const Padrao: Story = {
       </PreviewWrapper>
     </div>
   ),
+  parameters: {
+    docs: {
+      description: {
+        story: "Exemplo do wrapper com um bloco de conteúdo interno.",
+      },
+    },
+  },
 };

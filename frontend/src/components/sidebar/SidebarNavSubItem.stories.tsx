@@ -8,7 +8,21 @@ const meta = {
   component: SidebarNavSubItem,
   tags: ["autodocs"],
   argTypes: {
-    onClick: { action: "clicked" },
+    label: {
+      control: { type: "text" },
+      description: "Texto exibido no subitem.",
+      table: { type: { summary: "string" } },
+    },
+    active: {
+      control: { type: "boolean" },
+      description: "Indica se o subitem representa a rota atual.",
+      table: { type: { summary: "boolean" } },
+    },
+    onClick: {
+      action: "clicked",
+      description: "Callback disparado no clique do subitem.",
+      table: { type: { summary: "() => void" } },
+    },
   },
   args: {
     label: "Resumo",
@@ -38,16 +52,38 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {};
+export const Padrao: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: "Subitem padrão em estado inativo.",
+      },
+    },
+  },
+};
 
 export const Ativo: Story = {
   args: {
     active: true,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "Estado ativo com destaque visual na navegação.",
+      },
+    },
   },
 };
 
 export const RotuloLongo: Story = {
   args: {
     label: "Resumo geral da coleta da integração selecionada",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "Compara truncamento/comportamento com rótulo longo.",
+      },
+    },
   },
 };

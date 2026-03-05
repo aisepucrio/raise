@@ -6,6 +6,18 @@ const meta = {
   title: "Components/FormatDateItem",
   component: FormatDateItem,
   tags: ["autodocs"],
+  argTypes: {
+    value: {
+      control: { type: "text" },
+      description: "Data bruta recebida para formatação.",
+      table: { type: { summary: "string | null" } },
+    },
+    locale: {
+      control: { type: "text" },
+      description: "Locale usado na formatação da data.",
+      table: { type: { summary: "string" }, defaultValue: { summary: "en-US" } },
+    },
+  },
   args: {
     value: "02/02/2026",
   },
@@ -30,7 +42,15 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {};
+export const Padrao: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: "Formatação padrão de um valor de data único.",
+      },
+    },
+  },
+};
 
 export const VariacoesComuns: Story = {
   render: () => {
@@ -57,5 +77,12 @@ export const VariacoesComuns: Story = {
         ))}
       </div>
     );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "Compara entradas comuns (ISO, BR, inválida e vazia).",
+      },
+    },
   },
 };

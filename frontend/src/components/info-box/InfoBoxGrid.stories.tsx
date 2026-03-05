@@ -17,7 +17,21 @@ const meta = {
   component: InfoBoxGrid,
   tags: ["autodocs"],
   argTypes: {
-    items: { control: false },
+    items: {
+      control: false,
+      description: "Lista de cards com título, valor e cor opcional.",
+      table: { type: { summary: "InfoBoxGridItem[]" } },
+    },
+    className: {
+      control: false,
+      description: "Classe CSS adicional aplicada no grid.",
+      table: { type: { summary: "string" } },
+    },
+    style: {
+      control: false,
+      description: "Estilos inline opcionais aplicados no container.",
+      table: { type: { summary: "CSSProperties" } },
+    },
   },
   args: {
     items: baseItems,
@@ -43,7 +57,15 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const PadraoZebrado: Story = {};
+export const PadraoZebrado: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: "Grid padrão com alternância automática de cores (zebra).",
+      },
+    },
+  },
+};
 
 export const ComCoresExplicitas: Story = {
   args: {

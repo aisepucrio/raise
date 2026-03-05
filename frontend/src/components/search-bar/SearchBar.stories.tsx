@@ -28,7 +28,41 @@ const meta = {
   component: SearchBar,
   tags: ["autodocs"],
   argTypes: {
-    onSearchChange: { control: false },
+    id: {
+      control: { type: "text" },
+      description: "ID do campo de busca.",
+      table: { type: { summary: "string" } },
+    },
+    onSearchChange: {
+      control: false,
+      description: "Callback disparado após debounce do termo digitado.",
+      table: { type: { summary: "(searchTerm: string) => void" } },
+    },
+    label: {
+      control: { type: "text" },
+      description: "Label do campo de busca.",
+      table: { type: { summary: "string" }, defaultValue: { summary: "Search" } },
+    },
+    placeholder: {
+      control: { type: "text" },
+      description: "Placeholder do input de busca.",
+      table: { type: { summary: "string" }, defaultValue: { summary: "Type..." } },
+    },
+    debounceMs: {
+      control: { type: "number" },
+      description: "Tempo de debounce (ms) antes de disparar `onSearchChange`.",
+      table: { type: { summary: "number" }, defaultValue: { summary: "350" } },
+    },
+    disabled: {
+      control: { type: "boolean" },
+      description: "Desabilita interação com a busca.",
+      table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
+    },
+    expandable: {
+      control: { type: "boolean" },
+      description: "Ativa expansão horizontal do campo ao focar ou digitar.",
+      table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
+    },
   },
   parameters: {
     wrapperSize: "medium",
@@ -53,8 +87,22 @@ type Story = StoryObj<typeof meta>;
 
 export const Padrao: Story = {
   render: () => <InteractiveDemo />,
+  parameters: {
+    docs: {
+      description: {
+        story: "Busca padrão com feedback do termo aplicado após debounce.",
+      },
+    },
+  },
 };
 
 export const Expandivel: Story = {
   render: () => <InteractiveDemo expandable />,
+  parameters: {
+    docs: {
+      description: {
+        story: "Busca em modo expansível para economizar espaço no layout.",
+      },
+    },
+  },
 };

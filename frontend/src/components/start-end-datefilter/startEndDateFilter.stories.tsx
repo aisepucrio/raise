@@ -75,11 +75,76 @@ const meta = {
   component: StartEndDateFilter,
   tags: ["autodocs"],
   argTypes: {
-    onStartDateChange: { action: "startChanged" },
-    onEndDateChange: { action: "endChanged" },
+    idPrefix: {
+      control: { type: "text" },
+      description: "Prefixo usado para gerar IDs dos campos de data.",
+      table: { type: { summary: "string" } },
+    },
+    startDate: {
+      control: { type: "text" },
+      description: "Data inicial no formato `YYYY-MM-DD`.",
+      table: { type: { summary: "string" } },
+    },
+    endDate: {
+      control: { type: "text" },
+      description: "Data final no formato `YYYY-MM-DD`.",
+      table: { type: { summary: "string" } },
+    },
+    onStartDateChange: {
+      action: "startChanged",
+      description: "Callback disparado ao alterar data inicial.",
+      table: { type: { summary: "(value: string) => void" } },
+    },
+    onEndDateChange: {
+      action: "endChanged",
+      description: "Callback disparado ao alterar data final.",
+      table: { type: { summary: "(value: string) => void" } },
+    },
+    startLabel: {
+      control: { type: "text" },
+      description: "Rótulo do campo inicial.",
+      table: { type: { summary: "string" }, defaultValue: { summary: "Start" } },
+    },
+    endLabel: {
+      control: { type: "text" },
+      description: "Rótulo do campo final.",
+      table: { type: { summary: "string" }, defaultValue: { summary: "End" } },
+    },
+    error: {
+      control: { type: "text" },
+      description: "Mensagem de erro compartilhada entre os campos.",
+      table: { type: { summary: "string" } },
+    },
     width: {
       control: { type: "inline-radio" },
       options: ["full", "compact"],
+      description: "Define a largura/layout da dupla de campos.",
+      table: { type: { summary: "\"full\" | \"compact\"" }, defaultValue: { summary: "full" } },
+    },
+    className: {
+      control: false,
+      description: "Classe CSS adicional do container.",
+      table: { type: { summary: "string" } },
+    },
+    disabled: {
+      control: { type: "boolean" },
+      description: "Desabilita ambos os campos de data.",
+      table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
+    },
+    dateRange: {
+      control: false,
+      description: "Limites opcionais de data mínima e máxima.",
+      table: { type: { summary: "{ minDate?: string; maxDate?: string }" } },
+    },
+    startWrapperClassName: {
+      control: false,
+      description: "Classe CSS adicional do wrapper do campo inicial.",
+      table: { type: { summary: "string" } },
+    },
+    endWrapperClassName: {
+      control: false,
+      description: "Classe CSS adicional do wrapper do campo final.",
+      table: { type: { summary: "string" } },
     },
   },
   args: {
@@ -107,14 +172,35 @@ export const LarguraMaxima: Story = {
   args: {
     width: "full",
   },
+  parameters: {
+    docs: {
+      description: {
+        story: "Layout com campos ocupando toda a largura disponível.",
+      },
+    },
+  },
 };
 
 export const LarguraMinima: Story = {
   args: {
     width: "compact",
   },
+  parameters: {
+    docs: {
+      description: {
+        story: "Layout compacto com largura fixa para cada campo.",
+      },
+    },
+  },
 };
 
 export const ComDateRangeDinamico: Story = {
   render: () => <InteractiveDateRangeDemo />,
+  parameters: {
+    docs: {
+      description: {
+        story: "Demonstra atualização dinâmica dos limites de data conforme a source.",
+      },
+    },
+  },
 };

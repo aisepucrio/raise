@@ -115,14 +115,54 @@ const meta = {
     position: "top-right",
   },
   argTypes: {
-    className: { control: false },
-    icons: { control: false },
-    style: { control: false },
+    closeButton: {
+      control: { type: "boolean" },
+      description: "Exibe botão de fechar em cada toast.",
+      table: { type: { summary: "boolean" } },
+    },
+    richColors: {
+      control: { type: "boolean" },
+      description: "Ativa paleta de cores por tipo (success, error etc.).",
+      table: { type: { summary: "boolean" } },
+    },
+    position: {
+      control: { type: "select" },
+      options: [
+        "top-left",
+        "top-center",
+        "top-right",
+        "bottom-left",
+        "bottom-center",
+        "bottom-right",
+      ],
+      description: "Posição do container de toasts na tela.",
+      table: { type: { summary: "ToasterProps['position']" } },
+    },
+    className: {
+      control: false,
+      description: "Classe CSS adicional do container.",
+      table: { type: { summary: "string" } },
+    },
+    icons: {
+      control: false,
+      description: "Mapeamento opcional de ícones por tipo de toast.",
+      table: { type: { summary: "ToasterProps['icons']" } },
+    },
+    style: {
+      control: false,
+      description: "Estilos inline opcionais do container.",
+      table: { type: { summary: "CSSProperties" } },
+    },
     theme: {
       control: false,
       description: "Tema visual usado pelo container de toasts.",
+      table: { type: { summary: "ToasterProps['theme']" } },
     },
-    toastOptions: { control: false },
+    toastOptions: {
+      control: false,
+      description: "Configurações padrão aplicadas aos toasts disparados.",
+      table: { type: { summary: "ToasterProps['toastOptions']" } },
+    },
   },
   parameters: {
     wrapperSize: "small",

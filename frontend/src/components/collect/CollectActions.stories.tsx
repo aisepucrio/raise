@@ -7,7 +7,31 @@ const meta = {
   component: CollectActions,
   tags: ["autodocs"],
   argTypes: {
-    onCollect: { action: "collectClick" },
+    collectButtonText: {
+      control: { type: "text" },
+      description: "Texto do botão no estado normal.",
+      table: { type: { summary: "string" } },
+    },
+    collectPendingButtonText: {
+      control: { type: "text" },
+      description: "Texto exibido quando a coleta está pendente.",
+      table: { type: { summary: "string" } },
+    },
+    onCollect: {
+      action: "collectClick",
+      description: "Callback disparado ao clicar no botão de coleta.",
+      table: { type: { summary: "() => void" } },
+    },
+    isCollectPending: {
+      control: { type: "boolean" },
+      description: "Indica estado pendente da coleta.",
+      table: { type: { summary: "boolean" } },
+    },
+    isCollectDisabled: {
+      control: { type: "boolean" },
+      description: "Desabilita o botão de coleta.",
+      table: { type: { summary: "boolean" } },
+    },
   },
   args: {
     collectButtonText: "Collect",
@@ -36,11 +60,26 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {};
+export const Padrao: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: "Ação padrão habilitada para iniciar coleta.",
+      },
+    },
+  },
+};
 
 export const Pendente: Story = {
   args: {
     isCollectPending: true,
     isCollectDisabled: true,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "Estado pendente com botão bloqueado e texto de progresso.",
+      },
+    },
   },
 };

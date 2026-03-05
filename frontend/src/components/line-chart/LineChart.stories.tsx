@@ -72,8 +72,46 @@ const meta = {
   component: LineChart,
   tags: ["autodocs"],
   argTypes: {
-    data: { control: false },
-    colors: { control: false },
+    title: {
+      control: { type: "text" },
+      description: "Título exibido acima do gráfico.",
+      table: { type: { summary: "string" } },
+    },
+    data: {
+      control: false,
+      description: "Séries no formato `{ id, data[] }` consumido pelo Nivo.",
+      table: { type: { summary: "LineSeries[]" } },
+    },
+    loading: {
+      control: { type: "boolean" },
+      description: "Ativa estado de carregamento com loader.",
+      table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
+    },
+    error: {
+      control: { type: "text" },
+      description: "Mensagem de erro exibida no lugar do gráfico.",
+      table: { type: { summary: "string | null" }, defaultValue: { summary: "null" } },
+    },
+    height: {
+      control: { type: "number" },
+      description: "Altura da área do gráfico em pixels.",
+      table: { type: { summary: "number" }, defaultValue: { summary: "450" } },
+    },
+    yLabel: {
+      control: { type: "text" },
+      description: "Rótulo do eixo Y.",
+      table: { type: { summary: "string" } },
+    },
+    emptyMessage: {
+      control: { type: "text" },
+      description: "Mensagem exibida quando não há dados para renderização.",
+      table: { type: { summary: "string" } },
+    },
+    colors: {
+      control: false,
+      description: "Paleta de cores fixa ou função para resolver cor por série.",
+      table: { type: { summary: "string[] | ((serie: { id: string }) => string)" } },
+    },
   },
   parameters: {
     wrapperSize: "large",
@@ -105,7 +143,15 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {};
+export const Padrao: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: "Visualização padrão com série mensal de atividade.",
+      },
+    },
+  },
+};
 
 export const MultiplasSeries: Story = {
   args: {

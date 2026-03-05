@@ -6,6 +6,18 @@ const meta = {
   title: "Components/PageHeader",
   component: PageHeader,
   tags: ["autodocs"],
+  argTypes: {
+    title: {
+      control: { type: "text" },
+      description: "Título principal da página.",
+      table: { type: { summary: "string" } },
+    },
+    subtitle: {
+      control: { type: "text" },
+      description: "Descrição complementar exibida abaixo do título.",
+      table: { type: { summary: "string" } },
+    },
+  },
   parameters: {
     wrapperSize: "medium",
     docs: {
@@ -32,12 +44,27 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {};
+export const Padrao: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: "Cabeçalho padrão com título e subtítulo curtos.",
+      },
+    },
+  },
+};
 
 export const TextoLongo: Story = {
   args: {
     title: "Preview",
     subtitle:
       "Inspect records returned by the selected source and section before exporting or validating downstream transformations.",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "Valida comportamento visual com texto mais longo no subtítulo.",
+      },
+    },
   },
 };

@@ -43,9 +43,57 @@ const meta = {
   component: TablePaginationFooter,
   tags: ["autodocs"],
   argTypes: {
-    onPageChange: { control: false },
-    onRowsPerPageChange: { control: false },
-    className: { control: false },
+    currentPage: {
+      control: { type: "number" },
+      description: "Página atual (indexada em 1).",
+      table: { type: { summary: "number" } },
+    },
+    rowsPerPage: {
+      control: { type: "number" },
+      description: "Quantidade de linhas exibidas por página.",
+      table: { type: { summary: "number" } },
+    },
+    totalItems: {
+      control: { type: "number" },
+      description: "Total de itens disponíveis para paginação.",
+      table: { type: { summary: "number" } },
+    },
+    onPageChange: {
+      control: false,
+      description: "Callback disparado quando o usuário navega de página.",
+      table: { type: { summary: "(page: number) => void" } },
+    },
+    onRowsPerPageChange: {
+      control: false,
+      description: "Callback disparado ao alterar linhas por página.",
+      table: { type: { summary: "(rowsPerPage: number) => void" } },
+    },
+    itemsLabel: {
+      control: { type: "text" },
+      description: "Rótulo de unidade usado no resumo (ex.: rows, jobs).",
+      table: { type: { summary: "string" }, defaultValue: { summary: "items" } },
+    },
+    rowsPerPageLabel: {
+      control: { type: "text" },
+      description: "Texto do label do seletor de linhas por página.",
+      table: {
+        type: { summary: "string" },
+        defaultValue: { summary: "Rows per page" },
+      },
+    },
+    rowsPerPageSelectId: {
+      control: { type: "text" },
+      description: "ID aplicado no select de linhas por página.",
+      table: {
+        type: { summary: "string" },
+        defaultValue: { summary: "table-rows-per-page" },
+      },
+    },
+    className: {
+      control: false,
+      description: "Classe CSS adicional no container do rodapé.",
+      table: { type: { summary: "string" } },
+    },
   },
   parameters: {
     wrapperSize: "medium",
@@ -72,8 +120,22 @@ type Story = StoryObj<typeof meta>;
 
 export const Padrao: Story = {
   render: () => <InteractiveDemo />,
+  parameters: {
+    docs: {
+      description: {
+        story: "Demonstra paginação interativa com total de itens e troca de densidade.",
+      },
+    },
+  },
 };
 
 export const Vazio: Story = {
   render: () => <InteractiveDemo totalItems={0} />,
+  parameters: {
+    docs: {
+      description: {
+        story: "Mostra o estado sem itens, com navegação desabilitada.",
+      },
+    },
+  },
 };

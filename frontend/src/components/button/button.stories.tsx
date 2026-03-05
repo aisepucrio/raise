@@ -8,11 +8,64 @@ const meta = {
   component: Button,
   tags: ["autodocs"],
   argTypes: {
-    icon: { control: false },
-    onClick: { action: "clicked" },
+    text: {
+      control: { type: "text" },
+      description: "Texto exibido no botão.",
+      table: { type: { summary: "string" } },
+    },
+    icon: {
+      control: false,
+      description: "Ícone opcional exibido no botão.",
+      table: { type: { summary: "ReactNode" } },
+    },
+    onClick: {
+      action: "clicked",
+      description: "Callback disparado no clique do botão.",
+      table: { type: { summary: "MouseEventHandler<HTMLButtonElement>" } },
+    },
     iconSide: {
       control: { type: "inline-radio" },
       options: ["left", "right"],
+      description: "Define o lado do ícone quando há texto.",
+      table: { type: { summary: "\"left\" | \"right\"" }, defaultValue: { summary: "left" } },
+    },
+    type: {
+      control: { type: "inline-radio" },
+      options: ["button", "submit", "reset"],
+      description: "Tipo nativo do botão.",
+      table: { type: { summary: "\"button\" | \"submit\" | \"reset\"" }, defaultValue: { summary: "button" } },
+    },
+    size: {
+      control: { type: "inline-radio" },
+      options: ["default", "sm"],
+      description: "Tamanho visual do botão.",
+      table: { type: { summary: "\"default\" | \"sm\"" }, defaultValue: { summary: "default" } },
+    },
+    fullWidth: {
+      control: { type: "boolean" },
+      description: "Quando `true`, ocupa largura total do container.",
+      table: { type: { summary: "boolean" }, defaultValue: { summary: "true" } },
+    },
+    variant: {
+      control: { type: "inline-radio" },
+      options: ["default", "selectable"],
+      description: "Variante visual do botão.",
+      table: { type: { summary: "\"default\" | \"selectable\"" }, defaultValue: { summary: "default" } },
+    },
+    selected: {
+      control: { type: "boolean" },
+      description: "Estado selecionado (usado na variante `selectable`).",
+      table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
+    },
+    disabled: {
+      control: { type: "boolean" },
+      description: "Desabilita clique e estilo interativo.",
+      table: { type: { summary: "boolean" } },
+    },
+    className: {
+      control: false,
+      description: "Classe CSS adicional aplicada ao botão.",
+      table: { type: { summary: "string" } },
     },
   },
   args: {
@@ -43,6 +96,13 @@ type Story = StoryObj<typeof meta>;
 
 export const Padrao: Story = {
   args: {},
+  parameters: {
+    docs: {
+      description: {
+        story: "Botão padrão com texto simples.",
+      },
+    },
+  },
 };
 
 export const ComIconeEsquerda: Story = {
@@ -52,6 +112,13 @@ export const ComIconeEsquerda: Story = {
     iconSide: "left",
     "aria-label": "Novo registro",
   },
+  parameters: {
+    docs: {
+      description: {
+        story: "Botão com ícone à esquerda e texto.",
+      },
+    },
+  },
 };
 
 export const ComIconeDireita: Story = {
@@ -60,6 +127,13 @@ export const ComIconeDireita: Story = {
     icon: <ArrowRight />,
     iconSide: "right",
     "aria-label": "Continuar",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "Botão com ícone à direita e texto.",
+      },
+    },
   },
 };
 
@@ -84,5 +158,12 @@ export const Desabilitado: Story = {
   args: {
     text: "Salvar alterações",
     disabled: true,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "Estado desabilitado sem interação do usuário.",
+      },
+    },
   },
 };

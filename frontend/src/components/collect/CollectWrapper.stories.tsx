@@ -6,6 +6,13 @@ const meta = {
   title: "Components/Collect/CollectWrapper",
   component: CollectWrapper,
   tags: ["autodocs"],
+  argTypes: {
+    children: {
+      control: false,
+      description: "Conteúdo interno da área principal de collect.",
+      table: { type: { summary: "ReactNode" } },
+    },
+  },
   parameters: {
     wrapperSize: "large",
     layout: "fullscreen",
@@ -36,4 +43,11 @@ export const Padrao: Story = {
       </div>
     </CollectWrapper>
   ),
+  parameters: {
+    docs: {
+      description: {
+        story: "Container base do módulo Collect com conteúdo interno.",
+      },
+    },
+  },
 };

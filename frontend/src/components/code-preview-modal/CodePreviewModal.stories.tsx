@@ -5,9 +5,16 @@ import { Button } from "@/components/button";
 import { ThemeProvider } from "@/lib/theme-context";
 import { CodePreviewModal } from "./CodePreviewModal";
 
+type PreviewValue =
+  | string
+  | number
+  | boolean
+  | null
+  | Record<string, string | number | boolean | null | string[]>;
+
 function InteractiveDemo() {
   const [open, setOpen] = useState(false);
-  const [previewValue, setPreviewValue] = useState<unknown>(null);
+  const [previewValue, setPreviewValue] = useState<PreviewValue>(null);
 
   return (
     <div className="space-y-3">
@@ -52,7 +59,31 @@ const meta = {
   component: CodePreviewModal,
   tags: ["autodocs"],
   argTypes: {
-    onClose: { control: false },
+    open: {
+      control: { type: "boolean" },
+      description: "Controla se o modal de preview está aberto.",
+      table: { type: { summary: "boolean" } },
+    },
+    onClose: {
+      control: false,
+      description: "Callback executado ao fechar o modal.",
+      table: { type: { summary: "() => void" } },
+    },
+    value: {
+      control: false,
+      description: "Conteúdo renderizado no bloco de código (texto ou JSON).",
+      table: {
+        type: {
+          summary:
+            "string | number | boolean | null | Record<string, string | number | boolean | null | string[]>",
+        },
+      },
+    },
+    dialogLabel: {
+      control: { type: "text" },
+      description: "Nome acessível do diálogo para leitores de tela.",
+      table: { type: { summary: "string" }, defaultValue: { summary: "Cell content preview" } },
+    },
   },
   parameters: {
     wrapperSize: "large",
@@ -79,4 +110,11 @@ type Story = StoryObj<typeof meta>;
 
 export const Padrao: Story = {
   render: () => <InteractiveDemo />,
+  parameters: {
+    docs: {
+      description: {
+        story: "Teste interativo com abertura do modal para JSON e texto simples.",
+      },
+    },
+  },
 };

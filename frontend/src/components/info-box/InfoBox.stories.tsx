@@ -13,6 +13,23 @@ const meta = {
     color: {
       control: { type: "inline-radio" },
       options: ["primary", "secondary"],
+      description: "Variante visual do card.",
+      table: { type: { summary: "\"primary\" | \"secondary\"" }, defaultValue: { summary: "primary" } },
+    },
+    title: {
+      control: { type: "text" },
+      description: "Título exibido no card.",
+      table: { type: { summary: "string" } },
+    },
+    number: {
+      control: { type: "text" },
+      description: "Valor principal da métrica.",
+      table: { type: { summary: "number | string" } },
+    },
+    className: {
+      control: false,
+      description: "Classe CSS adicional aplicada no card.",
+      table: { type: { summary: "string" } },
     },
   },
   args: {
@@ -41,12 +58,27 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {};
+export const Padrao: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: "Card de métrica com estilo primário.",
+      },
+    },
+  },
+};
 
 export const Secundario: Story = {
   args: {
     title: "Jobs em fila",
     number: 42,
     color: "secondary",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "Mesma estrutura usando a variante visual secundária.",
+      },
+    },
   },
 };

@@ -7,7 +7,16 @@ const meta = {
   component: FormatStatusItem,
   tags: ["autodocs"],
   argTypes: {
-    className: { control: false },
+    status: {
+      control: { type: "text" },
+      description: "Status bruto recebido da API para normalização e exibição.",
+      table: { type: { summary: "string | null" } },
+    },
+    className: {
+      control: false,
+      description: "Classe CSS adicional aplicada ao container.",
+      table: { type: { summary: "string" } },
+    },
   },
   args: {
     status: "STARTED",
@@ -33,7 +42,15 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {};
+export const Padrao: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: "Exibe um status único no formato final da interface.",
+      },
+    },
+  },
+};
 
 export const ListaDeStatus: Story = {
   render: () => {
@@ -60,5 +77,12 @@ export const ListaDeStatus: Story = {
         ))}
       </div>
     );
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "Compara os principais status suportados e seus mapeamentos visuais.",
+      },
+    },
   },
 };
