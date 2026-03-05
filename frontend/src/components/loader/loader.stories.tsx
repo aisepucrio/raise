@@ -11,7 +11,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Indicador de carregamento centralizado que se adapta ao tamanho do contêiner.",
+          "Centered loading indicator that adapts to container size.",
       },
     },
   },
@@ -20,7 +20,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {
+export const Default: Story = {
   render: () => (
     <div className="h-36 rounded-xl border border-(--color-secondary-soft) bg-(--color-primary) p-4">
       <Loader />
@@ -29,7 +29,7 @@ export const Padrao: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Exemplo básico de uso em uma área de carregamento.",
+        story: "Example basic of usage in the area of loading.",
       },
     },
   },
@@ -52,7 +52,7 @@ export const ResizePorContainer: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Mostra o comportamento em contêineres com tamanhos diferentes.",
+        story: "Mostra the behavior in containers with sizes different.",
       },
     },
   },

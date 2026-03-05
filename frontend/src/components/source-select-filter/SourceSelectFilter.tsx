@@ -17,7 +17,7 @@ export type SourceSelectFilterProps = {
   className?: string;
 };
 
-// Select padrão de source (repository/project/etc) reutilizado no overview e preview.
+// Select standard of source (repository/project/etc) reutilizado in the overview and preview.
 export function SourceSelectFilter({
   id,
   label,

@@ -12,7 +12,7 @@ export type ResolvedStartEndDateState = {
   endMax?: string;
 };
 
-// Normaliza `YYYY-MM-DD` ou ISO datetime para o formato do input de data.
+// normalizes `YYYY-MM-DD` ou ISO datetime for the format of the input of date.
 function toInputDate(value?: string | null): string | undefined {
   if (!value) return undefined;
 
@@ -25,7 +25,7 @@ function toInputDate(value?: string | null): string | undefined {
   return parsedDate.toISOString().slice(0, 10);
 }
 
-// Limpa o valor se ele cair fora do intervalo permitido.
+// clears the value se ele cair outside of the interval permitido.
 function keepDateWithinRange(value: string, min?: string, max?: string) {
   if (!value) return "";
   if (min && value < min) return "";
@@ -42,15 +42,15 @@ export function resolveStartEndDateState({
   endDate: string;
   dateRange?: StartEndDateRange;
 }): ResolvedStartEndDateState {
-  // Bounds vindos do endpoint `/date-range`.
+  // Bounds vindos of the endpoint `/date-range`.
   const minDate = toInputDate(dateRange?.minDate);
   const maxDate = toInputDate(dateRange?.maxDate);
 
-  // Remove datas que não pertencem ao intervalo absoluto.
+  // removes dates that not pertencem to interval absoluto.
   const nextStartDate = keepDateWithinRange(startDate, minDate, maxDate);
   let nextEndDate = keepDateWithinRange(endDate, minDate, maxDate);
 
-  // Regra base: start não pode ser maior que end.
+  // rule base: start not pode ser maior that end.
   if (nextStartDate && nextEndDate && nextStartDate > nextEndDate) {
     nextEndDate = "";
   }
@@ -58,10 +58,10 @@ export function resolveStartEndDateState({
   return {
     startDate: nextStartDate,
     endDate: nextEndDate,
-    // Sem end definido, o start respeita só o teto absoluto do range.
+    // without end definido, the start respeita only the teto absoluto of the range.
     startMin: minDate,
     startMax: nextEndDate || maxDate,
-    // Sem start definido, o end respeita só o piso absoluto do range.
+    // without start definido, the end respeita only the piso absoluto of the range.
     endMin: nextStartDate || minDate,
     endMax: maxDate,
   };

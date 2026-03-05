@@ -17,35 +17,35 @@ const meta = {
   argTypes: {
     label: {
       control: { type: "text" },
-      description: "Texto principal do item da sidebar.",
+      description: "text main of the item of the sidebar.",
       table: { type: { summary: "string" } },
     },
     active: {
       control: { type: "boolean" },
-      description: "Marca o item como ativo.",
+      description: "Marca the item how ativo.",
       table: { type: { summary: "boolean" } },
     },
     onClick: {
       action: "clicked",
-      description: "Callback disparado no clique quando não há subitens.",
+      description: "Callback triggered in the click when there are no subitems.",
       table: { type: { summary: "() => void" } },
     },
     subItems: {
       control: false,
       description:
-        "Lista opcional de subitens para exibição hierárquica.",
+        "Optional subitems list for hierarchical display.",
       table: { type: { summary: "{ label: string; active: boolean; onClick: () => void }[]" } },
     },
     defaultExpanded: {
       control: "boolean",
-      description: "Define o estado inicial de expansão.",
+      description: "Define the state initial of expansion.",
       table: { type: { summary: "boolean" } },
     },
     icon: {
       control: { type: "select" },
       options: Object.keys(iconOptions),
       mapping: iconOptions,
-      description: "Ícone Lucide exibido à esquerda do rótulo.",
+      description: "icon Lucide shown to esquerda of the label.",
       table: { type: { summary: "LucideIcon" } },
     },
   },
@@ -61,7 +61,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Item principal da navegação da sidebar, com ícone, estado ativo e subitens opcionais.",
+          "Main sidebar navigation item with icon, active state, and optional subitems.",
       },
     },
   },
@@ -79,11 +79,11 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {
+export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Item de navegação padrão sem subitens.",
+        story: "item of navigation standard without subitems.",
       },
     },
   },
@@ -96,7 +96,7 @@ export const Ativo: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Mostra o destaque visual do estado ativo.",
+        story: "Mostra the destaque visual of the state ativo.",
       },
     },
   },
@@ -104,19 +104,19 @@ export const Ativo: Story = {
 
 export const RotuloLongo: Story = {
   args: {
-    label: "Configurações e preferências de integração",
+    label: "configurations and preferences of integration",
     icon: Briefcase,
   },
   parameters: {
     docs: {
       description: {
-        story: "Compara comportamento de layout com rótulo longo.",
+        story: "Compara behavior of layout with label longo.",
       },
     },
   },
 };
 
-export const ComSubitens: Story = {
+export const WithSubitems: Story = {
   args: {
     label: "Preview",
     icon: Eye,
@@ -125,13 +125,13 @@ export const ComSubitens: Story = {
     subItems: [
       { label: "Resumo", active: true, onClick: noop },
       { label: "Detalhes", active: false, onClick: noop },
-      { label: "Histórico", active: false, onClick: noop },
+      { label: "history", active: false, onClick: noop },
     ],
   },
   parameters: {
     docs: {
       description: {
-        story: "Mostra o comportamento expansível quando existem subitens.",
+        story: "Mostra the behavior expandable when existem subitems.",
       },
     },
   },
@@ -180,7 +180,7 @@ export const EmContexto: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Exemplo com vários itens para comparar os estados visuais.",
+        story: "Example with multiple items for compare the states visual.",
       },
     },
   },

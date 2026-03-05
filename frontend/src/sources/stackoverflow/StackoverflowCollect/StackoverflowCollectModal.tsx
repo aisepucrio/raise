@@ -21,12 +21,12 @@ export default function StackoverflowCollectModal({
   onClose,
   onAddTag,
 }: StackoverflowCollectModalProps) {
-  // estado local da tag e erro.
+  // state local of the tag and error.
   const tagInputRef = useRef<HTMLInputElement | null>(null);
   const [tagInput, setTagInput] = useState("");
   const [addTagError, setAddTagError] = useState<string | null>(null);
 
-  // limpa o formulário ao fechar o modal.
+  // clears the form to close the modal.
   useEffect(() => {
     if (open) return;
 
@@ -34,7 +34,7 @@ export default function StackoverflowCollectModal({
     setAddTagError(null);
   }, [open]);
 
-  // valida duplicidade e confirma adição da tag.
+  // validates duplicidade and confirma addition of the tag.
   function handleConfirmAddTag() {
     const normalizedTag = normalizeTagInput(tagInput);
 
@@ -62,7 +62,7 @@ export default function StackoverflowCollectModal({
       initialFocusRef={tagInputRef}
       onConfirm={handleConfirmAddTag}
     >
-      {/* campo de entrada da tag */}
+      {/* field of input of the tag */}
       <FormInput
         id="stackoverflow-collect-tag-input"
         ref={tagInputRef}

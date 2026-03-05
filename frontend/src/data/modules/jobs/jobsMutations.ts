@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invalidateJobsQueries } from "../../query/invalidation";
 import { jobsService } from "./jobsService";
 
-// Para/cancela um job específico e atualiza a listagem de jobs.
+// for/cancela the job specific and updates the listing of jobs.
 export function useStopJobMutation() {
   const queryClient = useQueryClient();
 
@@ -12,7 +12,7 @@ export function useStopJobMutation() {
   });
 }
 
-// Reinicia uma coleta a partir de um job e atualiza a listagem de jobs.
+// Reinicia the collection the partir of the job and updates the listing of jobs.
 export function useRestartCollectionMutation() {
   const queryClient = useQueryClient();
 

@@ -18,7 +18,7 @@ export type OverviewChartSectionProps = {
   emptyMessage: string;
 };
 
-// Bloco do gráfico principal com espaçamento e estados padrão.
+// Main chart block with default spacing and states.
 export function OverviewChartSection({
   title,
   data,

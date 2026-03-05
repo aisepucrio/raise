@@ -9,27 +9,27 @@ const meta = {
   argTypes: {
     collectButtonText: {
       control: { type: "text" },
-      description: "Texto do botão no estado normal.",
+      description: "Button text in normal state.",
       table: { type: { summary: "string" } },
     },
     collectPendingButtonText: {
       control: { type: "text" },
-      description: "Texto exibido quando a coleta está pendente.",
+      description: "Text shown while collection is pending.",
       table: { type: { summary: "string" } },
     },
     onCollect: {
       action: "collectClick",
-      description: "Callback disparado ao clicar no botão de coleta.",
+      description: "Callback triggered on collect button click.",
       table: { type: { summary: "() => void" } },
     },
     isCollectPending: {
       control: { type: "boolean" },
-      description: "Indica estado pendente da coleta.",
+      description: "Indicates pending collection state.",
       table: { type: { summary: "boolean" } },
     },
     isCollectDisabled: {
       control: { type: "boolean" },
-      description: "Desabilita o botão de coleta.",
+      description: "Disables collect button.",
       table: { type: { summary: "boolean" } },
     },
   },
@@ -44,7 +44,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Bloco de ações finais da coleta, com estados normal, pendente e desabilitado.",
+          "Final action block for collection, with normal, pending, and disabled states.",
       },
     },
   },
@@ -60,17 +60,17 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {
+export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Ação padrão habilitada para iniciar coleta.",
+        story: "Default enabled action to start collection.",
       },
     },
   },
 };
 
-export const Pendente: Story = {
+export const Pending: Story = {
   args: {
     isCollectPending: true,
     isCollectDisabled: true,
@@ -78,7 +78,7 @@ export const Pendente: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Estado pendente com botão bloqueado e texto de progresso.",
+        story: "Pending state with disabled button and progress text.",
       },
     },
   },

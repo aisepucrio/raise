@@ -11,7 +11,7 @@ type GithubCollectModalProps = {
   onAddRepository: (repository: string) => void;
 };
 
-// Normaliza a entrada do usuário para extrair o formato "owner/repo" de URLs ou entradas com espaços
+// Normalize user input to extract "owner/repo" from URLs or raw text.
 function normalizeRepositoryInput(value: string) {
   return value
     .trim()
@@ -20,7 +20,7 @@ function normalizeRepositoryInput(value: string) {
     .replace(/\/+$/, "");
 }
 
-// Verifica se a string segue o formato "owner/repo"
+// Validate "owner/repo" format.
 function isValidRepositoryName(value: string) {
   return /^[^/\s]+\/[^/\s]+$/.test(value);
 }
@@ -31,14 +31,14 @@ export default function GithubCollectModal({
   onClose,
   onAddRepository,
 }: GithubCollectModalProps) {
-  // estado local do input e mensagem de erro.
+  // Local input state and error message.
   const addRepositoryInputRef = useRef<HTMLInputElement | null>(null);
   const [repositoryInput, setRepositoryInput] = useState("");
   const [addRepositoryError, setAddRepositoryError] = useState<string | null>(
     null,
   );
 
-  // limpa estado quando o modal é fechado.
+  // Reset state when modal closes.
   useEffect(() => {
     if (open) return;
 
@@ -46,7 +46,7 @@ export default function GithubCollectModal({
     setAddRepositoryError(null);
   }, [open]);
 
-  // valida e confirma a inclusão de repositório.
+  // Validate and confirm repository addition.
   function handleConfirmAddRepository() {
     const normalizedRepository = normalizeRepositoryInput(repositoryInput);
 
@@ -79,7 +79,7 @@ export default function GithubCollectModal({
       initialFocusRef={addRepositoryInputRef}
       onConfirm={handleConfirmAddRepository}
     >
-      {/* campo único de entrada do repositório */}
+      {/* Repository input field */}
       <FormInput
         id="github-collect-repository-input"
         ref={addRepositoryInputRef}

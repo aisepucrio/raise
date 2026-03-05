@@ -20,7 +20,7 @@ import type {
 const SOURCE = "github" as const;
 
 export const githubService = {
-  // Overview e ItemSwitcher: cards do dashboard e lista de repositorios.
+  // Overview and ItemSwitcher: cards of the dashboard and list of repositories.
   getOverview: (
     params?: GithubOverviewParams,
     options?: RequestOptions,
@@ -30,7 +30,7 @@ export const githubService = {
       signal: options?.signal,
     }) as Promise<GithubOverviewResponse>,
 
-  // Overview e Preview: faixa de datas para limitar filtros por repositorio.
+  // Overview and Preview: range of dates for limitar filters for repository.
   getDateRange: (
     params: GithubDateRangeParams,
     options?: RequestOptions,
@@ -40,7 +40,7 @@ export const githubService = {
       signal: options?.signal,
     }) as Promise<ApiDateRangeResponse>,
 
-  // ChartLine (Overview): serie acumulada por intervalo.
+  // ChartLine (Overview): series cumulative for interval.
   getGraph: (
     params: GithubGraphParams,
     options?: RequestOptions,
@@ -50,7 +50,7 @@ export const githubService = {
       signal: options?.signal,
     }) as Promise<GithubGraphResponse>,
 
-  // Preview: tabela paginada por secao com filtros e ordenacao.
+  // Preview: table paginada for section with filters and sorting.
   getPreview: (
     section: GithubSection,
     params: GithubPreviewParams,
@@ -61,14 +61,14 @@ export const githubService = {
       signal: options?.signal,
     }) as Promise<GithubPreviewResponse>,
 
-  // ModalDownload (Preview): exporta no formato padrão atual (json).
+  // ModalDownload (Preview): exporta in the current standard format (json).
   exportPreview: (body: GithubExportBody, options?: RequestOptions) =>
     api.post(endpoints.export(SOURCE), body, {
       responseType: "blob",
       signal: options?.signal,
     }),
 
-  // Collect: inicia a coleta de GitHub via endpoint padronizado.
+  // Collect: starts the collection of GitHub via endpoint standardized.
   collect: (body: GithubCollectBody, options?: RequestOptions) =>
     api.post(endpoints.collect(SOURCE), body, { signal: options?.signal }),
 };

@@ -9,7 +9,7 @@ const meta = {
   argTypes: {
     children: {
       control: false,
-      description: "Conteúdo interno da área principal de collect.",
+      description: "content internal of the area main of collect.",
       table: { type: { summary: "ReactNode" } },
     },
   },
@@ -19,7 +19,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Container base para organizar o conteúdo da tela de coleta.",
+          "Base container to organize collection screen content.",
       },
     },
   },
@@ -35,18 +35,18 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {
+export const Default: Story = {
   render: () => (
     <CollectWrapper>
       <div className="rounded-lg border border-(--color-secondary-soft) p-3 text-sm text-(--color-secondary-muted)">
-        conteúdo interno do collect
+        content interno do collect
       </div>
     </CollectWrapper>
   ),
   parameters: {
     docs: {
       description: {
-        story: "Container base do módulo Collect com conteúdo interno.",
+        story: "Container base of the module Collect with content internal.",
       },
     },
   },

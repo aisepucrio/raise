@@ -13,7 +13,7 @@ export function RemovableTag({ label, onRemove }: RemovableTagProps) {
       <button
         type="button"
         onClick={onRemove}
-        aria-label={`Remove ${label}`}
+        aria-label={`removes ${label}`}
         className="inline-flex size-5 items-center justify-center rounded-full bg-(--color-secondary-subtle) text-(--color-secondary) transition-colors hover:bg-(--color-secondary-soft)"
       >
         <X className="size-3" />

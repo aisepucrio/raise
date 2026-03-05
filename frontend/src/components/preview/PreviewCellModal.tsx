@@ -10,7 +10,7 @@ export type PreviewCellModalProps = {
   dialogLabel?: CodePreviewModalProps["dialogLabel"];
 };
 
-// Modal padrão para inspeção do valor completo da célula.
+// Modal standard for inspection of the value complete of the cell.
 export function PreviewCellModal({
   open,
   onClose,

@@ -1,19 +1,19 @@
 import { sourceIds, type SourceId } from "@/sources";
 
-// Query keys são a "identidade" de cada consulta no cache do React Query.
-// Elas servem para:
-// - separar caches por tela/filtros/paginação
-// - evitar colisão entre consultas diferentes
-// - permitir invalidate/refetch por prefixo (ex.: ["jobs"])
+// Query keys are the "identidade" of each consulta in the cache of the React Query.
+// Elas servem for:
+// - separar caches for screen/filters/pagination
+// - avoid collision between consultas different
+// - permitir invalidte/refetch for prefixed (ex.: ["jobs"])
 //
-// Sem isso centralizado, o código funciona, mas fica mais fácil errar
+// without isso centered, the code funciona, mas fica mais easy errar
 // (ex.: "date-range" vs "dateRange", "job" vs "jobs").
 
-// Esta função é uma "fábrica":
-// dado um source ("github", "jira", etc), ela devolve um objeto com as
-// funções de key daquele source.
+// Esta function is the "factory":
+// dado the source ("github", "jira", etc), ela returns the object with the
+// functions of key daquele source.
 //
-// Exemplo:
+// Example:
 // createSourceQueryKeys("github").overview({ page: 1 })
 // -> ["github", "overview", { page: 1 }]
 function createSourceQueryKeys(source: SourceId) {
@@ -28,7 +28,7 @@ function createSourceQueryKeys(source: SourceId) {
   };
 }
 
-// Aqui montamos um objeto que vai ficar assim:
+// here Buildsmos the object that vai ficar assim:
 // {
 //   github: { overview, dateRange, graph, preview },
 //   jira: { ... },
@@ -39,22 +39,22 @@ const sourceQueryKeys = {} as Record<
   ReturnType<typeof createSourceQueryKeys>
 >;
 
-// Para cada source definido em "@/sources", criamos automaticamente seu grupo
-// de query keys. Isso evita repetir manualmente github/jira/stackoverflow.
-// OBS: Para isso é considerado que há uma padronização entre as keys de cada source (overview, dateRange, graph, preview).
+// for each source definido in "@/sources", criamos automaticamente seu grupo
+// of query keys. Isso avoids repetir manualmente github/jira/stackoverflow.
+// OBS: for isso is considerado that there is the standardization between the keys of each source (overview, dateRange, graph, preview).
 for (const source of sourceIds) {
   sourceQueryKeys[source] = createSourceQueryKeys(source);
 }
 
-// Objeto final usado pela aplicação:
-// - traz as keys de cada source (github/jira/stackoverflow)
-// - adiciona também as keys específicas de jobs
+// Objeat the end used pela application:
+// - traz the keys of each source (github/jira/stackoverflow)
+// - adds also the keys specific of jobs
 export const queryKeys = {
   ...sourceQueryKeys,
   jobs: {
-    // Prefixo para invalidar tudo que pertence a jobs.
+    // Prefixed for invalidr tudo that pertence the jobs.
     all: ["jobs"] as const,
-    // Chave da listagem principal de jobs.
+    // key of the listing main of jobs.
     list: () => ["jobs", "list"] as const,
   },
 };

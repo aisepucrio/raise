@@ -1,33 +1,33 @@
 # raise
 
-## Como ligar e acessar o frontend (passo a passo)
+## How to run and access the frontend (step by step)
 
-1. Entre na pasta do frontend:
+1. Enter the frontend folder:
 
 ```bash
 cd frontend
 ```
 
-2. Instale as dependências:
+2. Install dependencies:
 
 ```bash
 npm install
 ```
 
-3. Configure a variável de ambiente em `frontend/.env`:
+3. Configure the environment variable in `frontend/.env`:
 
 ```env
-VITE_API_URL=http://localhost:8000 (ou o local do backend)
+VITE_API_URL=http://localhost:8000 (or your backend location)
 ```
 
-4. Suba o servidor de desenvolvimento:
+4. Start the development server:
 
 ```bash
 npm run dev
 ```
 
-## Documentação detalhada do frontend
+## Detailed frontend documentation
 
-A documentação completa de arquitetura, módulos e fluxo está em:
+The full architecture, modules, and flow documentation is in:
 
 - [README.md](frontend/README.md)

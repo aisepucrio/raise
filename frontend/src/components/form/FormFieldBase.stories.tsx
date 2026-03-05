@@ -8,50 +8,50 @@ const meta = {
   argTypes: {
     label: {
       control: { type: "text" },
-      description: "Texto do rótulo exibido acima/ao lado do campo.",
+      description: "Label text shown above or beside field.",
       table: { type: { summary: "string" } },
     },
     htmlFor: {
       control: { type: "text" },
-      description: "ID do campo associado ao label.",
+      description: "Field ID associated with label.",
       table: { type: { summary: "string" } },
     },
     hint: {
       control: { type: "text" },
-      description: "Mensagem de apoio exibida abaixo do campo.",
+      description: "Support message shown below field.",
       table: { type: { summary: "string" } },
     },
     error: {
       control: { type: "text" },
-      description: "Mensagem de erro (substitui o hint quando presente).",
+      description: "Error message (replaces hint when present).",
       table: { type: { summary: "string" } },
     },
     required: {
       control: { type: "boolean" },
-      description: "Marca o campo como obrigatório no label.",
+      description: "Marks field the required in label.",
       table: { type: { summary: "boolean" } },
     },
     labelPosition: {
       control: { type: "inline-radio" },
       options: ["top", "left"],
-      description: "Posição visual do label em relação ao conteúdo.",
+      description: "Visual label position relative to content.",
       table: { type: { summary: "\"top\" | \"left\"" }, defaultValue: { summary: "top" } },
     },
     className: {
       control: false,
-      description: "Classe CSS adicional do wrapper.",
+      description: "Additional CSS class for wrapper.",
       table: { type: { summary: "string" } },
     },
     children: {
       control: false,
-      description: "Elemento de campo renderizado dentro do container.",
+      description: "Field element rendered inside container.",
       table: { type: { summary: "ReactNode" } },
     },
   },
   args: {
-    label: "Nome do campo",
+    label: "Field Name",
     htmlFor: "field-base-demo",
-    hint: "Use este container para padronizar label, hint e erro.",
+    hint: "Use this container to standardize label, hint, and error.",
     required: false,
   },
   parameters: {
@@ -59,7 +59,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Componente base para organizar label, conteúdo do campo e mensagens de apoio ou erro.",
+          "Base component to organize label, field content, and support or error messages.",
       },
     },
   },
@@ -68,7 +68,7 @@ const meta = {
       <input
         id={args.htmlFor}
         className={getFormControlClassName("outlined")}
-        placeholder="Campo renderizado como child"
+        placeholder="Field rendered as child"
       />
     </FormFieldBase>
   ),
@@ -77,48 +77,48 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const ComHint: Story = {
+export const WithHint: Story = {
   args: {},
   parameters: {
     docs: {
       description: {
-        story: "Exemplo base com label e mensagem de apoio.",
+        story: "Base example with label and support message.",
       },
     },
   },
 };
 
-export const ComErro: Story = {
+export const WithError: Story = {
   args: {
     hint: undefined,
-    error: "Este campo é obrigatório.",
+    error: "This field is required.",
     required: true,
   },
   parameters: {
     docs: {
       description: {
-        story: "Exibe estado de erro com indicação de campo obrigatório.",
+        story: "Shows error state with required field indicator.",
       },
     },
   },
 };
 
-export const SemLabel: Story = {
+export const WithoutLabel: Story = {
   args: {
     label: undefined,
     htmlFor: undefined,
-    hint: "Também funciona sem label para layouts específicos.",
+    hint: "Also works without label for specific layouts.",
   },
   parameters: {
     docs: {
       description: {
-        story: "Uso sem label para composições personalizadas de layout.",
+        story: "Usage without label for custom layout compositions.",
       },
     },
   },
 };
 
-export const ComparacaoOutlinedEFilled: Story = {
+export const OutlinedVsFilled: Story = {
   args: {
     label: undefined,
     htmlFor: undefined,
@@ -131,7 +131,7 @@ export const ComparacaoOutlinedEFilled: Story = {
         <input
           id="field-base-outlined"
           className={getFormControlClassName("outlined")}
-          placeholder="Variante outlined"
+          placeholder="Outlined variant"
         />
       </FormFieldBase>
 
@@ -139,7 +139,7 @@ export const ComparacaoOutlinedEFilled: Story = {
         <input
           id="field-base-filled"
           className={getFormControlClassName("filled")}
-          placeholder="Variante filled"
+          placeholder="Filled variant"
         />
       </FormFieldBase>
     </div>
@@ -147,7 +147,7 @@ export const ComparacaoOutlinedEFilled: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Comparação visual entre os estilos de campo `outlined` e `filled`.",
+        story: "Visual comparison between `outlined` and `filled` field styles.",
       },
     },
   },

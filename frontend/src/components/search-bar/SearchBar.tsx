@@ -28,7 +28,7 @@ export function SearchBar({
 
   const isExpanded = expandable && (isFocused || Boolean(inputValue.trim()));
 
-  // Debounce para evitar disparo de query em toda tecla digitada.
+  // Debounce to avoid disparo of query in entire key digitada.
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
       onSearchChange(inputValue.trim());

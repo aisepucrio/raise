@@ -19,17 +19,17 @@ const meta = {
   argTypes: {
     items: {
       control: false,
-      description: "Lista de cards com título, valor e cor opcional.",
+      description: "list of cards with title, value and color optional.",
       table: { type: { summary: "InfoBoxGridItem[]" } },
     },
     className: {
       control: false,
-      description: "Classe CSS adicional aplicada no grid.",
+      description: "Classe CSS adicional aplieach in the grid.",
       table: { type: { summary: "string" } },
     },
     style: {
       control: false,
-      description: "Estilos inline opcionais aplicados no container.",
+      description: "Estilos inline optional aplicados in the container.",
       table: { type: { summary: "CSSProperties" } },
     },
   },
@@ -41,7 +41,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Grid responsivo para exibir múltiplos cards de métrica.",
+          "Responsive grid to display multiple metric cards.",
       },
     },
   },
@@ -57,17 +57,17 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const PadraoZebrado: Story = {
+export const DefaultZebra: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Grid padrão com alternância automática de cores (zebra).",
+        story: "Grid standard with alternation automatic of cores (zebra).",
       },
     },
   },
 };
 
-export const ComCoresExplicitas: Story = {
+export const WithExplicitColors: Story = {
   args: {
     items: [
       { title: "Processados", number: 128, color: "secondary" },
@@ -79,7 +79,7 @@ export const ComCoresExplicitas: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Quando a cor é definida no item, ela é usada diretamente.",
+        story: "when the color is definida in the item, ela is used diretamente.",
       },
     },
   },

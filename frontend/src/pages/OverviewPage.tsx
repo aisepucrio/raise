@@ -12,7 +12,7 @@ export default function OverviewPage() {
     <section className="flex h-full min-h-0 flex-col gap-2">
       <PageHeader
         title="Overview"
-        subtitle="Overview of collected data and pipeline status."
+        subtitle="Overview of collected date and pipeline status."
       />
 
       <div className="min-h-0 flex-1">

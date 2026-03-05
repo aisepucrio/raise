@@ -24,8 +24,8 @@ import {
 } from "@/sources/shared/OverviewShared";
 import { buildSelectOptions } from "@/sources/shared/AllShared";
 
-// Configuração dos cards exibidos quando não há projeto selecionado.
-// A ordem aqui é a ordem visual da coluna lateral no modo "All projects".
+// Cards shown when in project is selected.
+// Order here matches sidebar visual order in "All projects" mode.
 const ALL_PROJECTS_CARD_CONFIG: readonly OverviewMetricCardConfig<JiraOverviewResponse>[] =
   [
     { title: "Issues", getValue: (data) => data?.issues_count },
@@ -33,8 +33,7 @@ const ALL_PROJECTS_CARD_CONFIG: readonly OverviewMetricCardConfig<JiraOverviewRe
     { title: "Users", getValue: (data) => data?.users_count },
   ];
 
-// Configuração dos cards exibidos para um projeto específico.
-// Mantém apenas métricas relevantes ao escopo de um projeto.
+// Cards shown for the specific project.
 const PROJECT_CARD_CONFIG: readonly OverviewMetricCardConfig<JiraOverviewResponse>[] =
   [
     { title: "Issues", getValue: (data) => data?.issues_count },
@@ -44,15 +43,15 @@ const PROJECT_CARD_CONFIG: readonly OverviewMetricCardConfig<JiraOverviewRespons
   ];
 
 export default function JiraOverview() {
-  // Filtros controlados pela própria tela (não ficam na URL).
+  // filters controlled pela own screen (not stay in the URL).
   const [selectedProjectId, setSelectedProjectId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  // Catálogo usado apenas para montar o select de projetos.
+  // catalog used only for build the select of projects.
   const projectCatalogQuery = useJiraOverviewQuery();
 
-  // Adapta payload da API para o formato padrão de opções da UI.
+  // adapts payload of the API for the format standard of options of the UI.
   const projectOptions = useMemo(
     () =>
       buildSelectOptions(projectCatalogQuery.data?.projects, {
@@ -62,7 +61,7 @@ export default function JiraOverview() {
     [projectCatalogQuery.data?.projects],
   );
 
-  // Params da query de overview (cards).
+  // Params of the query of overview (cards).
   const overviewParams = useMemo(
     () =>
       buildOverviewEndpointParams<JiraOverviewParams>(
@@ -77,7 +76,7 @@ export default function JiraOverview() {
   );
   const overviewQuery = useJiraOverviewQuery(overviewParams);
 
-  // Série temporal usa os mesmos filtros + intervalo derivado do range.
+  // series temporal usa the same filters + interval derived of the range.
   const graphParams = useMemo(
     () =>
       buildOverviewGraphEndpointParams<JiraGraphParams>(
@@ -93,9 +92,9 @@ export default function JiraOverview() {
   );
   const graphQuery = useJiraGraphQuery(graphParams);
 
-  // O próprio hook já:
-  // - normaliza string vazia para `undefined`
-  // - só habilita a query quando há `project_id`
+  // the own hook already:
+  // - normalizes string empty for `undefined`
+  // - only enables the query when there is `project_id`
   const dateRangeQuery = useJiraDateRangeByProjectQuery(selectedProjectId);
 
   const { graphSeries, graphErrorMessage } = resolveOverviewGraphPresentation(
@@ -103,7 +102,7 @@ export default function JiraOverview() {
     "Failed to load the Jira chart.",
   );
 
-  // Modo scoped = um projeto específico selecionado.
+  // mode scoped = the project specific selected.
   const isProjectScoped = Boolean(selectedProjectId);
   const infoBoxItems = buildScopedOverviewMetricCardItems({
     overviewData: overviewQuery.data,

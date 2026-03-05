@@ -14,13 +14,13 @@ const meta = {
   argTypes: {
     text: {
       control: { type: "text" },
-      description: "Mensagem exibida dentro da caixa.",
+      description: "message shown inside of the caixa.",
       table: { type: { summary: "string" } },
     },
     variant: {
       control: { type: "inline-radio" },
       options: ["default", "success", "info", "warning", "error"],
-      description: "Variante semântica/visual da caixa.",
+      description: "Variante semantic/visual of the caixa.",
       table: {
         type: {
           summary:
@@ -32,12 +32,12 @@ const meta = {
     width: {
       control: { type: "inline-radio" },
       options: ["full", "auto"],
-      description: "Define se o componente ocupa toda a largura ou apenas conteúdo.",
+      description: "Define se the component occupies entire the width ou only content.",
       table: { type: { summary: "\"full\" | \"auto\"" }, defaultValue: { summary: "full" } },
     },
     className: {
       control: false,
-      description: "Classe CSS adicional aplicada ao container.",
+      description: "Classe CSS adicional aplieach to container.",
       table: { type: { summary: "string" } },
     },
   },
@@ -46,7 +46,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Caixa de aviso com variantes de status e largura configurável.",
+          "Warning box with status variants and configurable width.",
       },
     },
   },
@@ -66,7 +66,7 @@ export const Playground: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Playground para testar texto, variante e largura.",
+        story: "Playground for testar text, variante and width.",
       },
     },
   },
@@ -85,7 +85,7 @@ export const Variants: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Comparação de todas as variantes visuais disponíveis.",
+        story: "comparison of entires the variants visual available.",
       },
     },
   },
@@ -98,7 +98,7 @@ export const AutoWidth: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Caixa ajustada ao conteúdo com largura automática.",
+        story: "Caixa adjusted to content with width automatic.",
       },
     },
   },

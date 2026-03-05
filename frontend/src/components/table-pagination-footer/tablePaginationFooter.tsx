@@ -59,14 +59,14 @@ export function TablePaginationFooter({
         className,
       )}
     >
-      {/* Resumo textual da faixa visível atual. */}
+      {/* Resumo textual of the range visible atual. */}
       <p className="text-sm text-(--color-secondary-muted)">
         {hasItems
           ? `Showing ${firstRowNumber}-${lastRowNumber} of ${totalItems} ${itemsLabel}`
           : "No rows to paginate"}
       </p>
 
-      {/* Paginação centralizada para manter o foco visual no rodapé. */}
+      {/* pagination centralizada for keep the focus visual in the footer. */}
       <Pagination className="mx-0 w-full justify-center">
         <PaginationContent>
           <PaginationItem>
@@ -124,7 +124,7 @@ export function TablePaginationFooter({
         </PaginationContent>
       </Pagination>
 
-      {/* Controle de densidade da tabela (rows per page). */}
+      {/* control of densidade of the table (rows per page). */}
       <FormSelect
         id={rowsPerPageSelectId}
         label={rowsPerPageLabel}

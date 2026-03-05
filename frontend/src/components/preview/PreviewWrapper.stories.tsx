@@ -9,7 +9,7 @@ const meta = {
   argTypes: {
     children: {
       control: false,
-      description: "Conteúdo interno exibido dentro do container principal.",
+      description: "content internal shown inside of the container main.",
       table: { type: { summary: "ReactNode" } },
     },
   },
@@ -19,7 +19,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Container base para organizar os blocos da tela de preview.",
+          "Base container to organize preview screen blocks.",
       },
     },
   },
@@ -37,12 +37,12 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {
+export const Default: Story = {
   render: () => (
     <div className="h-[24rem]">
       <PreviewWrapper>
         <div className="rounded-lg border border-dashed border-(--color-secondary-soft) p-3 text-sm text-(--color-secondary-muted)">
-          Conteúdo composto pelo item principal da source.
+          Content composed by the source main item.
         </div>
       </PreviewWrapper>
     </div>
@@ -50,7 +50,7 @@ export const Padrao: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Exemplo do wrapper com um bloco de conteúdo interno.",
+        story: "Example of the wrapper with the block of content internal.",
       },
     },
   },

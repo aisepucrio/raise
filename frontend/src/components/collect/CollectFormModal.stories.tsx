@@ -10,54 +10,54 @@ const meta = {
   argTypes: {
     open: {
       control: { type: "boolean" },
-      description: "Controla visibilidade do modal.",
+      description: "Controla visibility of the modal.",
       table: { type: { summary: "boolean" } },
     },
     onClose: {
       action: "close",
-      description: "Callback disparado ao cancelar/fechar modal.",
+      description: "Callback triggered to cancelar/close modal.",
       table: { type: { summary: "() => void" } },
     },
     title: {
       control: { type: "text" },
-      description: "Título principal do modal.",
+      description: "title main of the modal.",
       table: { type: { summary: "string" } },
     },
     subtitle: {
       control: { type: "text" },
-      description: "Subtítulo opcional do modal.",
+      description: "subtitle optional of the modal.",
       table: { type: { summary: "string" } },
     },
     initialFocusRef: {
       control: false,
-      description: "Ref opcional para foco inicial ao abrir modal.",
+      description: "Ref optional for focus initial to open modal.",
       table: { type: { summary: "{ current: HTMLElement | null }" } },
     },
     onConfirm: {
       action: "confirm",
-      description: "Callback disparado ao confirmar o formulário.",
+      description: "Callback triggered to confirmar the form.",
       table: { type: { summary: "() => void" } },
     },
     confirmText: {
       control: { type: "text" },
-      description: "Texto do botão de confirmação.",
+      description: "text of the button of confirmation.",
       table: { type: { summary: "string" }, defaultValue: { summary: "Add" } },
     },
     cancelText: {
       control: { type: "text" },
-      description: "Texto do botão de cancelamento.",
+      description: "text of the button of cancelamento.",
       table: { type: { summary: "string" }, defaultValue: { summary: "Cancel" } },
     },
     children: {
       control: false,
-      description: "Conteúdo de formulário renderizado dentro do modal.",
+      description: "content of form rendered inside of the modal.",
       table: { type: { summary: "ReactNode" } },
     },
   },
   args: {
     open: true,
     title: "Add repository",
-    subtitle: "Use owner/repo or paste a GitHub URL.",
+    subtitle: "Use owner/repo or paste the GitHub URL.",
     confirmText: "Add",
     cancelText: "Cancel",
   },
@@ -66,7 +66,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Modal de formulário com ações padrão de cancelar e confirmar.",
+          "Modal de form com actions standard de cancelar e confirmar.",
       },
     },
   },
@@ -75,7 +75,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {
+export const Default: Story = {
   render: (args) => (
     <CollectFormModal {...args}>
       <FormInput
@@ -89,7 +89,7 @@ export const Padrao: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Modal com conteúdo de formulário e ações de confirmar/cancelar.",
+        story: "Modal with content of form and actions of confirmar/cancelar.",
       },
     },
   },

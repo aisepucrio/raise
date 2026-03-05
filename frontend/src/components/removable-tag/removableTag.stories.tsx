@@ -9,12 +9,12 @@ const meta = {
   argTypes: {
     label: {
       control: { type: "text" },
-      description: "Texto exibido na tag.",
+      description: "text shown in the tag.",
       table: { type: { summary: "string" } },
     },
     onRemove: {
-      action: "remove",
-      description: "Callback disparado ao clicar no botão de remoção.",
+      action: "removes",
+      description: "Callback triggered to click in the button of removal.",
       table: { type: { summary: "() => void" } },
     },
   },
@@ -26,7 +26,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Tag com ação de remoção para listas de itens selecionados.",
+          "Tag with removal action for lists of selected items.",
       },
     },
   },
@@ -42,11 +42,11 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {
+export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Tag removível com rótulo curto.",
+        story: "Tag removable with label short.",
       },
     },
   },
@@ -59,7 +59,7 @@ export const RotuloLongo: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Valida quebra de linha/comportamento com texto longo.",
+        story: "validates quebra of row/behavior with text longo.",
       },
     },
   },

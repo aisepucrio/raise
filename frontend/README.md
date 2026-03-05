@@ -1,128 +1,128 @@
-# Organização geral do frontend e como criar um novo módulo
+# Frontend general organization and how to create a new module
 
-Este README centraliza a arquitetura do frontend e o fluxo para criar uma nova source (módulo completo de `overview + collect + preview + data`).
+This README centralizes the frontend architecture and the flow to create a new source (full module of `overview + collect + preview + date`).
 
-## Stack e setup rápido
+## Stack and quick setup
 
-- `React + Vite` -> base da aplicação SPA.
-- `react-router-dom` -> roteamento de páginas.
-- `@tanstack/react-query` -> cache, loading e sincronização de dados.
-- `axios` -> cliente HTTP para API.
-- `Tailwind + componentes internos` -> UI reutilizável.
-- `Storybook` -> catálogo/validação visual de componentes.
+- `React + Vite` -> SPA application base.
+- `react-router-dom` -> page routing.
+- `@tanstack/react-query` -> cache, loading, and date synchronization.
+- `axios` -> HTTP client for API.
+- `Tailwind + internal components` -> reusable UI.
+- `Storybook` -> component catalog/visual validation.
 
-Scripts principais:
+Main scripts:
 
-- `npm run dev` -> sobe ambiente local.
-- `npm run build` -> gera build de produção.
-- `npm run storybook` -> sobe documentação visual dos componentes.
+- `npm run dev` -> starts local environment.
+- `npm run build` -> creates production build.
+- `npm run storybook` -> starts component visual documentation.
 
-Variável de ambiente (colocar na .env):
+Environment variable (set in .env):
 
-- `VITE_API_URL` -> URL base da API consumida em `src/data/api/apiClient.ts` - rota do backend.
+- `VITE_API_URL` -> API base URL consumed in `src/date/api/apiClient.ts` - backend route.
 
-## Mapa de execução da aplicação (arquivos principais)
+## Application execution map (main files)
 
-- `src/main.tsx` -> injeta `ThemeProvider` (tema claro/escuro), `QueryClientProvider` (tanstack query), `RouterProvider` (roteamento) e `Toast`(avisos); consome `queryClient` pelo barrel `@/data`.
-- `src/router.tsx` -> define as rotas `/overview`, `/collect`, `/preview` e `/jobs`.
-- `src/layout.tsx` -> renderiza estrutura base `Sidebar + Outlet`.
-- `src/sidebar/Sidebar.tsx` -> configuração da sidebar e da lógica de troca de página, usa `source/section` da URL como fonte única da verdade.
-- `src/pages/OverviewPage.tsx` -> escolhe o módulo de overview pela `source` atual.
-- `src/pages/CollectPage.tsx` -> escolhe o módulo de collect pela `source` atual.
-- `src/pages/PreviewPage.tsx` -> escolhe o módulo de preview por `source + section`.
-- `src/pages/JobsPage.tsx` -> lista jobs globais e executa ações de stop/restart.
-- `src/pages/NotFound.tsx` -> fallback 404 da aplicação.
-- `src/data/index.ts` -> ponto único de entrada da camada de dados para páginas e componentes (`hooks`, `types`, `queryClient`, helpers e tipos de section).
+- `src/main.tsx` -> injects `ThemeProvider` (light/dark theme), `QueryClientProvider` (tanstack query), `RouterProvider` (routing), and `Toast` (alerts); consumes `queryClient` through the `@/data` barrel.
+- `src/router.tsx` -> defines routes `/overview`, `/collect`, `/preview`, and `/jobs`.
+- `src/layout.tsx` -> renders base structure `Sidebar + Outlet`.
+- `src/sidebar/Sidebar.tsx` -> sidebar configuration and page-switching logic; uses URL `source/section` as single source of truth.
+- `src/pages/OverviewPage.tsx` -> picks overview module by current `source`.
+- `src/pages/CollectPage.tsx` -> picks collect module by current `source`.
+- `src/pages/PreviewPage.tsx` -> picks preview module by `source + section`.
+- `src/pages/JobsPage.tsx` -> lists global jobs and executes stop/restart actions.
+- `src/pages/NotFound.tsx` -> app 404 fallback.
+- `src/date/index.ts` -> single date layer entry point for pages and components (`hooks`, `types`, `queryClient`, helpers, and section types).
 
-## Rotas e query params (fonte da navegação)
+## Routes and query params (navigation source)
 
-- `source` -> define qual integração está ativa (`github`, `jira`, `stackoverflow`).
-- `section` -> define qual subárea da preview está ativa (somente em `/preview`).
+- `source` -> defines which integration is active (`github`, `jira`, `stackoverflow`).
+- `section` -> defines which preview subarea is active (only in `/preview`).
 
 ![Figure1-README](public/Figure1-README.png)
 
-Arquivos que controlam a regra:
+Files that control the rule:
 
-- `src/sources/index.ts` -> contrato global de ids, labels, defaults e sections por source.
-- `src/lib/source-section-resolver.ts` -> normaliza `source/section` inválidos para valores válidos.
-- `src/sidebar/Sidebar.tsx` e `src/sidebar/sidebarNavigation.ts`-> preserva `source`, mantém `section` só em preview e remove fora dela, também corrige URL inválida automaticamente com `replace`.
+- `src/sources/index.ts` -> global contract of ids, labels, defaults, and sections by source.
+- `src/lib/source-section-resolver.ts` -> normalizes invalid `source/section` into valid values.
+- `src/sidebar/Sidebar.tsx` and `src/sidebar/sidebarNavigation.ts` -> preserve `source`, keep `section` only in preview and removes it outside, and also auto-fix invalid URL with `replace`.
 
-## Organização de pastas (visão arquitetural)
+## Folder organization (architectural view)
 
 ```txt
 src/
-  components/ -> UI compartilhada (cards, tabelas, filtros, modais, etc.), cada componente está em uma pasta e possuí documentação com storybook.
-  pages/      -> páginas de rota (overview, collect, preview, jobs)
-  sidebar/    -> navegação lateral e regras de URL
-  sources/    -> módulos de UI por source
-  data/       -> camada de API + React Query + módulos de domínio por source (comunicação com o back)
-  lib/        -> utilitários de suporte (resolvers, tema, helpers)
+  components/ -> shared UI (cards, tables, filters, modals, etc.), each component is in its own folder and has Storybook documentation.
+  pages/      -> route pages (overview, collect, preview, jobs)
+  sidebar/    -> side navigation and URL rules
+  sources/    -> UI modules by source
+  date/       -> API + React Query layer + domain modules by source (communication with backend)
+  lib/        -> support utilities (resolvers, theme, helpers)
 ```
 
-## Padrão de componentes + Storybook
+## Component pattern + Storybook
 
-Para manter consistência de documentação e uso:
+To keep documentation and usage consistency:
 
-- Todo componente compartilhado deve ficar em `src/components/<nome-do-componente>/`.
-- Dentro da pasta, manter no mínimo `<Componente>.tsx` (implementação), `<Componente>.stories.tsx` (documentação/uso no Storybook) e `index.ts` (exportar somente o que deve ser exposto para consumo externo).
-- Imports externos devem apontar para o barrel da pasta (`@/components/<nome-do-componente>`), evitando importar arquivos internos diretamente.
+- Every shared component must be in `src/components/<component-name>/`.
+- Inside the folder, keep at least `<Component>.tsx` (implementation), `<Component>.stories.tsx` (Storybook documentation/usage), and `index.ts` (export only what should be exposed externally).
+- External imports must point to the folder barrel (`@/components/<component-name>`), avoiding direct imports of internal files.
 
-## Camada `src/data` (backend + cache)
+## `src/date` layer (backend + cache)
 
-### `src/data/api`
+### `src/date/api`
 
-- `apiClient.ts` -> instancia axios com base URL e interceptor que devolve `res.data`.
-- `endpoints.ts` -> centraliza rotas HTTP de dashboard, preview, collect e jobs.
+- `apiClient.ts` -> instantiates axios with base URL and interceptor that returns `res.data`.
+- `endpoints.ts` -> centralizes dashboard, preview, collect, and jobs HTTP routes.
 
-### `src/data/query`
+### `src/date/query`
 
-- `client.ts` -> configura `QueryClient` único da aplicação.
-- `keys.ts` -> gera query keys padronizadas por source + keys de jobs.
-- `invalidation.ts` -> concentra invalidadores reutilizáveis (ex.: jobs).
-- `errors.ts` -> normaliza objetos de erro para mensagem amigável.
+- `client.ts` -> configures the app single `QueryClient`.
+- `keys.ts` -> generates standardized query keys by source + jobs keys.
+- `invalidation.ts` -> centralizes reusable invalidators (for example: jobs).
+- `errors.ts` -> normalizes error objects into user-friendly message.
 
-### `src/data/modules`
+### `src/date/modules`
 
-Cada domínio segue o mesmo padrão:
+Each domain follows the same pattern:
 
-- `<source>Types.ts` -> concentra contratos de params, payloads e respostas.
-- `<source>Service.ts` -> contém apenas chamadas HTTP de cada endpoint do domínio.
-- `<source>Queries.ts` -> encapsula `useQuery` com `queryKey` padronizada - as queries são operações usadas para buscar/ler informações.
-- `<source>Mutations.ts` -> encapsula `useMutation` e invalidações pós-ação - as mutations são operações usadas para criar, editar ou remover informações.
-- `index.ts` -> agrega e reexporta `queries`, `mutations` e `types` do módulo.
+- `<source>Types.ts` -> centralizes params, payload, and response contracts.
+- `<source>Service.ts` -> contains only HTTP calls for each domain endpoint.
+- `<source>Queries.ts` -> encapsulates `useQuery` with standardized `queryKey` - queries are operations used to fetch/read information.
+- `<source>Mutations.ts` -> encapsulates `useMutation` and post-action invalidations - mutations are operations used to create, edit, or removes information.
+- `index.ts` -> aggregates and re-exports module `queries`, `mutations`, and `types`.
 
-Barrel de consumo:
+Consumption barrel:
 
-- `src/data/index.ts` -> é o ponto único de consumo para páginas/componentes: reexporta hooks de queries/mutations, types de módulos, tipos de `section`, `queryClient` e helper de erro.
-- Padrão de import na UI -> preferir sempre `@/data`; evitar import direto de `@/data/modules/*`, `@/data/api/*` e `@/data/query/*`.
+- `src/date/index.ts` -> is the single consumption point for pages/components: re-exports query/mutation hooks, module types, `section` types, `queryClient`, and error helper.
+- UI import pattern -> always prefer `@/data`; avoid direct imports from `@/data/modules/*`, `@/data/api/*`, and `@/data/query/*`.
 
-Fluxo padrão:
+Default flow:
 
-`Componente/Página (importa de "@/data")` -> `hook Query/Mutation` -> `Service` -> `endpoints + apiClient` -> `Backend`
+`Component/Page (imports from "@/data")` -> `Query/Mutation hook` -> `Service` -> `endpoints + apiClient` -> `Backend`
 
-## Camada `src/sources` (UI por source)
+## `src/sources` layer (UI by source)
 
-Papel desta camada:
+This layer role:
 
-- `Overview` -> filtros + gráfico + cards de métricas.
-- `Collect` -> formulário de entrada e disparo da coleta.
-- `Preview` -> tabela paginada com busca, ordenação, export e filtros.
+- `Overview` -> filters + chart + metric cards.
+- `Collect` -> input form and collection trigger.
+- `Preview` -> paginated table with search, sorting, export, and filters.
 
-Arquivos centrais:
+Core files:
 
-- `src/sources/index.ts` -> contrato tipado de sources/sections/labels/defaults (utilizado para que todo o frontend tenha apenas uma fonte de consumo padronizada).
-- `src/sources/registry.ts` -> registry que liga source aos componentes reais da UI (utilizados para mapeamento em OverviewPage, CollectPage e PreviewPage).
+- `src/sources/index.ts` -> typed contract for sources/sections/labels/defaults (used so the whole frontend has only one standardized consumption source).
+- `src/sources/registry.ts` -> registry that links source to real UI components (used for mapping in OverviewPage, CollectPage, and PreviewPage).
 
-Shareds para funções de lógica, reutilizados por múltiplos sources:
+Shared logic functions, reused by multiple sources:
 
-- `sources/shared/AllShared.ts` -> helpers genéricos de opção para selects.
-- `sources/shared/OverviewShared.ts` -> builders de filtros/cards/séries do overview.
-- `sources/shared/CollectShared.ts` -> helpers de tags e feedback de coleta.
-- `sources/shared/PreviewShared.ts` -> helpers de tabela, sort, export e feedback de preview.
+- `sources/shared/AllShared.ts` -> generic option helpers for selects.
+- `sources/shared/OverviewShared.ts` -> overview filter/card/series builders.
+- `sources/shared/CollectShared.ts` -> collection tag and feedback helpers.
+- `sources/shared/PreviewShared.ts` -> preview table, sort, export, and feedback helpers.
 
-Componentes compostos usados direto na construção das páginas:
+Composed components used directly to build pages:
 
-- `src/components/overview/*` -> componentes específicos de overview que já agrupam blocos menores (filtros, layout, gráfico e métricas) para cada módulo configurar.
-- `src/components/collect/*` -> componentes específicos de collect que já agrupam blocos menores (header, tags, datas e ações) para cada módulo configurar.
-- `src/components/preview/*` -> componentes específicos de preview que já agrupam blocos menores (header, tabela, modal e export) para cada módulo configurar.
-- `Padrão recorrente, não obrigatório` -> o projeto costuma seguir esse modelo para acelerar novos módulos, mas cada source pode sair dele quando fizer sentido.
+- `src/components/overview/*` -> overview-specific components that already group smaller blocks (filters, layout, chart, and metrics) for each module to configure.
+- `src/components/collect/*` -> collect-specific components that already group smaller blocks (header, tags, dates, and actions) for each module to configure.
+- `src/components/preview/*` -> preview-specific components that already group smaller blocks (header, table, modal, and export) for each module to configure.
+- `Recurring pattern, not mandatory` -> the project usually follows this model to speed up new modules, but each source can deviate from it when it makes sense.

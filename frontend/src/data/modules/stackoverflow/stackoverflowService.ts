@@ -19,7 +19,7 @@ import type {
 const SOURCE = "stackoverflow" as const;
 
 export const stackoverflowService = {
-  // Overview e ItemSwitcher: cards do dashboard e lista de perguntas.
+  // Overview and ItemSwitcher: cards of the dashboard and list of questions.
   getOverview: (
     params?: StackOverflowOverviewParams,
     options?: RequestOptions,
@@ -29,7 +29,7 @@ export const stackoverflowService = {
       signal: options?.signal,
     }) as Promise<StackOverflowOverviewResponse>,
 
-  // Overview e Preview: faixa de datas para limitar filtros por pergunta.
+  // Overview and Preview: range of dates for limitar filters for question.
   getDateRange: (
     params: StackOverflowDateRangeParams,
     options?: RequestOptions,
@@ -39,14 +39,14 @@ export const stackoverflowService = {
       signal: options?.signal,
     }) as Promise<ApiDateRangeResponse>,
 
-  // ChartLine (Overview): serie acumulada por intervalo (sem question_id).
+  // ChartLine (Overview): series cumulative for interval (without question_id).
   getGraph: (params: StackOverflowGraphParams, options?: RequestOptions) =>
     api.get(endpoints.dashboardGraph(SOURCE), {
       params,
       signal: options?.signal,
     }),
 
-  // Preview: tabela paginada de questions com filtros e ordenacao.
+  // Preview: table paginada of questions with filters and sorting.
   getPreview: (
     section: StackOverflowSection,
     params: StackOverflowPreviewParams,
@@ -57,19 +57,19 @@ export const stackoverflowService = {
       signal: options?.signal,
     }) as Promise<StackOverflowPreviewResponse>,
 
-  // ModalDownload (Preview): exporta no formato padrão atual (json).
+  // ModalDownload (Preview): exporta in the current standard format (json).
   exportPreview: (options?: RequestOptions) =>
     api.post(endpoints.export(SOURCE), { format: "json" }, {
       responseType: "blob",
       signal: options?.signal,
     }),
 
-  // Collect: inicia a coleta de Stack Overflow via endpoint padronizado.
+  // Collect: starts the collection of Stack Overflow via endpoint standardized.
   collect: (body: StackOverflowCollectBody, options?: RequestOptions) =>
     api.post(endpoints.collect(SOURCE), body, { signal: options?.signal }),
 
-  // HARDCODE TEMPORARIO: O SO AINDA USA /COLLECT/ADVANCED POR COMPATIBILIDADE COM A IMPLEMENTACAO LEGADA.
-  // FUTURO: MERGEAR COM /COLLECT USANDO APENAS PAYLOAD.
+  // HARDCODE TEMPORARIO: the SO AINDA USA /COLLECT/ADVANCED for COMPATIBILIDADE with the IMPLEMENTACAO LEGADA.
+  // FUTURO: MERGEAR with /COLLECT USANDO only PAYLOAD.
   collectAdvanced: (
     body: StackOverflowAdvancedCollectBody,
     options?: RequestOptions,

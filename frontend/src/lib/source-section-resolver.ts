@@ -7,7 +7,7 @@ import {
   type SourceId,
 } from "@/sources";
 
-// Retorna o SourceId correspondente ao rawSource, ou o defaultSourceId se rawSource for inválido ou ausente.
+// returns the SourceId correspondente to rawSource, ou the defaultSourceId se rawSource for invalid ou ausente.
 export function resolveSourceId(
   rawSource: string | null | undefined,
 ): SourceId {
@@ -18,7 +18,7 @@ export function resolveSourceId(
   return defaultSourceId;
 }
 
-// Retorna o SectionId correspondente ao rawSection para a source dada, ou o defaultSectionId para essa source se rawSection for inválido ou ausente.
+// returns the SectionId correspondente to rawSection for the source dada, ou the defaultSectionId for essa source se rawSection for invalid ou ausente.
 export function resolveSectionId<S extends SourceId>(
   source: S,
   rawSection: string | null | undefined,

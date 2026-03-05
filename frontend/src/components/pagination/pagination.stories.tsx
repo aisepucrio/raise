@@ -114,8 +114,8 @@ function DemoTableWithPagination() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Pedido</TableHead>
-            <TableHead>Cliente</TableHead>
+            <TableHead>Order</TableHead>
+            <TableHead>Customer</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Total</TableHead>
           </TableRow>
@@ -124,26 +124,26 @@ function DemoTableWithPagination() {
           <TableRow>
             <TableCell className="font-medium">#1023</TableCell>
             <TableCell>Atlas Tech</TableCell>
-            <TableCell>Pago</TableCell>
+            <TableCell>Paid</TableCell>
             <TableCell className="text-right">R$ 320,00</TableCell>
           </TableRow>
           <TableRow>
             <TableCell className="font-medium">#1024</TableCell>
             <TableCell>Neo Labs</TableCell>
-            <TableCell>Pendente</TableCell>
+            <TableCell>Pending</TableCell>
             <TableCell className="text-right">R$ 180,00</TableCell>
           </TableRow>
           <TableRow>
             <TableCell className="font-medium">#1025</TableCell>
             <TableCell>Orbit Data</TableCell>
-            <TableCell>Pago</TableCell>
+            <TableCell>Paid</TableCell>
             <TableCell className="text-right">R$ 510,00</TableCell>
           </TableRow>
         </TableBody>
       </Table>
 
       <div className="flex items-center justify-between gap-3 text-sm text-(--color-secondary-muted)">
-        <span>Mostrando 1-10 de 87 resultados</span>
+        <span>Showing 1-10 of 87 results</span>
         <DemoPagination
           currentPage={3}
           totalPages={9}
@@ -161,7 +161,7 @@ const meta = {
   argTypes: {
     className: {
       control: false,
-      description: "Classe CSS adicional aplicada ao container `<nav>`.",
+      description: "Additional CSS class applied to `<nav>` container.",
       table: { type: { summary: "string" } },
     },
   },
@@ -170,7 +170,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Componente de paginação baseado no `shadcn/ui`, organizado em partes composáveis para navegação entre páginas.",
+          "Pagination component based on `shadcn/ui`, organized into composable parts for page navigation.",
       },
     },
   },
@@ -186,18 +186,18 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {
+export const Default: Story = {
   render: () => <InteractiveDemoPagination initialPage={3} totalPages={8} />,
   parameters: {
     docs: {
       description: {
-        story: "Exemplo interativo de navegação entre páginas.",
+        story: "Interactive page navigation example.",
       },
     },
   },
 };
 
-export const PrimeiraEPaginaFinalDesabilitamNavegacao: Story = {
+export const FirstAndLastPageDisableNavigation: Story = {
   render: () => (
     <div className="space-y-4">
       <DemoPagination currentPage={1} totalPages={7} />
@@ -207,18 +207,18 @@ export const PrimeiraEPaginaFinalDesabilitamNavegacao: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Mostra os estados desabilitados na primeira e na última página.",
+        story: "Shows disabled states on first and last page.",
       },
     },
   },
 };
 
-export const UsoComTabela: Story = {
+export const UsageWithTable: Story = {
   render: () => <DemoTableWithPagination />,
   parameters: {
     docs: {
       description: {
-        story: "Exemplo de uso da paginação junto com uma tabela.",
+        story: "Example of pagination used with the table.",
       },
     },
   },

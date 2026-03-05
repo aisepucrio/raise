@@ -24,8 +24,8 @@ import {
 } from "@/sources/shared/OverviewShared";
 import { buildSelectOptions } from "@/sources/shared/AllShared";
 
-// Configuração dos cards exibidos quando não há repositório selecionado.
-// A ordem aqui é a ordem visual da coluna lateral no modo "All repositories".
+// Cards shown when in repository is selected.
+// Order here matches sidebar visual order in "All repositories" mode.
 const ALL_REPOSITORIES_CARD_CONFIG: readonly OverviewMetricCardConfig<GithubOverviewResponse>[] =
   [
     { title: "Repositories", getValue: (data) => data?.repositories_count },
@@ -35,8 +35,7 @@ const ALL_REPOSITORIES_CARD_CONFIG: readonly OverviewMetricCardConfig<GithubOver
     { title: "Users", getValue: (data) => data?.users_count },
   ];
 
-// Configuração dos cards exibidos para um repositório específico.
-// Mantém apenas métricas relevantes ao escopo de um repo (inclui forks/stars).
+// Cards shown for the specific repository.
 const REPOSITORY_CARD_CONFIG: readonly OverviewMetricCardConfig<GithubOverviewResponse>[] =
   [
     { title: "Commits", getValue: (data) => data?.commits_count },
@@ -48,15 +47,15 @@ const REPOSITORY_CARD_CONFIG: readonly OverviewMetricCardConfig<GithubOverviewRe
   ];
 
 export default function GithubOverview() {
-  // Filtros controlados pela própria tela (não ficam na URL).
+  // filters controlled pela own screen (not stay in the URL).
   const [selectedRepositoryId, setSelectedRepositoryId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  // Catálogo usado apenas para montar o select de repositórios.
+  // catalog used only for build the select of repositories.
   const repositoryCatalogQuery = useGithubOverviewQuery();
 
-  // Adapta payload da API para o formato padrão de opções da UI.
+  // adapts payload of the API for the format standard of options of the UI.
   const repositoryOptions = useMemo(
     () =>
       buildSelectOptions(repositoryCatalogQuery.data?.repositories, {
@@ -66,7 +65,7 @@ export default function GithubOverview() {
     [repositoryCatalogQuery.data?.repositories],
   );
 
-  // Params da query de overview (cards).
+  // Params of the query of overview (cards).
   const overviewParams = useMemo(
     () =>
       buildOverviewEndpointParams<GithubOverviewParams>(
@@ -81,7 +80,7 @@ export default function GithubOverview() {
   );
   const overviewQuery = useGithubOverviewQuery(overviewParams);
 
-  // Série temporal usa os mesmos filtros + intervalo derivado do range.
+  // series temporal usa the same filters + interval derived of the range.
   const graphParams = useMemo(
     () =>
       buildOverviewGraphEndpointParams<GithubGraphParams>(
@@ -97,9 +96,9 @@ export default function GithubOverview() {
   );
   const graphQuery = useGithubGraphQuery(graphParams);
 
-  // O próprio hook já:
-  // - normaliza string vazia para `undefined`
-  // - só habilita a query quando há `repository_id`
+  // the own hook already:
+  // - normalizes string empty for `undefined`
+  // - only enables the query when there is `repository_id`
   const dateRangeQuery = useGithubDateRangeByRepositoryQuery(
     selectedRepositoryId,
   );
@@ -109,7 +108,7 @@ export default function GithubOverview() {
     "Failed to load the GitHub chart.",
   );
 
-  // Modo scoped = um repositório específico selecionado.
+  // mode scoped = the repository specific selected.
   const isRepositoryScoped = Boolean(selectedRepositoryId);
   const infoBoxItems = buildScopedOverviewMetricCardItems({
     overviewData: overviewQuery.data,

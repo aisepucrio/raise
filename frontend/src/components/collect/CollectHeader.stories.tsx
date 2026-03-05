@@ -9,22 +9,22 @@ const meta = {
   argTypes: {
     title: {
       control: { type: "text" },
-      description: "Título principal da seção de coleta.",
+      description: "title main of the section of collection.",
       table: { type: { summary: "string" } },
     },
     description: {
       control: { type: "text" },
-      description: "Descrição auxiliar da seção.",
+      description: "description auxiliar of the section.",
       table: { type: { summary: "string" } },
     },
     addButtonText: {
       control: { type: "text" },
-      description: "Texto do botão de adicionar item.",
+      description: "text of the button of add item.",
       table: { type: { summary: "string" } },
     },
     onAddClick: {
       action: "addClick",
-      description: "Callback disparado ao clicar em adicionar.",
+      description: "Callback triggered to click in add.",
       table: { type: { summary: "() => void" } },
     },
   },
@@ -38,7 +38,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Cabeçalho de coleta com título, descrição e ação principal.",
+          "Collection header with title, description, and primary action.",
       },
     },
   },
@@ -54,11 +54,11 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {
+export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Cabeçalho padrão com título, descrição e ação principal.",
+        story: "header standard with title, description and action main.",
       },
     },
   },

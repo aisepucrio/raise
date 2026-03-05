@@ -9,105 +9,105 @@ const meta = {
   argTypes: {
     id: {
       control: { type: "text" },
-      description: "ID do input para associação com label.",
+      description: "ID of the input for association with label.",
       table: { type: { summary: "string" } },
     },
     label: {
       control: { type: "text" },
-      description: "Rótulo exibido para o campo.",
+      description: "label shown for the field.",
       table: { type: { summary: "string" } },
     },
     placeholder: {
       control: { type: "text" },
-      description: "Placeholder do input.",
+      description: "Placeholder of the input.",
       table: { type: { summary: "string" } },
     },
     hint: {
       control: { type: "text" },
-      description: "Mensagem de apoio exibida abaixo do campo.",
+      description: "Support message shown below field.",
       table: { type: { summary: "string" } },
     },
     error: {
       control: { type: "text" },
-      description: "Mensagem de erro exibida abaixo do campo.",
+      description: "Error message shown below field.",
       table: { type: { summary: "string" } },
     },
     type: {
       control: { type: "text" },
-      description: "Tipo nativo do input HTML.",
+      description: "Native HTML input type.",
       table: { type: { summary: "InputHTMLAttributes<HTMLInputElement>['type']" } },
     },
     required: {
       control: { type: "boolean" },
-      description: "Marca o campo como obrigatório.",
+      description: "Marks field the required.",
       table: { type: { summary: "boolean" } },
     },
     disabled: {
       control: { type: "boolean" },
-      description: "Desabilita interação com o campo.",
+      description: "disables interaction with the field.",
       table: { type: { summary: "boolean" } },
     },
     autoComplete: {
       control: { type: "text" },
-      description: "Valor do atributo nativo `autoComplete`.",
+      description: "Value for native `autoComplete` attribute.",
       table: { type: { summary: "string" } },
     },
     defaultValue: {
       control: { type: "text" },
-      description: "Valor inicial para uso não controlado.",
+      description: "Initial value for uncontrolled usage.",
       table: { type: { summary: "string | number | readonly string[]" } },
     },
     value: {
       control: { type: "text" },
-      description: "Valor controlado do campo.",
+      description: "value controlled of the field.",
       table: { type: { summary: "string | number | readonly string[]" } },
     },
     wrapperClassName: {
       control: false,
-      description: "Classe CSS adicional do wrapper.",
+      description: "Additional CSS class for wrapper.",
       table: { type: { summary: "string" } },
     },
     icon: {
       control: false,
-      description: "Ícone opcional exibido dentro do input.",
+      description: "Optional icon shown inside input.",
       table: { type: { summary: "ReactNode" } },
     },
     iconPosition: {
       control: { type: "inline-radio" },
       options: ["left", "right"],
-      description: "Define o lado do ícone dentro do input.",
+      description: "Defines icon side inside input.",
       table: { type: { summary: "\"left\" | \"right\"" }, defaultValue: { summary: "left" } },
     },
     labelPosition: {
       control: { type: "inline-radio" },
       options: ["top", "left"],
-      description: "Posição do label em relação ao campo.",
+      description: "Label position relative to field.",
       table: { type: { summary: "\"top\" | \"left\"" }, defaultValue: { summary: "top" } },
     },
     variant: {
       control: { type: "inline-radio" },
       options: ["outlined", "filled"],
-      description: "Variante visual do campo.",
+      description: "Visual field variant.",
       table: { type: { summary: "\"outlined\" | \"filled\"" }, defaultValue: { summary: "outlined" } },
     },
     onChange: {
       action: "changed",
-      description: "Callback disparado ao alterar o valor do campo.",
+      description: "Callback triggered when field value changes.",
       table: { type: { summary: "ChangeEventHandler<HTMLInputElement>" } },
     },
   },
   args: {
     id: "form-input-demo",
-    label: "Nome",
-    placeholder: "Digite seu nome",
-    hint: "Campo de texto padrão.",
+    label: "Name",
+    placeholder: "Type your name",
+    hint: "Default text field.",
   },
   parameters: {
     wrapperSize: "medium",
     docs: {
       description: {
         component:
-          "Campo de texto com label, hint e erro no padrão visual do formulário.",
+          "Text field with label, hint, and error using the standard form style.",
       },
     },
   },
@@ -116,11 +116,11 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Texto: Story = {
+export const text: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Campo de texto padrão para entrada simples.",
+        story: "Default text field for simple input.",
       },
     },
   },
@@ -130,83 +130,83 @@ export const Email: Story = {
   args: {
     id: "form-input-email",
     type: "email",
-    label: "E-mail",
-    placeholder: "nome@empresa.com",
+    label: "Email",
+    placeholder: "nome@empresa.with",
     autoComplete: "email",
-    hint: "Usa atributos nativos do input.",
+    hint: "Uses native input attributes.",
   },
   parameters: {
     docs: {
       description: {
-        story: "Configuração para e-mail com tipo e `autoComplete` apropriados.",
+        story: "Email setup with proper type and `autoComplete`.",
       },
     },
   },
 };
 
-export const ComErro: Story = {
+export const WithError: Story = {
   args: {
     id: "form-input-error",
-    label: "Usuário",
+    label: "User",
     required: true,
-    error: "Informe um usuário válido.",
+    error: "Enter a valid user.",
     hint: undefined,
   },
   parameters: {
     docs: {
       description: {
-        story: "Estado de validação com mensagem de erro.",
+        story: "Validation state with error message.",
       },
     },
   },
 };
 
-export const Desabilitado: Story = {
+export const disabled: Story = {
   args: {
     id: "form-input-disabled",
-    label: "Código",
+    label: "Code",
     defaultValue: "STNL-001",
     disabled: true,
-    hint: "Exemplo de estado desabilitado.",
+    hint: "Disabled state example.",
   },
   parameters: {
     docs: {
       description: {
-        story: "Campo desabilitado para leitura sem edição.",
+        story: "Disabled field for read-only display.",
       },
     },
   },
 };
 
-export const VarianteFilled: Story = {
+export const FilledVariant: Story = {
   args: {
     id: "form-input-filled",
-    label: "Busca",
-    placeholder: "Pesquisar por repositório",
+    label: "Search",
+    placeholder: "Search by repository",
     variant: "filled",
-    hint: "Exemplo com a variante filled.",
+    hint: "Filled variant example.",
   },
   parameters: {
     docs: {
       description: {
-        story: "Exemplo da variante visual `filled`.",
+        story: "Visual example of the `filled` variant.",
       },
     },
   },
 };
 
-export const ComIcone: Story = {
+export const WithIcon: Story = {
   args: {
     id: "form-input-icon",
     label: "Search",
     placeholder: "Type...",
     icon: <Search className="size-4" />,
-    hint: "Exemplo com icone opcional.",
+    hint: "Example with optional icon.",
   },
   parameters: {
     docs: {
       description: {
-        story: "Campo com ícone decorativo dentro da área de input.",
+        story: "Field with decorative icon inside input.",
       },
     },
   },

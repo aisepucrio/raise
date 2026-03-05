@@ -24,7 +24,7 @@ export type OverviewFiltersProps = {
   dateRange?: OverviewDateRange;
 };
 
-// Linha de filtros compartilhada: source + intervalo de datas.
+// row of filters shared: source + interval of dates.
 export function OverviewFilters({
   idPrefix,
   sourceFilterLabel,

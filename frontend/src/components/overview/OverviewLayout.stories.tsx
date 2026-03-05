@@ -12,17 +12,17 @@ const meta = {
   argTypes: {
     filters: {
       control: false,
-      description: "Bloco renderizado na área superior do painel principal.",
+      description: "block rendered in the area top of the panel main.",
       table: { type: { summary: "ReactNode" } },
     },
     chart: {
       control: false,
-      description: "Bloco principal de conteúdo (gráfico).",
+      description: "block main of content (chart).",
       table: { type: { summary: "ReactNode" } },
     },
     stats: {
       control: false,
-      description: "Bloco lateral de métricas/resumo.",
+      description: "block side of metrics/summary.",
       table: { type: { summary: "ReactNode" } },
     },
   },
@@ -32,7 +32,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Layout principal do overview com área de conteúdo e área lateral.",
+          "Main overview layout with content area and side area.",
       },
     },
   },
@@ -48,18 +48,18 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {
+export const Default: Story = {
   render: () => (
     <OverviewLayout
-      filters={<div className={panelClassName}>filtros</div>}
-      chart={<div className={panelClassName}>gráfico</div>}
+      filters={<div className={panelClassName}>filters</div>}
+      chart={<div className={panelClassName}>chart</div>}
       stats={<div className={panelClassName}>cards</div>}
     />
   ),
   parameters: {
     docs: {
       description: {
-        story: "Exemplo estrutural com filtros, gráfico e área lateral de cards.",
+        story: "Example estrutural with filters, chart and area side of cards.",
       },
     },
   },

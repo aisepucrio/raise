@@ -28,42 +28,42 @@ const meta = {
   argTypes: {
     startDate: {
       control: { type: "text" },
-      description: "Data inicial no formato `YYYY-MM-DD`.",
+      description: "date initial in the format `YYYY-MM-DD`.",
       table: { type: { summary: "string" } },
     },
     endDate: {
       control: { type: "text" },
-      description: "Data final no formato `YYYY-MM-DD`.",
+      description: "end date in the format `YYYY-MM-DD`.",
       table: { type: { summary: "string" } },
     },
     onStartDateChange: {
       action: "startDateChange",
-      description: "Callback disparado ao alterar data inicial.",
+      description: "Callback triggered to change date initial.",
       table: { type: { summary: "(value: string) => void" } },
     },
     onEndDateChange: {
       action: "endDateChange",
-      description: "Callback disparado ao alterar data final.",
+      description: "Callback triggered to change end date.",
       table: { type: { summary: "(value: string) => void" } },
     },
     dateFilterIdPrefix: {
       control: { type: "text" },
-      description: "Prefixo usado para gerar IDs internos do filtro.",
+      description: "Prefixed used for gerar IDs internos of the filter.",
       table: { type: { summary: "string" } },
     },
     dateWarningMessage: {
       control: { type: "text" },
-      description: "Mensagem exibida quando período está vazio.",
+      description: "message shown when period is empty.",
       table: { type: { summary: "string" } },
     },
     startLabel: {
       control: { type: "text" },
-      description: "Rótulo do campo de data inicial.",
+      description: "label of the field of date initial.",
       table: { type: { summary: "string" }, defaultValue: { summary: "Start" } },
     },
     endLabel: {
       control: { type: "text" },
-      description: "Rótulo do campo de data final.",
+      description: "label of the field of end date.",
       table: { type: { summary: "string" }, defaultValue: { summary: "Finish" } },
     },
   },
@@ -82,7 +82,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Seção de período com seleção de data inicial/final e aviso opcional.",
+          "Period section with initial/final date selection and optional warning.",
       },
     },
   },
@@ -98,18 +98,18 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const ComAviso: Story = {
+export const WithWarning: Story = {
   render: (args) => <CollectDateSectionDemo {...args} />,
   parameters: {
     docs: {
       description: {
-        story: "Estado inicial sem datas preenchidas, exibindo aviso.",
+        story: "state initial without dates filled, showing warning.",
       },
     },
   },
 };
 
-export const ComDatasPreenchidas: Story = {
+export const WithFilledDates: Story = {
   render: (args) => <CollectDateSectionDemo {...args} />,
   args: {
     startDate: "2026-01-10",
@@ -118,7 +118,7 @@ export const ComDatasPreenchidas: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Estado com período completo, sem exibição do aviso.",
+        story: "state with period complete, without display of the warning.",
       },
     },
   },

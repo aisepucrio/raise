@@ -9,12 +9,12 @@ const meta = {
   argTypes: {
     value: {
       control: { type: "text" },
-      description: "Data bruta recebida para formatação.",
+      description: "date bruta recebida for formatting.",
       table: { type: { summary: "string | null" } },
     },
     locale: {
       control: { type: "text" },
-      description: "Locale usado na formatação da data.",
+      description: "Locale used in the formatting of the date.",
       table: { type: { summary: "string" }, defaultValue: { summary: "en-US" } },
     },
   },
@@ -26,7 +26,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Componente para exibir datas em formato legível com fallback para o valor original.",
+          "Component to display dates in readable format with fallback to original value.",
       },
     },
   },
@@ -42,11 +42,11 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {
+export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Formatação padrão de um valor de data único.",
+        story: "formatting standard of the value of date single.",
       },
     },
   },
@@ -81,7 +81,7 @@ export const VariacoesComuns: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Compara entradas comuns (ISO, BR, inválida e vazia).",
+        story: "Compara inputs comuns (ISO, BR, invalid and empty).",
       },
     },
   },

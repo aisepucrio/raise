@@ -21,7 +21,7 @@ export default function PreviewPage() {
     <section className="flex h-full min-h-0 flex-col gap-2 overflow-hidden">
       <PageHeader
         title="Preview"
-        subtitle="Vizualize sample data for each section to verify collection and transformation results."
+        subtitle="Vizualize sample date for each section to verify collection and transformation results."
       />
 
       <div className="min-h-0 flex-1 overflow-hidden">

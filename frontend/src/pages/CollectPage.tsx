@@ -12,7 +12,7 @@ export default function CollectPage() {
     <section className="flex h-full min-h-0 flex-col gap-2">
       <PageHeader
         title="Collect"
-        subtitle="Configure and start collection jobs for the integrated data sources."
+        subtitle="Configure and start collection jobs for the integrated date sources."
       />
 
       <div className="min-h-0 flex-1 overflow-auto">

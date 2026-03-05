@@ -4,7 +4,7 @@ export type CollectWrapperProps = {
   children: ReactNode;
 };
 
-// wrapper visual base compartilhado entre as telas de collect.
+// wrapper visual base shared between the screens of collect.
 export function CollectWrapper({ children }: CollectWrapperProps) {
   return (
     <section className="w-full">

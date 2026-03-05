@@ -8,76 +8,76 @@ const meta = {
   argTypes: {
     id: {
       control: { type: "text" },
-      description: "ID do select para associação com label.",
+      description: "ID of the select for association with label.",
       table: { type: { summary: "string" } },
     },
     label: {
       control: { type: "text" },
-      description: "Rótulo exibido acima do campo.",
+      description: "label shown above of the field.",
       table: { type: { summary: "string" } },
     },
     hint: {
       control: { type: "text" },
-      description: "Mensagem de apoio exibida abaixo do campo.",
+      description: "Support message shown below the field.",
       table: { type: { summary: "string" } },
     },
     error: {
       control: { type: "text" },
-      description: "Mensagem de erro exibida abaixo do campo.",
+      description: "message of error shown below of the field.",
       table: { type: { summary: "string" } },
     },
     required: {
       control: { type: "boolean" },
-      description: "Marca o campo como obrigatório.",
+      description: "Marca the field how required.",
       table: { type: { summary: "boolean" } },
     },
     defaultValue: {
       control: { type: "text" },
-      description: "Valor inicial para uso não controlado.",
+      description: "value initial for uncontrolled usage.",
       table: { type: { summary: "string | number | readonly string[]" } },
     },
     value: {
       control: { type: "text" },
-      description: "Valor controlado do select.",
+      description: "value controlled of the select.",
       table: { type: { summary: "string | number | readonly string[]" } },
     },
     children: {
       control: false,
-      description: "Opções (`<option>`) renderizadas dentro do select.",
+      description: "options (`<option>`) renderizadas inside of the select.",
       table: { type: { summary: "ReactNode" } },
     },
     wrapperClassName: {
       control: false,
-      description: "Classe CSS adicional do wrapper.",
+      description: "Classe CSS adicional of the wrapper.",
       table: { type: { summary: "string" } },
     },
     labelPosition: {
       control: { type: "inline-radio" },
       options: ["top", "left"],
-      description: "Posição do label em relação ao campo.",
+      description: "position of the label in relation to field.",
       table: { type: { summary: "\"top\" | \"left\"" }, defaultValue: { summary: "top" } },
     },
     variant: {
       control: { type: "inline-radio" },
       options: ["outlined", "filled"],
-      description: "Variante visual do select.",
+      description: "Variante visual of the select.",
       table: { type: { summary: "\"outlined\" | \"filled\"" }, defaultValue: { summary: "outlined" } },
     },
     onChange: {
       action: "changed",
-      description: "Callback disparado ao alterar a opção selecionada.",
+      description: "Callback triggered to change the option selected.",
       table: { type: { summary: "ChangeEventHandler<HTMLSelectElement>" } },
     },
   },
   args: {
     id: "form-select-demo",
-    label: "Fonte",
+    label: "source",
     defaultValue: "",
-    hint: "Select com ícone animado e estados padrão.",
+    hint: "Select with icon animatestesdo and states standard.",
     children: (
       <>
         <option value="" disabled>
-          Selecione uma opção
+          Select an option
         </option>
         <option value="github">GitHub</option>
         <option value="jira">Jira</option>
@@ -90,7 +90,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Campo select com o mesmo padrão visual e de validação dos demais campos de formulário.",
+          "Select field with the same visual and validation standard as other form fields.",
       },
     },
   },
@@ -99,11 +99,11 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {
+export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Select padrão com opções de fonte.",
+        story: "Select standard with options of source.",
       },
     },
   },
@@ -113,13 +113,13 @@ export const ObrigatorioComErro: Story = {
   args: {
     id: "form-select-error",
     required: true,
-    error: "Selecione uma fonte.",
+    error: "Select a source.",
     hint: undefined,
   },
   parameters: {
     docs: {
       description: {
-        story: "Estado de validação com campo obrigatório e erro.",
+        story: "state of validation with field required and error.",
       },
     },
   },
@@ -129,28 +129,28 @@ export const PreSelecionado: Story = {
   args: {
     id: "form-select-selected",
     defaultValue: "jira",
-    hint: "Exemplo com valor inicial.",
+    hint: "Example with value initial.",
   },
   parameters: {
     docs: {
       description: {
-        story: "Exibe select com valor inicial já selecionado.",
+        story: "displays select with value initial already selected.",
       },
     },
   },
 };
 
-export const VarianteFilled: Story = {
+export const FilledVariant: Story = {
   args: {
     id: "form-select-filled",
     defaultValue: "github",
     variant: "filled",
-    hint: "Exemplo com a variante filled.",
+    hint: "Example with the variante filled.",
   },
   parameters: {
     docs: {
       description: {
-        story: "Exemplo visual com variante `filled`.",
+        story: "Example visual with variante `filled`.",
       },
     },
   },

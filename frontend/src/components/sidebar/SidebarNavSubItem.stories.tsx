@@ -10,17 +10,17 @@ const meta = {
   argTypes: {
     label: {
       control: { type: "text" },
-      description: "Texto exibido no subitem.",
+      description: "text shown in the subitem.",
       table: { type: { summary: "string" } },
     },
     active: {
       control: { type: "boolean" },
-      description: "Indica se o subitem representa a rota atual.",
+      description: "Indica se the subitem representa the rota atual.",
       table: { type: { summary: "boolean" } },
     },
     onClick: {
       action: "clicked",
-      description: "Callback disparado no clique do subitem.",
+      description: "Callback triggered in the click of the subitem.",
       table: { type: { summary: "() => void" } },
     },
   },
@@ -34,7 +34,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Subitem de navegação para listas hierárquicas da sidebar.",
+          "Sidebar navigation subitem for hierarchical lists.",
       },
     },
   },
@@ -52,11 +52,11 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {
+export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Subitem padrão em estado inativo.",
+        story: "Subitem standard in state inativo.",
       },
     },
   },
@@ -69,7 +69,7 @@ export const Ativo: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Estado ativo com destaque visual na navegação.",
+        story: "state ativo with destaque visual in the navigation.",
       },
     },
   },
@@ -77,12 +77,12 @@ export const Ativo: Story = {
 
 export const RotuloLongo: Story = {
   args: {
-    label: "Resumo geral da coleta da integração selecionada",
+    label: "Resumo geral of the collection of the integration selected",
   },
   parameters: {
     docs: {
       description: {
-        story: "Compara truncamento/comportamento com rótulo longo.",
+        story: "Compara truncamento/behavior with label longo.",
       },
     },
   },

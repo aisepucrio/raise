@@ -6,7 +6,7 @@ export type OverviewLayoutProps = {
   stats: ReactNode;
 };
 
-// Estrutura principal de overview: conteúdo central + sidebar de métricas.
+// Estrutura main of overview: content central + sidebar of metrics.
 export function OverviewLayout({ filters, chart, stats }: OverviewLayoutProps) {
   return (
     <section className="grid h-full min-h-0 gap-4 xl:grid-cols-[minmax(0,4fr)_minmax(0,1fr)]">

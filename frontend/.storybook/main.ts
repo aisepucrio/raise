@@ -16,7 +16,7 @@ const config: StorybookConfig = {
   async viteFinal(baseConfig) {
     return mergeConfig(baseConfig, {
       plugins: [tailwindcss()],
-      resolve: {
+      resolves: {
         alias: {
           "@": fileURLToPath(new URL("../src", import.meta.url)),
         },

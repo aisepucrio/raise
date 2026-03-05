@@ -3,18 +3,18 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* Variant utilitário para usar `dark:` baseado na classe `.dark` do app. */
+/* Variant utility for use `dark:` baseado in the classe `.dark` of the app. */
 @custom-variant dark (&:is(.dark *));
 
 /* Paleta base (cores reais). */
 @theme {
-  /* Contextuais principais do app */
+  /* Contextuais principais of the app */
   --color-primary-light: #f3f4f7;
   --color-primary-dark: #15161f;
   --color-secondary-light: #1e2f93;
   --color-secondary-dark: #5f81ff;
 
-  /* Cores nomeadas (mapeadas por tema) */
+  /* Cores nomeadas (mapeadas for theme) */
   --color-indigo-light: #6675e6;
   --color-indigo-dark: #a8b4ff;
   --color-amber-light: #d08a12;
@@ -32,25 +32,25 @@
 
   --color-transparent: transparent;
 
-  /* Integração shadcn/Tailwind */
+  /* integration shadcn/Tailwind */
   --color-shadcn-border-light: oklch(0.923 0.003 48.717);
   --color-shadcn-ring-light: oklch(0.709 0.01 56.259);
   --color-shadcn-border-dark: oklch(1 0 0 / 10%);
   --color-shadcn-ring-dark: oklch(0.553 0.013 58.071);
 
-  /* Filtro do ícone nativo de date */
+  /* filter of the icon nativo of date */
   --filter-date-picker-light: brightness(0) saturate(100%) invert(97%) sepia(8%)
     saturate(233%) hue-rotate(191deg) brightness(105%) contrast(94%);
   --filter-date-picker-dark: brightness(0) saturate(100%) invert(8%) sepia(56%)
     saturate(3258%) hue-rotate(229deg) brightness(88%) contrast(103%);
 }
 
-/* Base + aliases genéricos (sem acoplamento a componente). */
+/* Base + aliases generic (without acoplamento the component). */
 :root {
   font-family: "Montserrat", system-ui, sans-serif;
   color-scheme: light;
 
-  /* Mapeamento padrão = light */
+  /* Mapeamento standard = light */
   --color-primary: var(--color-primary-light);
   --color-secondary: var(--color-secondary-light);
 
@@ -72,7 +72,7 @@
   --color-primary-inverse: var(--color-secondary);
   --color-secondary-inverse: var(--color-primary);
 
-  /* Variações genéricas reutilizáveis */
+  /* variations generic reusable */
   --color-secondary-subtle: color-mix(
     in srgb,
     var(--color-secondary) 14%,
@@ -111,14 +111,14 @@
   color: var(--color-secondary);
   background-color: var(--color-primary);
 
-  /* Ponte mínima para shadcn/Tailwind */
+  /* Ponte minimum for shadcn/Tailwind */
   --background: var(--color-primary);
   --foreground: var(--color-secondary);
   --border: var(--color-shadcn-border);
   --ring: var(--color-shadcn-ring);
 }
 
-/* Dark explícito (travado pelo app) */
+/* Dark explicit (locksdo pelo app) */
 :root.dark {
   color-scheme: dark;
 
@@ -145,7 +145,7 @@
   --color-date-picker-indicator-filter: var(--filter-date-picker-dark);
 }
 
-/* Sistema: dark quando o app não força `.light`/`.dark` */
+/* Sistema: dark when the app not forces `.light`/`.dark` */
 @media (prefers-color-scheme: dark) {
   :root:not(.light):not(.dark) {
     color-scheme: dark;
@@ -174,7 +174,7 @@
   }
 }
 
-/* Light explícito (reseta se `.light` e `.dark` coexistirem) */
+/* Light explicit (reseta se `.light` and `.dark` coexistirem) */
 :root.light {
   color-scheme: light;
 
@@ -201,7 +201,7 @@
   --color-date-picker-indicator-filter: var(--filter-date-picker-light);
 }
 
-/* Mantém o ícone nativo de date alinhado com o tema do app. */
+/* keeps the icon nativo of date alinhado with the theme of the app. */
 input[type="date"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
   filter: var(

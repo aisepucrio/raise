@@ -3,7 +3,7 @@ import { createBrowserRouter } from "react-router-dom";
 import Layout from "./layout";
 import NotFound from "./pages/NotFound";
 
-// Páginas
+// pages
 import OverviewPage from "./pages/OverviewPage";
 import CollectPage from "./pages/CollectPage";
 import PreviewPage from "./pages/PreviewPage";

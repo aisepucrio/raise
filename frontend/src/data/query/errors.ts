@@ -1,4 +1,4 @@
-// Extrai mensagens de erro de objetos complexos
+// Extract error text from nested objects.
 function extractErrorText(value: unknown): string | null {
   if (typeof value === "string") {
     const trimmed = value.trim();
@@ -24,10 +24,10 @@ function extractErrorText(value: unknown): string | null {
   return null;
 }
 
-// Formata erros vindos do axios/api para uma mensagem simples na UI.
+// Format Axios/API errors into the simple UI message.
 export function getQueryErrorMessage(
   error: unknown,
-  fallbackMessage = "Erro ao carregar dados.",
+  fallbackMessage = "Error loading data.",
 ) {
   if (error && typeof error === "object" && "data" in error) {
     const apiError = error as { data?: unknown };

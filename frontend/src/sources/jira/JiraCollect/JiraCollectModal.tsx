@@ -12,7 +12,7 @@ export type JiraCollectModalProps = {
   onAddProject: (project: JiraProject) => void;
 };
 
-// Normaliza o domínio informado pelo usuário, removendo protocolo e barra final.
+// Normalizes user domain input, removing protocol and trailing slash.
 function normalizeJiraDomainInput(value: string) {
   return value
     .trim()
@@ -20,12 +20,12 @@ function normalizeJiraDomainInput(value: string) {
     .replace(/\/+$/, "");
 }
 
-// Normaliza a chave do projeto removendo espaços extras.
+// normalizes the key of the project removing spaces extra.
 function normalizeJiraProjectKeyInput(value: string) {
   return value.trim();
 }
 
-// monta uma chave unica para comparar duplicidade entre projetos.
+// Builds the key unica for compare duplicidade between projects.
 function buildProjectIdentifier(jiraDomain: string, projectKey: string) {
   return `${jiraDomain}/${projectKey}`;
 }
@@ -36,13 +36,13 @@ export default function JiraCollectModal({
   onClose,
   onAddProject,
 }: JiraCollectModalProps) {
-  // estados locais dos dois campos e erro compartilhado.
+  // states locais of the dois fields and error shared.
   const jiraDomainInputRef = useRef<HTMLInputElement | null>(null);
   const [jiraDomainInput, setJiraDomainInput] = useState("");
   const [jiraProjectKeyInput, setJiraProjectKeyInput] = useState("");
   const [addProjectError, setAddProjectError] = useState<string | null>(null);
 
-  // reseta os campos ao fechar o modal.
+  // reseta the fields to close the modal.
   useEffect(() => {
     if (open) return;
 
@@ -51,7 +51,7 @@ export default function JiraCollectModal({
     setAddProjectError(null);
   }, [open]);
 
-  // valida domínio/chave e adiciona o projeto.
+  // validates domain/key and adds the project.
   function handleConfirmAddProject() {
     const normalizedJiraDomain = normalizeJiraDomainInput(jiraDomainInput);
     const normalizedProjectKey =
@@ -92,7 +92,7 @@ export default function JiraCollectModal({
       initialFocusRef={jiraDomainInputRef}
       onConfirm={handleConfirmAddProject}
     >
-      {/* bloco com os dois campos obrigatórios do jira */}
+      {/* block with the dois fields required of the jira */}
       <div className="space-y-3">
         <FormInput
           id="jira-collect-domain-input"

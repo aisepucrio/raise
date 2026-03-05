@@ -41,7 +41,7 @@ export default function FormSelect({
 }: FormSelectProps) {
   const isFilledVariant = variant === "filled";
   const selectRef = useRef<HTMLSelectElement>(null);
-  // UI-only flag used to animate the chevron while native popup is open.
+  // UI-only flag used to animatesteste the chevron while native popup is open.
   const [isOpenLike, setIsOpenLike] = useState(false);
   const [openDirection, setOpenDirection] = useState<"up" | "down">("down");
 
@@ -60,7 +60,7 @@ export default function FormSelect({
     const selectRect = selectElement.getBoundingClientRect();
     const availableSpaceAbove = selectRect.top;
     const availableSpaceBelow = window.innerHeight - selectRect.bottom;
-    // Native select does not expose popup placement, so we estimate it by viewport space.
+    // Native select does not expose popup placement, so we estimate it for viewport space.
     const visibleOptionCount =
       selectElement.size > 1
         ? selectElement.size
@@ -118,7 +118,7 @@ export default function FormSelect({
 
     let frameId = 0;
 
-    // Native select can close without dispatching blur/change; :open keeps animation in sync.
+    // Native select can close without dispatching blur/change; :open keeps animatestestion in sync.
     const syncFromNativeOpenState = () => {
       const selectElement = selectRef.current;
 

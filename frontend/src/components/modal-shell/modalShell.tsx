@@ -21,7 +21,7 @@ export function ModalShell({
   const titleId = useId();
   const onCloseEvent = useEffectEvent(onClose);
 
-  // Foca o elemento inicial quando o modal é aberto e adiciona um listener para fechar o modal com a tecla Escape.
+  // Focuses the initial element when modal opens and adds an Escape key listener to close it.
   useEffect(() => {
     if (!open) return;
 

@@ -8,88 +8,88 @@ const meta = {
   argTypes: {
     id: {
       control: { type: "text" },
-      description: "ID do campo de data.",
+      description: "Date field ID.",
       table: { type: { summary: "string" } },
     },
     label: {
       control: { type: "text" },
-      description: "Rótulo exibido para o campo.",
+      description: "label shown for the field.",
       table: { type: { summary: "string" } },
     },
     hint: {
       control: { type: "text" },
-      description: "Mensagem de apoio exibida abaixo do campo.",
+      description: "Support message shown below field.",
       table: { type: { summary: "string" } },
     },
     error: {
       control: { type: "text" },
-      description: "Mensagem de erro exibida abaixo do campo.",
+      description: "Error message shown below field.",
       table: { type: { summary: "string" } },
     },
     required: {
       control: { type: "boolean" },
-      description: "Marca o campo como obrigatório.",
+      description: "Marks field the required.",
       table: { type: { summary: "boolean" } },
     },
     disabled: {
       control: { type: "boolean" },
-      description: "Desabilita interação com o campo.",
+      description: "disables interaction with the field.",
       table: { type: { summary: "boolean" } },
     },
     min: {
       control: { type: "text" },
-      description: "Data mínima permitida no formato `YYYY-MM-DD`.",
+      description: "Minimum allowed date in `YYYY-MM-DD` format.",
       table: { type: { summary: "string" } },
     },
     max: {
       control: { type: "text" },
-      description: "Data máxima permitida no formato `YYYY-MM-DD`.",
+      description: "Maximum allowed date in `YYYY-MM-DD` format.",
       table: { type: { summary: "string" } },
     },
     defaultValue: {
       control: { type: "text" },
-      description: "Valor inicial para uso não controlado.",
+      description: "Initial value for uncontrolled usage.",
       table: { type: { summary: "string | number | readonly string[]" } },
     },
     value: {
       control: { type: "text" },
-      description: "Valor controlado do campo.",
+      description: "value controlled of the field.",
       table: { type: { summary: "string | number | readonly string[]" } },
     },
     wrapperClassName: {
       control: false,
-      description: "Classe CSS adicional do wrapper.",
+      description: "Classe CSS adicional of the wrapper.",
       table: { type: { summary: "string" } },
     },
     labelPosition: {
       control: { type: "inline-radio" },
       options: ["top", "left"],
-      description: "Posição do label em relação ao campo.",
+      description: "Label position relative to field.",
       table: { type: { summary: "\"top\" | \"left\"" }, defaultValue: { summary: "top" } },
     },
     variant: {
       control: { type: "inline-radio" },
       options: ["outlined", "filled"],
-      description: "Variante visual do campo de data.",
+      description: "Visual variant of date field.",
       table: { type: { summary: "\"outlined\" | \"filled\"" }, defaultValue: { summary: "outlined" } },
     },
     onChange: {
       action: "changed",
-      description: "Callback disparado ao alterar a data.",
+      description: "Callback triggered on date change.",
       table: { type: { summary: "ChangeEventHandler<HTMLInputElement>" } },
     },
   },
   args: {
     id: "form-date-demo",
-    label: "Data de coleta",
-    hint: "Seletor de data nativo do navegador.",
+    label: "Collection Date",
+    hint: "Native browser date selector.",
   },
   parameters: {
     wrapperSize: "medium",
     docs: {
       description: {
         component:
-          "Campo de data com label, hint e erro no mesmo padrão dos campos de formulário.",
+          "Date field with label, hint, and error using the same form style.",
       },
     },
   },
@@ -98,58 +98,58 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {
+export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Campo de data padrão no estilo do formulário.",
+        story: "Default date field in form style.",
       },
     },
   },
 };
 
-export const ComValorInicial: Story = {
+export const WithInitialValue: Story = {
   args: {
     id: "form-date-filled",
     defaultValue: "2026-02-25",
-    hint: "Exemplo preenchido.",
+    hint: "Filled example.",
   },
   parameters: {
     docs: {
       description: {
-        story: "Campo já preenchido com uma data inicial.",
+        story: "Field pre-filled with an initial date.",
       },
     },
   },
 };
 
-export const ComErro: Story = {
+export const WithError: Story = {
   args: {
     id: "form-date-error",
     required: true,
-    error: "Informe uma data válida.",
+    error: "Enter a valid date.",
     hint: undefined,
   },
   parameters: {
     docs: {
       description: {
-        story: "Estado com validação e mensagem de erro.",
+        story: "Validation state with error message.",
       },
     },
   },
 };
 
-export const VarianteFilled: Story = {
+export const FilledVariant: Story = {
   args: {
     id: "form-date-filled-variant",
     variant: "filled",
     defaultValue: "2026-02-27",
-    hint: "Exemplo com a variante filled.",
+    hint: "Example using filled variant.",
   },
   parameters: {
     docs: {
       description: {
-        story: "Exemplo visual usando a variante `filled`.",
+        story: "Visual example with `filled` variant.",
       },
     },
   },

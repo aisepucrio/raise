@@ -20,7 +20,7 @@ const globalLayout: Preview = {
     controls: {
       matchers: {
         color: /(background|color)$/i,
-        date: /Date$/i,
+        data: /Date$/i,
       },
     },
     docs: {

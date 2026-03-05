@@ -47,18 +47,18 @@ const meta = {
   argTypes: {
     columns: {
       control: false,
-      description: "Lista completa de colunas disponíveis.",
+      description: "list complete of columns available.",
       table: { type: { summary: "string[]" } },
     },
     hiddenColumns: {
       control: false,
-      description: "Lista controlada de colunas ocultas.",
+      description: "list controlled of columns hidden.",
       table: { type: { summary: "string[]" } },
     },
     onHiddenColumnsChange: {
       control: false,
       description:
-        "Callback para atualizar colunas ocultas (valor direto ou updater).",
+        "Callback to update hidden columns (direct value or updater).",
       table: {
         type: {
           summary:
@@ -68,27 +68,27 @@ const meta = {
     },
     className: {
       control: false,
-      description: "Classe CSS adicional do container principal.",
+      description: "Classe CSS adicional of the container main.",
       table: { type: { summary: "string" } },
     },
     buttonClassName: {
       control: false,
-      description: "Classe CSS adicional do botão gatilho.",
+      description: "Classe CSS adicional of the button gatilho.",
       table: { type: { summary: "string" } },
     },
     menuClassName: {
       control: false,
-      description: "Classe CSS adicional do popover/menu.",
+      description: "Classe CSS adicional of the popover/menu.",
       table: { type: { summary: "string" } },
     },
     title: {
       control: { type: "text" },
-      description: "Título exibido no menu de colunas.",
+      description: "title shown in the menu of columns.",
       table: { type: { summary: "string" }, defaultValue: { summary: "Visible columns" } },
     },
     description: {
       control: { type: "text" },
-      description: "Texto auxiliar exibido no menu de colunas.",
+      description: "text auxiliar shown in the menu of columns.",
       table: {
         type: { summary: "string" },
         defaultValue: { summary: "Select which columns should appear in the table." },
@@ -100,7 +100,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Menu para mostrar ou ocultar colunas de uma tabela.",
+          "Menu to show or hide table columns.",
       },
     },
   },
@@ -116,12 +116,12 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {
+export const Default: Story = {
   render: () => <InteractiveDemo />,
   parameters: {
     docs: {
       description: {
-        story: "Menu interativo para ocultar/exibir colunas com resumo visual.",
+        story: "Menu interativo for hide/display columns with summary visual.",
       },
     },
   },

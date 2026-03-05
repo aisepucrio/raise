@@ -2,7 +2,7 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
-// Propriedades nativas de botão permitidas na API padronizada.
+// Propriedades nativas of button permitidas in the API standardized.
 type ButtonBaseProps = Pick<
   ButtonHTMLAttributes<HTMLButtonElement>,
   | "id"

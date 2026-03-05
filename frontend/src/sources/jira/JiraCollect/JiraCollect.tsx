@@ -20,25 +20,25 @@ import {
 import JiraCollectModal from "./JiraCollectModal";
 
 export default function JiraCollect() {
-  // Redireciona para jobs já com source=jira após iniciar a coleta.
+  // Redirects to jobs with source=jira after starting collection.
   const navigate = useNavigate();
-  // Mutation responsável por enviar o payload de projetos para o endpoint Jira.
+  // Mutation responsible for enviar the payload of projects for the endpoint Jira.
   const collectMutation = useJiraCollectMutation();
 
-  // Lista de projetos selecionados no formato { jira_domain, project_key }.
+  // list of projects selected in the format { jira_domain, project_key }.
   const [projects, setProjects] = useState<JiraProject[]>([]);
-  // Filtro de período opcional enviado ao backend.
+  // filter of period optional sent to backend.
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  // Estado do modal que adiciona novos projetos.
+  // state of the modal that adds novos projects.
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  // Adiciona um projeto já validado pelo modal.
+  // adds the project already validated pelo modal.
   function handleAddProject(project: JiraProject) {
     setProjects((currentProjects) => [...currentProjects, project]);
   }
 
-  // Remove um item exato da lista comparando domínio + project key.
+  // removes the item exact of the list comparing domain + project key.
   function handleRemoveProject(projectToRemove: JiraProject) {
     setProjects((currentProjects) =>
       currentProjects.filter(
@@ -51,9 +51,9 @@ export default function JiraCollect() {
     );
   }
 
-  // Monta o payload final da coleta Jira e executa a mutation.
+  // Builds the final Jira collection payload and executes the mutation.
   async function handleCollect() {
-    // Quando datas não são preenchidas, a coleta roda para todo o período disponível.
+    // when dates not are filled, the collection roda for entire the period available.
     const payload: JiraCollectBody = {
       projects,
       ...(startDate ? { start_date: startDate } : {}),
@@ -69,7 +69,7 @@ export default function JiraCollect() {
     });
   }
 
-  // Converte projetos para o formato de tags exibidas no bloco de tags.
+  // converts projects for the format of tags shown in the block of tags.
   const projectTags = mapItemsToCollectTags(
     projects,
     (project) => `${project.jira_domain}/${project.project_key}`,
@@ -78,9 +78,9 @@ export default function JiraCollect() {
 
   return (
     <>
-      {/* Estrutura visual compartilhada: cabeçalho, lista de projetos, datas e submit. */}
+      {/* Estrutura visual shared: header, list of projects, dates and submit. */}
       <CollectWrapper>
-        {/* Header principal com título, descrição e ação de adicionar item */}
+        {/* Header main with title, description and action of add item */}
         <CollectHeader
           title="Jira Collect"
           description="Configure projects and optional date range."
@@ -88,24 +88,24 @@ export default function JiraCollect() {
           onAddClick={() => setIsAddModalOpen(true)}
         />
 
-        {/* Lista de itens adicionados (repositórios/projetos/tags) */}
+        {/* list of items added (repositories/projects/tags) */}
         <CollectTagsSection
           tagsHeading={`Projects (${projects.length})`}
           tags={projectTags}
           emptyTagsMessage='No projects added yet. Click the "Add project" button above to get started.'
         />
 
-        {/* Filtro de data compartilhado e aviso contextual */}
+        {/* filter of date shared and warning contextual */}
         <CollectDateSection
           startDate={startDate}
           endDate={endDate}
           onStartDateChange={setStartDate}
           onEndDateChange={setEndDate}
           dateFilterIdPrefix="jira-collect"
-          dateWarningMessage="Leaving both date fields empty will mine data from the entire period."
+          dateWarningMessage="Leaving both date fields empty will mine date from the entire period."
         />
 
-        {/* Ação final de disparar a coleta */}
+        {/* final action to trigger collection */}
         <CollectActions
           collectButtonText="Collect"
           collectPendingButtonText="Collecting..."
@@ -115,7 +115,7 @@ export default function JiraCollect() {
         />
       </CollectWrapper>
 
-      {/* Modal específico do Jira para inclusão de domínio + chave de projeto. */}
+      {/* Modal specific of the Jira for inclusion of domain + key of project. */}
       <JiraCollectModal
         open={isAddModalOpen}
         projects={projects}

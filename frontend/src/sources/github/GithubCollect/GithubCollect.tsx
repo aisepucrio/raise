@@ -19,7 +19,7 @@ import {
   type GithubOptionalCollectType,
 } from "./GithubCollectTypesSection";
 
-// Formata a data para o formato ISO exigido pela API do GitHub.
+// Formata the date for the format ISO exigido pela API of the GitHub.
 function formatDateGitHub(dateStr: string) {
   if (!dateStr) return undefined;
 
@@ -30,24 +30,24 @@ function formatDateGitHub(dateStr: string) {
 }
 
 export default function GithubCollect() {
-  // Redireciona para a tela de jobs mantendo o contexto da source atual.
+  // Redirects for the screen of jobs mantendo the context of the source atual.
   const navigate = useNavigate();
-  // Dispara a coleta no endpoint de GitHub e invalida a listagem de jobs ao concluir.
+  // triggers the collection in the endpoint of GitHub and invalid the listing of jobs to concluir.
   const collectMutation = useGithubCollectMutation();
 
-  // Repositórios no formato owner/repo adicionados no modal.
+  // repositories in the format owner/repo added in the modal.
   const [repositories, setRepositories] = useState<string[]>([]);
-  // Janela opcional de datas enviada para limitar a coleta.
+  // Janela optional of dates sent for limitar the collection.
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  // tipos extras selecionados no bloco de scope.
+  // types extra selected in the block of scope.
   const [selectedOptionalTypes, setSelectedOptionalTypes] = useState<
     GithubOptionalCollectType[]
   >([]);
-  // Controla abertura do modal de inclusão de repositório.
+  // Controla abertura of the modal of inclusion of repository.
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  // Insere um novo repositório já normalizado/validado pelo modal.
+  // Insere the new repository already normalizado/validated pelo modal.
   function handleAddRepository(normalizedRepository: string) {
     setRepositories((currentRepositories) => [
       ...currentRepositories,
@@ -55,7 +55,7 @@ export default function GithubCollect() {
     ]);
   }
 
-  // Remove um repositório específico da lista atual.
+  // removes the repository specific of the list atual.
   function handleRemoveRepository(repositoryToRemove: string) {
     setRepositories((currentRepositories) =>
       currentRepositories.filter(
@@ -64,9 +64,9 @@ export default function GithubCollect() {
     );
   }
 
-  // Monta o payload final e executa a mutation de coleta.
+  // Builds the final payload and executes the collection mutation.
   async function handleCollect() {
-    // `metadata` sempre vai junto; tipos extras entram conforme a seleção do usuário.
+    // `metadata` always vai junto; types extra entram according to the selection of the user.
     const payload: GithubCollectBody = {
       repositories,
       depth: "basic",
@@ -84,7 +84,7 @@ export default function GithubCollect() {
     });
   }
 
-  // Adapta a lista de repositórios para o formato de tags removíveis.
+  // adapts the list of repositories for the format of tags removable.
   const repositoryTags = mapItemsToCollectTags(
     repositories,
     (repository) => repository,
@@ -93,9 +93,9 @@ export default function GithubCollect() {
 
   return (
     <>
-      {/* Estrutura visual base compartilhada pelos collects (header, tags, datas e botão de submit). */}
+      {/* Estrutura visual base shared pelos collects (header, tags, dates and button of submit). */}
       <CollectWrapper>
-        {/* Header principal com título, descrição e ação de adicionar item */}
+        {/* Header main with title, description and action of add item */}
         <CollectHeader
           title="GitHub Collect"
           description="Configure repositories, optional date range and collection types."
@@ -103,27 +103,27 @@ export default function GithubCollect() {
           onAddClick={() => setIsAddModalOpen(true)}
         />
 
-        {/* Lista de itens adicionados (repositórios/projetos/tags) */}
+        {/* list of items added (repositories/projects/tags) */}
         <CollectTagsSection
           tagsHeading={`Repositories (${repositories.length})`}
           tags={repositoryTags}
           emptyTagsMessage='No repositories added yet. Click the "Add repository" button above to get started.'
         />
 
-        {/* Filtro de data compartilhado e aviso contextual */}
+        {/* filter of date shared and warning contextual */}
         <CollectDateSection
           startDate={startDate}
           endDate={endDate}
           onStartDateChange={setStartDate}
           onEndDateChange={setEndDate}
           dateFilterIdPrefix="github-collect"
-          dateWarningMessage="Leaving both date fields empty will mine data from the entire period."
+          dateWarningMessage="Leaving both date fields empty will mine date from the entire period."
         />
 
-        {/* Área de extensão para conteúdo específico do source */}
+        {/* area of extension for content specific of the source */}
         <GithubCollectTypesSection onOptionalTypesChange={setSelectedOptionalTypes} />
 
-        {/* Ação final de disparar a coleta */}
+        {/* final action to trigger collection */}
         <CollectActions
           collectButtonText="Collect"
           collectPendingButtonText="Collecting..."

@@ -3,7 +3,7 @@ import { queryKeys } from "../../query/keys";
 import { jobsService } from "./jobsService";
 import type { JobsListResponse } from "./jobsTypes";
 
-// Lista os jobs de coleta globais exibidos na página de Jobs.
+// list the jobs of collection global shown in the page of jobs.
 export function useJobsListQuery() {
   return useQuery<JobsListResponse>({
     queryKey: queryKeys.jobs.list(),

@@ -10,7 +10,7 @@ function ToastDemo(props: ToastProps) {
     <div className="space-y-4">
       <div className="rounded-xl border border-(--color-secondary-soft) p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm font-semibold">Tema atual: {theme}</p>
+          <p className="text-sm font-semibold">Current theme: {theme}</p>
           <div className="inline-flex rounded-lg border border-(--color-secondary-soft) p-1">
             <button
               type="button"
@@ -41,32 +41,32 @@ function ToastDemo(props: ToastProps) {
           <button
             type="button"
             onClick={() =>
-              toast("Atualização concluída", {
-                description: "Feedback rápido para ações comuns da interface.",
+              toast("Update completed", {
+                description: "Feedback quick for actions comuns of the interface.",
               })
             }
             className="rounded-md border border-(--color-secondary-soft) px-3 py-2 text-sm"
           >
-            Toast padrão
+            Toast standard
           </button>
 
           <button
             type="button"
             onClick={() =>
-              toast.success("Registro salvo", {
-                description: "Exemplo de confirmação visual temporária.",
+              toast.success("record salvo", {
+                description: "Example of confirmation visual temporary.",
               })
             }
             className="rounded-md border border-(--color-secondary-soft) px-3 py-2 text-sm"
           >
-            Sucesso
+            success
           </button>
 
           <button
             type="button"
             onClick={() =>
-              toast.info("Sincronizando dados", {
-                description: "Mensagem informativa sem bloquear o fluxo.",
+              toast.info("Sincronizando date", {
+                description: "message informativa without bloquear the fluxo.",
               })
             }
             className="rounded-md border border-(--color-secondary-soft) px-3 py-2 text-sm"
@@ -77,25 +77,25 @@ function ToastDemo(props: ToastProps) {
           <button
             type="button"
             onClick={() =>
-              toast.warning("Atenção ao filtro", {
-                description: "Exemplo de aviso para revisão de parâmetros.",
+              toast.warning("Filter warning", {
+                description: "Example of warning for review of parameters.",
               })
             }
             className="rounded-md border border-(--color-secondary-soft) px-3 py-2 text-sm"
           >
-            Aviso
+            warning
           </button>
 
           <button
             type="button"
             onClick={() =>
-              toast.error("Falha ao processar", {
-                description: "Exemplo de erro para feedback de operação.",
+              toast.error("failure to processar", {
+                description: "Example of error for feedback of operation.",
               })
             }
             className="rounded-md border border-(--color-secondary-soft) px-3 py-2 text-sm"
           >
-            Erro
+            error
           </button>
         </div>
       </div>
@@ -117,12 +117,12 @@ const meta = {
   argTypes: {
     closeButton: {
       control: { type: "boolean" },
-      description: "Exibe botão de fechar em cada toast.",
+      description: "displays button of close in each toast.",
       table: { type: { summary: "boolean" } },
     },
     richColors: {
       control: { type: "boolean" },
-      description: "Ativa paleta de cores por tipo (success, error etc.).",
+      description: "Ativa paleta of cores for tipo (success, error etc.).",
       table: { type: { summary: "boolean" } },
     },
     position: {
@@ -135,32 +135,32 @@ const meta = {
         "bottom-center",
         "bottom-right",
       ],
-      description: "Posição do container de toasts na tela.",
+      description: "position of the container of toasts in the screen.",
       table: { type: { summary: "ToasterProps['position']" } },
     },
     className: {
       control: false,
-      description: "Classe CSS adicional do container.",
+      description: "Classe CSS adicional of the container.",
       table: { type: { summary: "string" } },
     },
     icons: {
       control: false,
-      description: "Mapeamento opcional de ícones por tipo de toast.",
+      description: "Mapeamento optional of icons for tipo of toast.",
       table: { type: { summary: "ToasterProps['icons']" } },
     },
     style: {
       control: false,
-      description: "Estilos inline opcionais do container.",
+      description: "Estilos inline optional of the container.",
       table: { type: { summary: "CSSProperties" } },
     },
     theme: {
       control: false,
-      description: "Tema visual usado pelo container de toasts.",
+      description: "theme visual used pelo container of toasts.",
       table: { type: { summary: "ToasterProps['theme']" } },
     },
     toastOptions: {
       control: false,
-      description: "Configurações padrão aplicadas aos toasts disparados.",
+      description: "configurations standard aplieachs to the toasts disparados.",
       table: { type: { summary: "ToasterProps['toastOptions']" } },
     },
   },
@@ -170,7 +170,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Componente `Toast` baseado no `Sonner` para exibir feedbacks temporários.",
+          "Toast component based on Sonner to show temporary feedback.",
       },
     },
   },
@@ -188,7 +188,7 @@ export const Playground: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Use os botões para disparar exemplos de toast e alternar o tema.",
+        story: "Use the buttons to trigger Examples of toast and toggle the theme.",
       },
     },
   },

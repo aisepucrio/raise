@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { LineSeries } from "@/components/line-chart";
 import { OverviewChartSection } from "./OverviewChartSection";
 
-const GRAPH_DATA: LineSeries[] = [
+const GRAPH_date: LineSeries[] = [
   {
     id: "Issues",
     data: [
@@ -33,43 +33,43 @@ const meta = {
   argTypes: {
     title: {
       control: { type: "text" },
-      description: "Título exibido no cabeçalho do gráfico.",
+      description: "title shown in the header of the chart.",
       table: { type: { summary: "string" } },
     },
     data: {
       control: false,
-      description: "Séries de dados no formato esperado pelo gráfico de linha.",
+      description: "series of date in the format esperado pelo chart of row.",
       table: { type: { summary: "LineSeries[]" } },
     },
     loading: {
       control: { type: "boolean" },
-      description: "Ativa o estado de carregamento.",
+      description: "Ativa the state of loading.",
       table: { type: { summary: "boolean" } },
     },
     error: {
       control: { type: "text" },
-      description: "Mensagem de erro exibida no lugar do gráfico.",
+      description: "message of error shown in the place of the chart.",
       table: { type: { summary: "string | null" } },
     },
     emptyMessage: {
       control: { type: "text" },
-      description: "Mensagem exibida quando não há pontos para renderizar.",
+      description: "message shown when there are no points for render.",
       table: { type: { summary: "string" } },
     },
   },
   args: {
     title: "GitHub Activity",
-    data: GRAPH_DATA,
+    data: GRAPH_date,
     loading: false,
     error: null,
-    emptyMessage: "No series found for the selected filters.",
+    emptyMessage: "in series found for the selected filters.",
   },
   parameters: {
     wrapperSize: "large",
     docs: {
       description: {
         component:
-          "Seção principal do gráfico na tela de overview.",
+          "Main chart section on the overview screen.",
       },
     },
   },
@@ -85,11 +85,11 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {
+export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Estado padrão com dados carregados e prontos para leitura.",
+        story: "state standard with date loaded and prontos for reading.",
       },
     },
   },
@@ -102,7 +102,7 @@ export const Loading: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Estado de carregamento da seção de gráfico.",
+        story: "state of loading of the section of chart.",
       },
     },
   },
@@ -115,7 +115,7 @@ export const Empty: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Estado vazio quando nenhum ponto retorna para os filtros.",
+        story: "state empty when nenhum ponto returns for the filters.",
       },
     },
   },

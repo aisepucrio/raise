@@ -10,43 +10,43 @@ const meta = {
   argTypes: {
     text: {
       control: { type: "text" },
-      description: "Texto exibido no botão toggle.",
+      description: "text shown in the button toggle.",
       table: { type: { summary: "string" } },
     },
     pressed: {
       control: { type: "boolean" },
-      description: "Estado controlado do botão.",
+      description: "state controlled of the button.",
       table: { type: { summary: "boolean" } },
     },
     defaultPressed: {
       control: { type: "boolean" },
-      description: "Estado inicial para uso não controlado.",
+      description: "state initial for uncontrolled usage.",
       table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
     },
     onPressedChange: {
       action: "pressedChange",
-      description: "Callback disparado quando o estado pressed muda.",
+      description: "Callback triggered when the state pressed changes.",
       table: { type: { summary: "(pressed: boolean) => void" } },
     },
     size: {
       control: { type: "inline-radio" },
       options: ["default", "sm"],
-      description: "Tamanho visual do botão.",
+      description: "size visual of the button.",
       table: { type: { summary: "\"default\" | \"sm\"" }, defaultValue: { summary: "default" } },
     },
     disabled: {
       control: { type: "boolean" },
-      description: "Desabilita interação.",
+      description: "disables interaction.",
       table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
     },
     fullWidth: {
       control: { type: "boolean" },
-      description: "Ocupa toda largura do container quando habilitado.",
+      description: "occupies entire width of the container when enabled.",
       table: { type: { summary: "boolean" }, defaultValue: { summary: "true" } },
     },
     className: {
       control: false,
-      description: "Classe CSS adicional aplicada ao botão.",
+      description: "Classe CSS adicional aplieach to button.",
       table: { type: { summary: "string" } },
     },
   },
@@ -60,7 +60,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Botão de seleção do tipo toggle para opções de formulário.",
+          "Toggle-style selection button for form options.",
       },
     },
   },
@@ -76,11 +76,11 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {
+export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Botão de seleção padrão em modo não controlado.",
+        story: "button of selection standard in mode not controlled.",
       },
     },
   },
@@ -94,7 +94,7 @@ export const PressionadoPorPadrao: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Inicializa com estado pressionado ativo.",
+        story: "initializa with state pressionado ativo.",
       },
     },
   },
@@ -126,7 +126,7 @@ export const ControladoExternamente: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Exemplo com estado controlado por um componente externo.",
+        story: "Example with state controlled for the component external.",
       },
     },
   },
@@ -144,7 +144,7 @@ export const GrupoDeSelecao: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Exemplo com múltiplos botões para seleção por categoria.",
+        story: "Example with multiple buttons for selection for category.",
       },
     },
   },

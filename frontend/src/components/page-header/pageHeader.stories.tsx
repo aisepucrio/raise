@@ -9,12 +9,12 @@ const meta = {
   argTypes: {
     title: {
       control: { type: "text" },
-      description: "Título principal da página.",
+      description: "title main of the page.",
       table: { type: { summary: "string" } },
     },
     subtitle: {
       control: { type: "text" },
-      description: "Descrição complementar exibida abaixo do título.",
+      description: "description complementar shown below of the title.",
       table: { type: { summary: "string" } },
     },
   },
@@ -23,7 +23,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Cabeçalho de página com título, subtítulo e separador inferior.",
+          "Page header with title, subtitle, and bottom separator.",
       },
     },
   },
@@ -44,11 +44,11 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {
+export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Cabeçalho padrão com título e subtítulo curtos.",
+        story: "header standard with title and subtitle curtos.",
       },
     },
   },
@@ -63,7 +63,7 @@ export const TextoLongo: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Valida comportamento visual com texto mais longo no subtítulo.",
+        story: "validates behavior visual with text mais longo in the subtitle.",
       },
     },
   },

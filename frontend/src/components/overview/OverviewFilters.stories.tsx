@@ -51,62 +51,62 @@ const meta = {
   argTypes: {
     idPrefix: {
       control: { type: "text" },
-      description: "Prefixo usado para gerar IDs dos campos internos.",
+      description: "Prefixed used for gerar IDs of the fields internos.",
       table: { type: { summary: "string" } },
     },
     sourceFilterLabel: {
       control: { type: "text" },
-      description: "Label exibido no filtro de fonte.",
+      description: "Label shown in the filter of source.",
       table: { type: { summary: "string" } },
     },
     allSourcesOptionLabel: {
       control: { type: "text" },
-      description: "Texto da opção neutra (todas as fontes).",
+      description: "text of the option neutra (entires the sources).",
       table: { type: { summary: "string" } },
     },
     sourceOptions: {
       control: false,
-      description: "Lista de opções disponíveis no filtro de fonte.",
+      description: "list of options available in the filter of source.",
       table: { type: { summary: "{ value: string; label: string }[]" } },
     },
     selectedSourceId: {
       control: { type: "text" },
-      description: "Fonte selecionada no filtro.",
+      description: "source selected in the filter.",
       table: { type: { summary: "string" } },
     },
     onSourceChange: {
       control: false,
-      description: "Callback disparado quando a fonte é alterada.",
+      description: "Callback triggered when the source is alterada.",
       table: { type: { summary: "(value: string) => void" } },
     },
     startDate: {
       control: { type: "text" },
-      description: "Data inicial no formato `YYYY-MM-DD`.",
+      description: "date initial in the format `YYYY-MM-DD`.",
       table: { type: { summary: "string" } },
     },
     endDate: {
       control: { type: "text" },
-      description: "Data final no formato `YYYY-MM-DD`.",
+      description: "end date in the format `YYYY-MM-DD`.",
       table: { type: { summary: "string" } },
     },
     onStartDateChange: {
       control: false,
-      description: "Callback disparado ao alterar data inicial.",
+      description: "Callback triggered to change date initial.",
       table: { type: { summary: "(value: string) => void" } },
     },
     onEndDateChange: {
       control: false,
-      description: "Callback disparado ao alterar data final.",
+      description: "Callback triggered to change end date.",
       table: { type: { summary: "(value: string) => void" } },
     },
     isSourceListPending: {
       control: { type: "boolean" },
-      description: "Indica carregamento da lista de fontes.",
+      description: "Indica loading of the list of sources.",
       table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
     },
     dateRange: {
       control: false,
-      description: "Limites opcionais de data mínima e máxima.",
+      description: "limits optional of date minimum and maximum.",
       table: { type: { summary: "{ minDate?: string; maxDate?: string }" } },
     },
   },
@@ -127,7 +127,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Bloco de filtros com seleção de fonte e intervalo de datas.",
+          "Filters block with source selection and date range.",
       },
     },
   },
@@ -143,18 +143,18 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {
+export const Default: Story = {
   render: () => <OverviewFiltersDemo />,
   parameters: {
     docs: {
       description: {
-        story: "Filtro padrão com seleção de fonte e período em branco.",
+        story: "filter standard with selection of source and period in branco.",
       },
     },
   },
 };
 
-export const ComSourceSelecionado: Story = {
+export const WithSelectedSource: Story = {
   render: () => (
     <OverviewFiltersDemo
       initialSourceId="acme/api"
@@ -166,7 +166,7 @@ export const ComSourceSelecionado: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Exemplo com fonte e intervalo inicial já definidos.",
+        story: "Example with source and interval initial already definidos.",
       },
     },
   },

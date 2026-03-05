@@ -18,7 +18,7 @@ import type {
 const SOURCE = "jira" as const;
 
 export const jiraService = {
-  // Overview e ItemSwitcher: cards do dashboard e lista de projetos.
+  // Overview and ItemSwitcher: cards of the dashboard and list of projects.
   getOverview: (
     params?: JiraOverviewParams,
     options?: RequestOptions,
@@ -28,7 +28,7 @@ export const jiraService = {
       signal: options?.signal,
     }) as Promise<JiraOverviewResponse>,
 
-  // Overview e Preview: faixa de datas para limitar filtros por projeto.
+  // Overview and Preview: range of dates for limitar filters for project.
   getDateRange: (
     params: JiraDateRangeParams,
     options?: RequestOptions,
@@ -38,11 +38,11 @@ export const jiraService = {
       signal: options?.signal,
     }) as Promise<ApiDateRangeResponse>,
 
-  // ChartLine (Overview): serie acumulada por intervalo.
+  // ChartLine (Overview): series cumulative for interval.
   getGraph: (params: JiraGraphParams, options?: RequestOptions) =>
     api.get(endpoints.dashboardGraph(SOURCE), { params, signal: options?.signal }),
 
-  // Preview: tabela paginada por secao com filtros e ordenacao.
+  // Preview: table paginada for section with filters and sorting.
   getPreview: (
     section: JiraSection,
     params: JiraPreviewParams,
@@ -53,14 +53,14 @@ export const jiraService = {
       signal: options?.signal,
     }) as Promise<JiraPreviewResponse>,
 
-  // ModalDownload (Preview): exporta no formato padrão atual (json).
+  // ModalDownload (Preview): exporta in the current standard format (json).
   exportPreview: (options?: RequestOptions) =>
     api.post(endpoints.export(SOURCE), { format: "json" }, {
       responseType: "blob",
       signal: options?.signal,
     }),
 
-  // Collect: inicia a coleta de Jira via endpoint padronizado.
+  // Collect: starts the collection of Jira via endpoint standardized.
   collect: (body: JiraCollectBody, options?: RequestOptions) =>
     api.post(endpoints.collect(SOURCE), body, { signal: options?.signal }),
 };

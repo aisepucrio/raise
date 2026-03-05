@@ -17,8 +17,8 @@ export const endpoints = {
   // ==> COLLECT
   collect: (source: Source) => `/api/${source}/collect/`,
 
-  // HARDCODE TEMPORARIO: O --StackOverflow-- AINDA USA /COLLECT/ADVANCED POR COMPATIBILIDADE COM A IMPLEMENTACAO LEGADA.
-  // FUTURO: MERGEAR COM /COLLECT USANDO APENAS PAYLOAD.
+  // HARDCODE TEMPORARIO: the --StackOverflow-- AINDA USA /COLLECT/ADVANCED for COMPATIBILIDADE with the IMPLEMENTACAO LEGADA.
+  // FUTURO: MERGEAR with /COLLECT USANDO only PAYLOAD.
   collectAdvanced: (source: Source) => `/api/${source}/collect/advanced/`,
 
   // ==> PREVIEW

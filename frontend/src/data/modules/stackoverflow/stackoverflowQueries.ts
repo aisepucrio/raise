@@ -11,8 +11,8 @@ import type {
   StackOverflowPreviewParams,
 } from "./stackoverflowTypes";
 
-// Os hooks recebem os mesmos params do service (sem camada extra de adaptação).
-// Busca os cards do dashboard do Stack Overflow.
+// the hooks receive the same params of the service (without layer extra of adaptstion).
+// search the cards of the dashboard of the Stack Overflow.
 export function useStackOverflowOverviewQuery(
   params?: StackOverflowOverviewParams,
   options?: HookQueryOptions,
@@ -24,7 +24,7 @@ export function useStackOverflowOverviewQuery(
   });
 }
 
-// Busca a faixa mínima/máxima de datas para a pergunta selecionada.
+// search the range minimum/maximum of dates for the question selected.
 export function useStackOverflowDateRangeQuery(
   params?: StackOverflowDateRangeParams,
   options?: HookQueryOptions,
@@ -37,7 +37,7 @@ export function useStackOverflowDateRangeQuery(
     queryFn: ({ signal }) => {
       if (!params) {
         throw new Error(
-          "question_id é obrigatório para buscar date range do Stack Overflow.",
+          "question_id is required to fetch Stack Overflow date range.",
         );
       }
       return stackoverflowService.getDateRange(params, { signal });
@@ -46,7 +46,7 @@ export function useStackOverflowDateRangeQuery(
   });
 }
 
-// Conveniência para componentes que só têm `questionId`.
+// convenience for components that only have `questionId`.
 export function useStackOverflowDateRangeByQuestionQuery(
   questionId?: string,
   options?: HookQueryOptions,
@@ -59,7 +59,7 @@ export function useStackOverflowDateRangeByQuestionQuery(
   );
 }
 
-// Busca a série temporal do dashboard do Stack Overflow.
+// search the series temporal of the dashboard of the Stack Overflow.
 export function useStackOverflowGraphQuery(
   params: StackOverflowGraphParams,
   options?: HookQueryOptions,
@@ -71,7 +71,7 @@ export function useStackOverflowGraphQuery(
   });
 }
 
-// Busca a tabela paginada de preview de uma seção do Stack Overflow.
+// search the table paginada of preview of the section of the Stack Overflow.
 export function useStackOverflowPreviewQuery(
   section: StackOverflowSection,
   params: StackOverflowPreviewParams,
@@ -80,7 +80,7 @@ export function useStackOverflowPreviewQuery(
   return useQuery({
     queryKey: queryKeys.stackoverflow.preview(section, params),
     enabled: options?.enabled,
-    // Mantém a tabela atual durante mudanças de filtro/ordenação/página.
+    // keeps the table atual durante changes of filter/sorting/page.
     placeholderData: keepPreviousData,
     queryFn: ({ signal }) =>
       stackoverflowService.getPreview(section, params, { signal }),

@@ -4,7 +4,7 @@ import {
   resolveSourceId,
 } from "@/lib/source-section-resolver";
 
-// Tipos e funções relacionados à navegação da sidebar.
+// types and functions relacionados to navigation of the sidebar.
 type SidebarRouteContext = {
   source: SourceId;
   section: SectionPreviewIdBySource[SourceId];
@@ -12,7 +12,7 @@ type SidebarRouteContext = {
   shouldNormalize: boolean;
 };
 
-// Estrutura mínima para calcular a query string de navegação.
+// Estrutura minimum for calcular the query string of navigation.
 type BuildSidebarSearchParams = {
   targetPathname: string;
   currentSearch: string;
@@ -20,13 +20,13 @@ type BuildSidebarSearchParams = {
   section?: string | null;
 };
 
-// Aux: converte URLSearchParams para query string com "?".
+// Aux: converts URLSearchParams for query string with "?".
 function toSearchString(searchParams: URLSearchParams) {
   const search = searchParams.toString();
   return search ? `?${search}` : "";
 }
 
-// Aux: verifica se o item principal da sidebar está ativo.
+// Aux: verifica se the item main of the sidebar is ativo.
 export function isSidebarItemActive(pathname: string, routePath: string) {
   if (routePath === "/") {
     return pathname === "/";
@@ -35,13 +35,13 @@ export function isSidebarItemActive(pathname: string, routePath: string) {
   return pathname === routePath || pathname.startsWith(`${routePath}/`);
 }
 
-// Aux: identifica se a rota atual é de Preview.
+// Aux: identifica se the rota atual is of preview.
 function isPreviewRoute(pathname: string) {
   return pathname === "/preview" || pathname.startsWith("/preview/");
 }
 
-// Lê source/section da URL e devolve valores já saneados para a UI.
-// Também sinaliza se a URL precisa ser corrigida (ex.: source inválido).
+// reads source/section of the URL and returns values already sanitized for the UI.
+// also sinaliza se the URL precisa ser fixed (ex.: source invalid).
 export function resolveSidebarRouteContext(
   pathname: string,
   search: string,
@@ -75,11 +75,11 @@ export function resolveSidebarRouteContext(
   };
 }
 
-// Gera a query string para navegações disparadas pela sidebar.
-// Regras:
-// - sempre preserva `source`
-// - em Preview mantém/resolve `section` para o source informado
-// - fora de Preview remove `section`
+// generates the query string for navigations disparadas pela sidebar.
+// rules:
+// - always preserva `source`
+// - in Preview keeps/resolves `section` for the source provided
+// - outside of preview removes `section`
 export function buildSidebarSearch({
   targetPathname,
   currentSearch,

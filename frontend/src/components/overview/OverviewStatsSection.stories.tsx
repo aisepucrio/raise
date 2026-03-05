@@ -9,7 +9,7 @@ const meta = {
   argTypes: {
     items: {
       control: false,
-      description: "Lista de métricas exibidas na coluna lateral.",
+      description: "list of metrics shown in the column side.",
       table: { type: { summary: "InfoBoxGridItem[]" } },
     },
   },
@@ -27,7 +27,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Seção lateral para exibir métricas em cards.",
+          "Side section to display metric cards.",
       },
     },
   },
@@ -43,17 +43,17 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {
+export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Renderiza conjunto completo de cards de métricas.",
+        story: "Renderiza set complete of cards of metrics.",
       },
     },
   },
 };
 
-export const ComPoucosCards: Story = {
+export const WithFewCards: Story = {
   args: {
     items: [
       { title: "Issues", number: "1,280" },
@@ -64,7 +64,7 @@ export const ComPoucosCards: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Exemplo com quantidade reduzida de cards.",
+        story: "Example with quantity reduced of cards.",
       },
     },
   },

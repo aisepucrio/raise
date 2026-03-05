@@ -11,8 +11,8 @@ import type {
   JiraPreviewParams,
 } from "./jiraTypes";
 
-// Os hooks recebem os mesmos params do service (sem camada extra de adaptação).
-// Busca os cards do dashboard do Jira.
+// the hooks receive the same params of the service (without layer extra of adaptstion).
+// search the cards of the dashboard of the Jira.
 export function useJiraOverviewQuery(
   params?: JiraOverviewParams,
   options?: HookQueryOptions,
@@ -24,7 +24,7 @@ export function useJiraOverviewQuery(
   });
 }
 
-// Busca a faixa mínima/máxima de datas para o projeto selecionado.
+// search the range minimum/maximum of dates for the project selected.
 export function useJiraDateRangeQuery(
   params?: JiraDateRangeParams,
   options?: HookQueryOptions,
@@ -36,7 +36,7 @@ export function useJiraDateRangeQuery(
     enabled: isEnabled,
     queryFn: ({ signal }) => {
       if (!params) {
-        throw new Error("project_id é obrigatório para buscar date range do Jira.");
+        throw new Error("project_id is required to fetch Jira date range.");
       }
       return jiraService.getDateRange(params, { signal });
     },
@@ -44,7 +44,7 @@ export function useJiraDateRangeQuery(
   });
 }
 
-// Conveniência para componentes que só têm `projectId`.
+// convenience for components that only have `projectId`.
 export function useJiraDateRangeByProjectQuery(
   projectId?: string,
   options?: HookQueryOptions,
@@ -57,7 +57,7 @@ export function useJiraDateRangeByProjectQuery(
   );
 }
 
-// Busca a série temporal do dashboard do Jira.
+// search the series temporal of the dashboard of the Jira.
 export function useJiraGraphQuery(
   params: JiraGraphParams,
   options?: HookQueryOptions,
@@ -69,7 +69,7 @@ export function useJiraGraphQuery(
   });
 }
 
-// Busca a tabela paginada de preview de uma seção do Jira.
+// search the table paginada of preview of the section of the Jira.
 export function useJiraPreviewQuery(
   section: JiraSection,
   params: JiraPreviewParams,
@@ -78,7 +78,7 @@ export function useJiraPreviewQuery(
   return useQuery({
     queryKey: queryKeys.jira.preview(section, params),
     enabled: options?.enabled,
-    // Mantém a tabela atual durante mudanças de filtro/ordenação/página.
+    // keeps the table atual durante changes of filter/sorting/page.
     placeholderData: keepPreviousData,
     queryFn: ({ signal }) => jiraService.getPreview(section, params, { signal }),
   });

@@ -8,39 +8,39 @@ const meta = {
   argTypes: {
     "aria-label": {
       control: { type: "text" },
-      description: "Rótulo acessível obrigatório para leitores de tela.",
+      description: "label accessible required for leitores of screen.",
       table: { type: { summary: "string" } },
     },
     checked: {
       control: { type: "boolean" },
-      description: "Estado controlado do switch.",
+      description: "state controlled of the switch.",
       table: { type: { summary: "boolean" } },
     },
     defaultChecked: {
       control: { type: "boolean" },
-      description: "Estado inicial para uso não controlado.",
+      description: "state initial for uncontrolled usage.",
       table: { type: { summary: "boolean" } },
     },
     disabled: {
       control: { type: "boolean" },
-      description: "Desabilita interação.",
+      description: "disables interaction.",
       table: { type: { summary: "boolean" } },
     },
     onCheckedChange: {
       action: "checkedChange",
-      description: "Callback disparado quando o estado do switch muda.",
+      description: "Callback triggered when the state of the switch changes.",
       table: { type: { summary: "(checked: boolean) => void" } },
     },
     size: {
       control: { type: "inline-radio" },
       options: ["default", "sm"],
-      description: "Tamanho visual do switch.",
+      description: "size visual of the switch.",
       table: { type: { summary: "\"default\" | \"sm\"" }, defaultValue: { summary: "default" } },
     },
     variant: {
       control: { type: "inline-radio" },
       options: ["default", "theme-toggle"],
-      description: "Variante visual do switch.",
+      description: "Variante visual of the switch.",
       table: {
         type: { summary: "\"default\" | \"theme-toggle\"" },
         defaultValue: { summary: "default" },
@@ -49,22 +49,22 @@ const meta = {
     trackWidth: {
       control: false,
       description:
-        "Largura opcional do track (number em px ou string, ex.: `100%`).",
+        "Optional track width (number in px or string, for example `100%`).",
       table: { type: { summary: "number | string" } },
     },
     className: {
       control: false,
-      description: "Classe CSS adicional do root do switch.",
+      description: "Classe CSS adicional of the root of the switch.",
       table: { type: { summary: "string" } },
     },
     style: {
       control: false,
-      description: "Estilos inline opcionais aplicados ao root.",
+      description: "Estilos inline optional aplicados to root.",
       table: { type: { summary: "CSSProperties" } },
     },
   },
   args: {
-    "aria-label": "Ativar opção",
+    "aria-label": "Ativar option",
     defaultChecked: false,
     size: "default",
     variant: "default",
@@ -75,7 +75,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Componente `Switch` derivado de shadcn/ui (Radix UI), com tamanhos e variantes para diferentes contextos.",
+          "Switch component derived from shadcn/ui (Radix UI), with sizes and variants for different contexts.",
       },
     },
   },
@@ -91,11 +91,11 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {
+export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Switch padrão desligado.",
+        story: "Switch standard desligado.",
       },
     },
   },
@@ -108,7 +108,7 @@ export const Ligado: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Switch inicializado no estado ligado.",
+        story: "Switch initializado in the state ligado.",
       },
     },
   },
@@ -122,7 +122,7 @@ export const ThemeToggle: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Exemplo da variante `theme-toggle`.",
+        story: "Example of the variante `theme-toggle`.",
       },
     },
   },
@@ -132,7 +132,7 @@ export const LarguraCustomizada: Story = {
   render: () => (
     <div className="w-52">
       <Switch
-        aria-label="Theme toggle com largura em porcentagem"
+        aria-label="Theme toggle with percentage width"
         variant="theme-toggle"
         trackWidth="100%"
         defaultChecked
@@ -142,7 +142,7 @@ export const LarguraCustomizada: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Exemplo com largura customizada do track.",
+        story: "Example with width customizada of the track.",
       },
     },
   },
@@ -151,9 +151,9 @@ export const LarguraCustomizada: Story = {
 export const EstadosDesabilitados: Story = {
   render: () => (
     <div className="flex items-center gap-4">
-      <Switch aria-label="Desabilitado desligado" disabled trackWidth={56} />
+      <Switch aria-label="disabled desligado" disabled trackWidth={56} />
       <Switch
-        aria-label="Desabilitado ligado"
+        aria-label="disabled ligado"
         disabled
         defaultChecked
         trackWidth={56}
@@ -163,7 +163,7 @@ export const EstadosDesabilitados: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Compara estados desabilitados desligado e ligado.",
+        story: "Compara states desabilitados desligado and ligado.",
       },
     },
   },

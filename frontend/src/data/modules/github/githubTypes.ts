@@ -7,7 +7,7 @@ export type GithubGraphParams = DateFilterRange & {
   repository_id?: string;
 };
 
-// Resposta do dashboard/overview (cards + lista de repositórios)
+// response of the dashboard/overview (cards + list of repositories)
 export type GithubRepository = {
   id: number;
   repository: string;
@@ -26,7 +26,7 @@ export type GithubOverviewResponse = {
   time_mined?: string | null;
 };
 
-// Resposta do gráfico do dashboard (séries por rótulo/tempo)
+// response of the chart of the dashboard (series for label/tempo)
 export type GithubGraphResponse = {
   time_series?: {
     labels?: string[];
@@ -39,14 +39,14 @@ export type GithubGraphResponse = {
 export type GithubPreviewParams = {
   page: number;
   page_size: number;
-  // No preview do GitHub o filtro usa `repository` (e nao `repository_id`).
+  // in the preview of the GitHub the filter usa `repository` (and not `repository_id`).
   repository?: string;
   search?: string;
   ordering?: string;
-  // Usado em `commits` e `users`.
+  // used in `commits` and `users`.
   date__gte?: string;
   date__lte?: string;
-  // Usado em `issues` e `pull-requests`.
+  // used in `issues` and `pull-requests`.
   github_created_at__gte?: string;
   github_created_at__lte?: string;
 };
@@ -76,5 +76,5 @@ export type GithubCollectBody = {
 export type GithubExportBody = {
   format: "json";
   table: string;
-  data_type?: string;
+  date_type?: string;
 };

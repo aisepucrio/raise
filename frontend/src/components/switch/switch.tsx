@@ -15,7 +15,7 @@ export function Switch({
   variant?: "default" | "theme-toggle";
   trackWidth?: number | string;
 }) {
-  // Aceita px (`number`) e valores fluidos (`string`, ex.: `100%`).
+  // Aceita px (`number`) and values fluidos (`string`, ex.: `100%`).
   const resolvedTrackWidth =
     trackWidth === undefined
       ? undefined

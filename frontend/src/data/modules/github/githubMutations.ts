@@ -3,7 +3,7 @@ import { invalidateJobsQueries } from "../../query/invalidation";
 import { githubService } from "./githubService";
 import type { GithubCollectBody, GithubExportBody } from "./githubTypes";
 
-// Inicia uma coleta de GitHub e atualiza a lista global de jobs.
+// starts the collection of GitHub and updates the list global of jobs.
 export function useGithubCollectMutation() {
   const queryClient = useQueryClient();
 
@@ -13,7 +13,7 @@ export function useGithubCollectMutation() {
   });
 }
 
-// Exporta dados de preview do GitHub no formato padrão atual (json).
+// Exporta date of preview of the GitHub in the current standard format (json).
 export function useGithubExportMutation() {
   return useMutation({
     mutationFn: (body: GithubExportBody) => githubService.exportPreview(body),

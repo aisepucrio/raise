@@ -5,7 +5,7 @@ export type OverviewStatsSectionProps = {
   items: InfoBoxGridItem[];
 };
 
-// Sidebar com cards de métricas distribuídos pela altura disponível.
+// Sidebar with cards of metrics distributed pela altura available.
 export function OverviewStatsSection({ items }: OverviewStatsSectionProps) {
   return (
     <div className="min-h-0 flex-1 overflow-hidden p-4">

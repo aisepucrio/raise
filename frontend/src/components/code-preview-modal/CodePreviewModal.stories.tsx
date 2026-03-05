@@ -61,17 +61,17 @@ const meta = {
   argTypes: {
     open: {
       control: { type: "boolean" },
-      description: "Controla se o modal de preview está aberto.",
+      description: "Controls whether the preview modal is open.",
       table: { type: { summary: "boolean" } },
     },
     onClose: {
       control: false,
-      description: "Callback executado ao fechar o modal.",
+      description: "Callback executesdo to close the modal.",
       table: { type: { summary: "() => void" } },
     },
     value: {
       control: false,
-      description: "Conteúdo renderizado no bloco de código (texto ou JSON).",
+      description: "content rendered in the block of code (text ou JSON).",
       table: {
         type: {
           summary:
@@ -81,7 +81,7 @@ const meta = {
     },
     dialogLabel: {
       control: { type: "text" },
-      description: "Nome acessível do diálogo para leitores de tela.",
+      description: "Nome accessible of the dialog for leitores of screen.",
       table: { type: { summary: "string" }, defaultValue: { summary: "Cell content preview" } },
     },
   },
@@ -90,7 +90,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Modal para inspecionar conteúdo em texto ou JSON, com opção de copiar.",
+          "Modal to inspect content as text or JSON, with copy option.",
       },
     },
   },
@@ -108,12 +108,12 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {
+export const Default: Story = {
   render: () => <InteractiveDemo />,
   parameters: {
     docs: {
       description: {
-        story: "Teste interativo com abertura do modal para JSON e texto simples.",
+        story: "Teste interativo with abertura of the modal for JSON and text simple.",
       },
     },
   },

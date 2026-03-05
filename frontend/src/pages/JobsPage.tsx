@@ -38,7 +38,7 @@ export default function JobsPage() {
   const stopJobMutation = useStopJobMutation();
   const restartCollectionMutation = useRestartCollectionMutation();
 
-  // Paginação e ordenação são estado puramente visual; ficam nesta página e não vazam para o data layer.
+  // pagination and sorting are state puramente visual; stay in this page and not leak for the date layer.
   const jobs = jobsQuery.data?.results ?? [];
   const orderedJobs = isReversed ? [...jobs].reverse() : jobs;
   const totalItems = orderedJobs.length;
@@ -54,9 +54,9 @@ export default function JobsPage() {
   }, [currentPage, totalPages]);
 
   useEffect(() => {
-    // Auto-reload da listagem a cada 5s (independente do botão manual).
+    // Auto-reload of the listing the each 5s (independente of the button manual).
     const intervalId = window.setInterval(() => {
-      // Mantém feedback visual consistente: auto-reload também anima o ícone.
+      // keeps feedback visual consistent: auto-reload also animatestes the icon.
       setReloadIconAnimationKey((value) => value + 1);
       void jobsQuery.refetch();
     }, 5000);
@@ -66,7 +66,7 @@ export default function JobsPage() {
     };
   }, [jobsQuery.refetch]);
 
-  // O erro de ação pode vir de qualquer uma das mutations, então lê ambos e prioriza a exibição.
+  // the error of action pode vir of any the of the mutations, then reads both and prioriza the display.
   const actionError = stopJobMutation.isError
     ? stopJobMutation.error
     : restartCollectionMutation.isError
@@ -76,13 +76,13 @@ export default function JobsPage() {
     ? getQueryErrorMessage(actionError, "Failed to run job action.")
     : null;
 
-  // Enquanto uma ação de linha (stop/restart) está pendente, desabilita os botões dessa linha para evitar ações concorrentes.
+  // While the action of row (stop/restart) is pending, disables the buttons dessa row to avoid actions concurrent.
   const isRowActionPending =
     stopJobMutation.isPending ||
     restartCollectionMutation.isPending ||
     isActionSyncPending;
 
-  // Efeito para disparar toast de erro quando uma ação falha.
+  // Effect to trigger toast of error when the action failure.
   useEffect(() => {
     if (!actionErrorMessage) return;
 
@@ -91,7 +91,7 @@ export default function JobsPage() {
     });
   }, [actionErrorMessage]);
 
-  // Efeito para disparar toast de erro quando a ação de parar tarefa é bem-sucedida.
+  // Effect to trigger toast of error when the action of stop task is successful.
   useEffect(() => {
     if (!stopJobMutation.isSuccess) return;
 
@@ -100,7 +100,7 @@ export default function JobsPage() {
     });
   }, [stopJobMutation.isSuccess]);
 
-  // Efeito para disparar toast de erro quando a ação de restartar tarefa é bem-sucedida.
+  // Effect to trigger toast of error when the action of restart task is successful.
   useEffect(() => {
     if (!restartCollectionMutation.isSuccess) return;
 
@@ -114,7 +114,7 @@ export default function JobsPage() {
     setIsActionSyncPending(isLocked);
   }
 
-  // Função utilitária para rodar uma ação de job (stop/restart) com lock para evitar concorrência e refetch da listagem ao final.
+  // function utility to run the action of job (stop/restart) with lock to avoid concurrency and refetch of the listing at the end.
   async function runJobAction(action: () => Promise<unknown>) {
     if (actionLockRef.current) return;
 
@@ -124,42 +124,42 @@ export default function JobsPage() {
       await action();
       await jobsQuery.refetch();
     } catch {
-      // O toast de erro usa o estado da mutation; evita erro não tratado no handler.
+      // the toast of error usa the state of the mutation; avoids error not tratado in the handler.
     } finally {
       setActionLock(false);
     }
   }
 
-  // Chama mutation de stop (e trava ações concorrentes até completar com runJobAction).
+  // Calls mutation of stop (and locks actions concurrent until complete with runJobAction).
   function handleStopJob(taskId: string) {
     stopJobMutation.reset();
     restartCollectionMutation.reset();
     void runJobAction(() => stopJobMutation.mutateAsync(taskId));
   }
 
-  // Chama mutation de restart (e trava ações concorrentes até completar com runJobAction).
+  // Calls mutation of restart (and locks actions concurrent until complete with runJobAction).
   function handleRestartJob(taskId: string) {
     stopJobMutation.reset();
     restartCollectionMutation.reset();
     void runJobAction(() => restartCollectionMutation.mutateAsync(taskId));
   }
 
-  // Handler de clique do botão de recarga: dispara refetch e anima o ícone.
+  // Handler of click of the button of reload: triggers refetch and animatestes the icon.
   function handleReloadClick() {
-    // Cada clique remonta o ícone para rodar a animação uma única vez.
+    // each click reBuilds the icon to run the animatestestion the single vez.
     setReloadIconAnimationKey((value) => value + 1);
     void jobsQuery.refetch();
   }
 
   return (
     <section className="flex h-full min-h-0 flex-col overflow-hidden">
-      {/* Cabeçalho principal da tela: contexto rápido do que esta página exibe. */}
+      {/* header main of the screen: context quick of the that esta page displays. */}
       <PageHeader
         title="Jobs"
         subtitle="Monitor collection jobs, inspect raw records, and run simple retry/stop actions."
       />
 
-      {/* Ações globais da tela: ordenação visual e recarga da consulta. */}
+      {/* actions global of the screen: sorting visual and reload of the consulta. */}
       <div className="mb-4 flex shrink-0 flex-wrap justify-end gap-2">
         <Button
           fullWidth={false}
@@ -188,19 +188,19 @@ export default function JobsPage() {
         />
       </div>
 
-      {/* Card/bloco principal que agrupa feedbacks, tabela e controles de paginação. */}
+      {/* Card/block main that agrupa feedbacks, table and controles of pagination. */}
       <section className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden rounded-xl border-2 border-(--color-secondary-soft) p-4">
-        {/* Erro da listagem: falha ao buscar jobs (query principal da página). */}
+        {/* error of the listing: failure to fetch jobs (query main of the page). */}
         {jobsQuery.isError ? (
           <p className="shrink-0 text-sm text-(--color-red)">
             {getQueryErrorMessage(jobsQuery.error, "Failed to load jobs.")}
           </p>
         ) : null}
 
-        {/* Tabela de jobs (campos crus da API, com data/status formatados por componentes dedicados). */}
+        {/* table of jobs (fields crus of the API, with date/status formatados for components dedicados). */}
         <div className="min-h-0 flex-1 overflow-auto">
           <Table>
-            {/* Cabeçalho das colunas visíveis na listagem. */}
+            {/* header of the columns visible in the listing. */}
             <TableHeader>
               <TableRow>
                 <TableHead>Project</TableHead>
@@ -212,7 +212,7 @@ export default function JobsPage() {
             </TableHeader>
 
             <TableBody>
-              {/* Estado de carregamento inicial da query: ocupa a linha inteira da tabela. */}
+              {/* state of loading initial of the query: occupies the row entire of the table. */}
               {jobsQuery.isPending ? (
                 <TableRow>
                   <TableCell colSpan={5} className="py-2">
@@ -223,7 +223,7 @@ export default function JobsPage() {
                 </TableRow>
               ) : null}
 
-              {/* Estado vazio: query concluída sem registros para exibir. */}
+              {/* state empty: query completed without records for display. */}
               {!jobsQuery.isPending && paginatedJobs.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="py-6 text-center">
@@ -232,10 +232,10 @@ export default function JobsPage() {
                 </TableRow>
               ) : null}
 
-              {/* Linhas de dados paginadas: renderiza apenas o recorte da página atual. */}
+              {/* rows of date paginadas: renderiza only the recorte of the page atual. */}
               {!jobsQuery.isPending &&
                 paginatedJobs.map((job) => {
-                  // O componente de status centraliza cor/label e também expõe as ações válidas.
+                  // the component of status centraliza color/label and also exposes the actions valid.
                   const statusInfo = getFormatStatusItemInfo(job.status);
                   const canStop = statusInfo.actions.stopActionActive;
                   const canRestart = statusInfo.actions.restartActionActive;
@@ -246,11 +246,11 @@ export default function JobsPage() {
                       <TableCell className="font-medium">
                         {job.repository ?? ""}
                       </TableCell>
-                      {/* Description (quebra linha se muito grande) */}
+                      {/* Description (quebra row se muito grande) */}
                       <TableCell className="max-w-160 whitespace-normal wrap-break-word">
                         {job.operation ?? ""}
                       </TableCell>
-                      {/* Data */}
+                      {/* date */}
                       <TableCell>
                         <FormatDateItem
                           value={job.created_at_formatted ?? job.created_at}
@@ -261,7 +261,7 @@ export default function JobsPage() {
                         <FormatStatusItem status={job.status} />
                       </TableCell>
                       <TableCell className="text-right">
-                        {/* Ações da linha: só aparecem quando o status permite. */}
+                        {/* actions of the row: only appear when the status permite. */}
                         <div className="flex justify-end gap-2">
                           {canStop ? (
                             <Button
@@ -295,7 +295,7 @@ export default function JobsPage() {
           </Table>
         </div>
 
-        {/* Rodapé reutilizável de paginação da tabela. */}
+        {/* footer reusable of pagination of the table. */}
         <div className="shrink-0">
           <TablePaginationFooter
             currentPage={currentPage}

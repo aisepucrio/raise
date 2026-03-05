@@ -36,47 +36,47 @@ const meta = {
   argTypes: {
     id: {
       control: { type: "text" },
-      description: "ID do campo select.",
+      description: "ID of the field select.",
       table: { type: { summary: "string" } },
     },
     label: {
       control: { type: "text" },
-      description: "Rótulo exibido acima do select.",
+      description: "label shown above of the select.",
       table: { type: { summary: "string" } },
     },
     value: {
       control: { type: "text" },
-      description: "Valor atualmente selecionado.",
+      description: "value atualmente selected.",
       table: { type: { summary: "string" } },
     },
     onChange: {
       control: false,
-      description: "Callback chamado quando a opção selecionada muda.",
+      description: "Callback called when the option selected changes.",
       table: { type: { summary: "(value: string) => void" } },
     },
     options: {
       control: false,
-      description: "Lista de opções disponíveis para seleção.",
+      description: "list of options available for selection.",
       table: { type: { summary: "{ value: string; label: string }[]" } },
     },
     allOptionLabel: {
       control: { type: "text" },
-      description: "Texto da opção neutra (todos).",
+      description: "text of the option neutra (entires).",
       table: { type: { summary: "string" } },
     },
     isOptionsPending: {
       control: { type: "boolean" },
-      description: "Indica carregamento de opções.",
+      description: "Indica loading of options.",
       table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
     },
     wrapperClassName: {
       control: false,
-      description: "Classe CSS adicional do wrapper do campo.",
+      description: "Classe CSS adicional of the wrapper of the field.",
       table: { type: { summary: "string" } },
     },
     className: {
       control: false,
-      description: "Classe CSS adicional aplicada ao select.",
+      description: "Classe CSS adicional aplieach to select.",
       table: { type: { summary: "string" } },
     },
   },
@@ -85,7 +85,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Select para escolher uma fonte dentro de uma linha de filtros.",
+          "Select to choose a source inside a filters row.",
       },
     },
   },
@@ -101,12 +101,12 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {
+export const Default: Story = {
   render: () => <InteractiveDemo />,
   parameters: {
     docs: {
       description: {
-        story: "Demonstra seleção de fonte com feedback do valor escolhido.",
+        story: "Demonstra selection of source with feedback of the value escolhido.",
       },
     },
   },
@@ -125,7 +125,7 @@ export const CarregandoOpcoes: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Estado com lista vazia e carregamento em andamento.",
+        story: "state with list empty and loading in andamento.",
       },
     },
   },

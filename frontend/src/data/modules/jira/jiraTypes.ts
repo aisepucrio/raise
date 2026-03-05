@@ -7,7 +7,7 @@ export type JiraGraphParams = DateFilterRange & {
   project_id?: string;
 };
 
-// Resposta do dashboard/overview (cards + lista de projetos)
+// response of the dashboard/overview (cards + list of projects)
 export type JiraOverviewProject = {
   id: string;
   name: string;
@@ -26,17 +26,17 @@ export type JiraOverviewResponse = {
 export type JiraPreviewParams = {
   page: number;
   page_size: number;
-  // No preview do Jira o filtro usa `project` (e nao `project_id`).
+  // in the preview of the Jira the filter usa `project` (and not `project_id`).
   project?: string;
   search?: string;
   ordering?: string;
-  // Usado em `sprints`.
+  // used in `sprints`.
   startDate__gte?: string;
   endDate__lte?: string;
-  // Usado em `users`.
+  // used in `users`.
   updated_at__gte?: string;
   updated_at__lte?: string;
-  // Usado em `issues` e `comments`.
+  // used in `issues` and `comments`.
   created__gte?: string;
   created__lte?: string;
 };

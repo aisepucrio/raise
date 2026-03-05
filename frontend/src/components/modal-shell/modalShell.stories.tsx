@@ -11,32 +11,32 @@ const meta = {
   argTypes: {
     open: {
       control: { type: "boolean" },
-      description: "Controla se o modal está aberto.",
+      description: "Controls whether the modal is open.",
       table: { type: { summary: "boolean" } },
     },
     onClose: {
       action: "closed",
-      description: "Callback disparado ao fechar o modal.",
+      description: "Callback triggered to close the modal.",
       table: { type: { summary: "() => void" } },
     },
     title: {
       control: { type: "text" },
-      description: "Título principal do modal.",
+      description: "title main of the modal.",
       table: { type: { summary: "string" } },
     },
     subtitle: {
       control: { type: "text" },
-      description: "Subtítulo opcional exibido abaixo do título.",
+      description: "subtitle optional shown below of the title.",
       table: { type: { summary: "string" } },
     },
     initialFocusRef: {
       control: false,
-      description: "Referência opcional para foco inicial ao abrir.",
+      description: "reference optional for focus initial to open.",
       table: { type: { summary: "{ current: HTMLElement | null }" } },
     },
     children: {
       control: false,
-      description: "Conteúdo interno do modal.",
+      description: "content internal of the modal.",
       table: { type: { summary: "ReactNode" } },
     },
   },
@@ -46,7 +46,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Estrutura base de modal com overlay, cabeçalho e área de conteúdo customizável.",
+          "Base modal structure with overlay, header, and customizable content area.",
       },
     },
   },
@@ -60,7 +60,7 @@ const meta = {
   args: {
     open: true,
     title: "Add repository",
-    subtitle: "Use owner/repo or paste a GitHub URL.",
+    subtitle: "Use owner/repo or paste the GitHub URL.",
     children: (
       <div className="space-y-4">
         <label className="block space-y-1">
@@ -91,17 +91,17 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {
+export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Modal completo com título, subtítulo e conteúdo de formulário.",
+        story: "Modal complete with title, subtitle and content of form.",
       },
     },
   },
 };
 
-export const SemSubtitulo: Story = {
+export const WithoutSubtitle: Story = {
   args: {
     subtitle: undefined,
     title: "Simple dialog",
@@ -109,7 +109,7 @@ export const SemSubtitulo: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Exemplo sem subtítulo para casos de diálogo curto.",
+        story: "Example without subtitle for cases of dialog short.",
       },
     },
   },

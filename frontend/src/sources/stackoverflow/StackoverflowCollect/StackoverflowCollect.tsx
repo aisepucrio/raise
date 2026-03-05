@@ -25,44 +25,44 @@ import {
 import StackoverflowCollectModal from "./StackoverflowCollectModal";
 
 export default function StackoverflowCollect() {
-  // Redireciona para jobs com o contexto da source ao concluir a action.
+  // Redirects for jobs with the context of the source to concluir the action.
   const navigate = useNavigate();
-  // Coleta padrão (sem endpoint advanced).
+  // collection standard (without endpoint advanced).
   const collectMutation = useStackOverflowCollectMutation();
-  // Coleta avançada (endpoint /collect/advanced/ + filtros opcionais).
+  // collection advanced (endpoint /collect/advanced/ + filters optional).
   const collectAdvancedMutation = useStackOverflowCollectAdvancedMutation();
 
-  // Tags opcionais usadas para restringir a coleta.
+  // Tags optional usadas for restringir the collection.
   const [tags, setTags] = useState<string[]>([]);
-  // Datas obrigatórias para Stack Overflow.
+  // dates required for Stack Overflow.
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  // espelha o estado do componente de filtros avançados.
+  // espelha the state of the component of filters advanced.
   const [advancedFiltersState, setAdvancedFiltersState] =
     useState<StackoverflowAdvancedFiltersSectionState>({
       enabled: false,
       filters: undefined,
     });
-  // Abre/fecha modal de inclusão de tags.
+  // Abre/fecha modal of inclusion of tags.
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  // A UI usa um único estado de loading combinando os dois caminhos de coleta.
+  // the UI usa the single state of loading combinando the dois caminhos of collection.
   const isCollectPending =
     collectMutation.isPending || collectAdvancedMutation.isPending;
 
-  // Adiciona uma nova tag à lista local.
+  // adds the nova tag to list local.
   function handleAddTag(tag: string) {
     setTags((currentTags) => [...currentTags, tag]);
   }
 
-  // Remove uma tag específica da lista local.
+  // removes the tag specific of the list local.
   function handleRemoveTag(tagToRemove: string) {
     setTags((currentTags) => currentTags.filter((tag) => tag !== tagToRemove));
   }
 
-  // Monta payload e decide entre fluxo default ou advanced.
+  // Builds payload and decide between fluxo default ou advanced.
   async function handleCollect() {
-    // Payload base comum aos modos default e advanced.
+    // Payload base comum to the modes default and advanced.
     const basePayload: StackOverflowCollectBody = {
       options: ["collect_questions"],
       start_date: startDate,
@@ -72,11 +72,11 @@ export default function StackoverflowCollect() {
 
     await runCollectWithFeedback({
       execute: async () => {
-        // Inicia a coleta no endpoint padrão ou avançado, dependendo do modo selecionado.
+        // starts the collection in the endpoint standard ou advanced, dependendo of the mode selected.
         if (advancedFiltersState.enabled) {
-          // HARDCODE TEMPORARIO: QUANDO ADVANCED ESTA ATIVO, O SO CHAMA /COLLECT/ADVANCED.
-          // MOTIVO: COMPATIBILIDADE COM A IMPLEMENTACAO LEGADA.
-          // FUTURO: MERGEAR TUDO NO /COLLECT COM PAYLOAD.
+          // HARDCODE TEMPORARIO: when ADVANCED ESTA ATIVO, the SO Calls /COLLECT/ADVANCED.
+          // MOTIVO: COMPATIBILIDADE with the IMPLEMENTACAO LEGADA.
+          // FUTURO: MERGEAR TUDO in the /COLLECT with PAYLOAD.
           const advancedPayload: StackOverflowAdvancedCollectBody = {
             ...basePayload,
             mode: "advanced",
@@ -98,14 +98,14 @@ export default function StackoverflowCollect() {
     });
   }
 
-  // Adapta tags para o formato de itens removíveis consumido pelo bloco de tags.
+  // adapts tags for the format of items removable consumed pelo block of tags.
   const tagItems = mapItemsToCollectTags(tags, (tag) => tag, handleRemoveTag);
 
   return (
     <>
-      {/* Estrutura visual base compartilhada (título, tags, datas e botão de coleta). */}
+      {/* Estrutura visual base shared (title, tags, dates and button of collection). */}
       <CollectWrapper>
-        {/* Header principal com título, descrição e ação de adicionar item */}
+        {/* Header main with title, description and action of add item */}
         <CollectHeader
           title="Stack Overflow Collect"
           description="Configure tags, required date range and optional advanced filters."
@@ -113,14 +113,14 @@ export default function StackoverflowCollect() {
           onAddClick={() => setIsAddModalOpen(true)}
         />
 
-        {/* Lista de itens adicionados (repositórios/projetos/tags) */}
+        {/* list of items added (repositories/projects/tags) */}
         <CollectTagsSection
           tagsHeading={`Tags (${tags.length})`}
           tags={tagItems}
           emptyTagsMessage='No tags added yet. You can collect without tags or click "Add tag" to target specific tags.'
         />
 
-        {/* Filtro de data compartilhado e aviso contextual */}
+        {/* filter of date shared and warning contextual */}
         <CollectDateSection
           startDate={startDate}
           endDate={endDate}
@@ -130,10 +130,10 @@ export default function StackoverflowCollect() {
           dateWarningMessage="Start and finish dates are required for Stack Overflow."
         />
 
-        {/* Área de extensão para conteúdo específico do source */}
+        {/* area of extension for content specific of the source */}
         <StackoverflowAdvancedFiltersSection onChange={setAdvancedFiltersState} />
 
-        {/* Ação final de disparar a coleta */}
+        {/* final action to trigger collection */}
         <CollectActions
           collectButtonText="Collect"
           collectPendingButtonText="Collecting..."
@@ -143,7 +143,7 @@ export default function StackoverflowCollect() {
         />
       </CollectWrapper>
 
-      {/* Modal específico para adicionar tags opcionais de Stack Overflow. */}
+      {/* Modal specific for add tags optional of Stack Overflow. */}
       <StackoverflowCollectModal
         open={isAddModalOpen}
         tags={tags}

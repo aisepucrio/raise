@@ -5,8 +5,8 @@ export type SidebarNavSubItemProps = {
 };
 
 /**
- * Subitem de navegação da sidebar.
- * Mantém estilo compacto e realce visual quando representa a rota atual.
+ * Subitem of navigation of the sidebar.
+ * keeps estilo compacto and realce visual when representa the rota atual.
  */
 export default function SidebarNavSubItem({
   label,

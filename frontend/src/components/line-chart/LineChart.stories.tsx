@@ -74,42 +74,42 @@ const meta = {
   argTypes: {
     title: {
       control: { type: "text" },
-      description: "Título exibido acima do gráfico.",
+      description: "title shown above of the chart.",
       table: { type: { summary: "string" } },
     },
     data: {
       control: false,
-      description: "Séries no formato `{ id, data[] }` consumido pelo Nivo.",
+      description: "series in the format `{ id, date[] }` consumed pelo Nivo.",
       table: { type: { summary: "LineSeries[]" } },
     },
     loading: {
       control: { type: "boolean" },
-      description: "Ativa estado de carregamento com loader.",
+      description: "Ativa state of loading with loader.",
       table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
     },
     error: {
       control: { type: "text" },
-      description: "Mensagem de erro exibida no lugar do gráfico.",
+      description: "message of error shown in the place of the chart.",
       table: { type: { summary: "string | null" }, defaultValue: { summary: "null" } },
     },
     height: {
       control: { type: "number" },
-      description: "Altura da área do gráfico em pixels.",
+      description: "Altura of the area of the chart in pixels.",
       table: { type: { summary: "number" }, defaultValue: { summary: "450" } },
     },
     yLabel: {
       control: { type: "text" },
-      description: "Rótulo do eixo Y.",
+      description: "label of the eixo Y.",
       table: { type: { summary: "string" } },
     },
     emptyMessage: {
       control: { type: "text" },
-      description: "Mensagem exibida quando não há dados para renderização.",
+      description: "message shown when there is no data for rendering.",
       table: { type: { summary: "string" } },
     },
     colors: {
       control: false,
-      description: "Paleta de cores fixa ou função para resolver cor por série.",
+      description: "Paleta of cores fixa ou function for resolver color for series.",
       table: { type: { summary: "string[] | ((serie: { id: string }) => string)" } },
     },
   },
@@ -121,7 +121,7 @@ const meta = {
       },
       description: {
         component:
-          "Gráfico de linha baseado em `@nivo/line` para exibir séries temporais com estados de carregamento, erro e vazio.",
+          "Line chart based on `@nivo/line` to display time series with loading, error, and empty states.",
       },
     },
   },
@@ -143,11 +143,11 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {
+export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Visualização padrão com série mensal de atividade.",
+        story: "view standard with series mensal of atividade.",
       },
     },
   },
@@ -162,7 +162,7 @@ export const MultiplasSeries: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Exemplo com múltiplas séries no mesmo gráfico.",
+        story: "Example with multiple series in the same chart.",
       },
     },
   },
@@ -176,35 +176,35 @@ export const Loading: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Exibe o estado de carregamento.",
+        story: "displays the state of loading.",
       },
     },
   },
 };
 
-export const Erro: Story = {
+export const error: Story = {
   args: {
-    error: "Falha ao carregar a série histórica.",
+    error: "failure to load a series historical.",
     data: monthlySeries,
   },
   parameters: {
     docs: {
       description: {
-        story: "Exibe o estado de erro do gráfico.",
+        story: "displays the state of error of the chart.",
       },
     },
   },
 };
 
-export const SemDados: Story = {
+export const NoData: Story = {
   args: {
     data: [{ id: "Commits", data: [] }],
-    emptyMessage: "Nenhum ponto foi encontrado para os filtros selecionados.",
+    emptyMessage: "Nenhum ponto foi encontrado for the filters selected.",
   },
   parameters: {
     docs: {
       description: {
-        story: "Exibe o estado vazio quando não há pontos para mostrar.",
+        story: "displays the state empty when there are no points to show.",
       },
     },
   },

@@ -20,7 +20,7 @@ import StackoverflowCollect from "./stackoverflow/StackoverflowCollect";
 import StackoverflowOverview from "./stackoverflow/StackoverflowOverview";
 import { StackoverflowPreviewQuestions } from "./stackoverflow/StackoverflowPreview/index";
 
-// Mapeia cada sourceId para módulos de UI de Overview e Collect.
+// maps each sourceId for modules of UI of overview and Collect.
 type SourceUiModuleSet = {
   collect: ComponentType;
   overview: ComponentType;
@@ -41,7 +41,7 @@ export const sourceUiModules: Record<SourceId, SourceUiModuleSet> = {
   },
 };
 
-// Mapeia cada sourceId para módulos de Preview por sectionPreview.
+// maps each sourceId for modules of preview for sectionPreview.
 type SourcePreviewUiModuleSet = {
   [S in SourceId]: Record<SectionPreviewIdBySource[S], ComponentType>;
 };

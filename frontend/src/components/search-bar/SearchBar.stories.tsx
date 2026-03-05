@@ -30,37 +30,37 @@ const meta = {
   argTypes: {
     id: {
       control: { type: "text" },
-      description: "ID do campo de busca.",
+      description: "ID of the field of search.",
       table: { type: { summary: "string" } },
     },
     onSearchChange: {
       control: false,
-      description: "Callback disparado após debounce do termo digitado.",
+      description: "Callback triggered after debounce of the termo digitado.",
       table: { type: { summary: "(searchTerm: string) => void" } },
     },
     label: {
       control: { type: "text" },
-      description: "Label do campo de busca.",
+      description: "Label of the field of search.",
       table: { type: { summary: "string" }, defaultValue: { summary: "Search" } },
     },
     placeholder: {
       control: { type: "text" },
-      description: "Placeholder do input de busca.",
+      description: "Placeholder of the input of search.",
       table: { type: { summary: "string" }, defaultValue: { summary: "Type..." } },
     },
     debounceMs: {
       control: { type: "number" },
-      description: "Tempo de debounce (ms) antes de disparar `onSearchChange`.",
+      description: "Tempo of debounce (ms) antes of trigger `onSearchChange`.",
       table: { type: { summary: "number" }, defaultValue: { summary: "350" } },
     },
     disabled: {
       control: { type: "boolean" },
-      description: "Desabilita interação com a busca.",
+      description: "disables interaction with the search.",
       table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
     },
     expandable: {
       control: { type: "boolean" },
-      description: "Ativa expansão horizontal do campo ao focar ou digitar.",
+      description: "Ativa expansion horizontal of the field to focar ou digitar.",
       table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
     },
   },
@@ -69,7 +69,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Barra de busca com debounce interno e opção de modo expansível.",
+          "bar de fetches com debounce interno e option de modo expandable.",
       },
     },
   },
@@ -85,12 +85,12 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {
+export const Default: Story = {
   render: () => <InteractiveDemo />,
   parameters: {
     docs: {
       description: {
-        story: "Busca padrão com feedback do termo aplicado após debounce.",
+        story: "search standard with feedback of the termo aplicado after debounce.",
       },
     },
   },
@@ -101,7 +101,7 @@ export const Expandivel: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Busca em modo expansível para economizar espaço no layout.",
+        story: "search in mode expandable for save space in the layout.",
       },
     },
   },

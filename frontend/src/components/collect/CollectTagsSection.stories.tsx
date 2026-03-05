@@ -22,17 +22,17 @@ const meta = {
   argTypes: {
     tagsHeading: {
       control: { type: "text" },
-      description: "Título da seção de tags.",
+      description: "title of the section of tags.",
       table: { type: { summary: "string" } },
     },
     tags: {
       control: false,
-      description: "Lista de tags removíveis (`id`, `label`, `onRemove`).",
+      description: "list of tags removable (`id`, `label`, `onRemove`).",
       table: { type: { summary: "readonly { id: string; label: string; onRemove: () => void }[]" } },
     },
     emptyTagsMessage: {
       control: { type: "text" },
-      description: "Mensagem exibida quando a lista de tags está vazia.",
+      description: "message shown when the list of tags is empty.",
       table: { type: { summary: "string" } },
     },
   },
@@ -47,7 +47,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Lista de tags removíveis com suporte a estado vazio.",
+          "Removable tags list with empty-state support.",
       },
     },
   },
@@ -63,17 +63,17 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const ComItens: Story = {
+export const WithItems: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Estado com repositórios já adicionados.",
+        story: "state with repositories already added.",
       },
     },
   },
 };
 
-export const Vazio: Story = {
+export const empty: Story = {
   args: {
     tagsHeading: "Repositories (0)",
     tags: [],
@@ -81,7 +81,7 @@ export const Vazio: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Estado vazio exibindo orientação para adicionar itens.",
+        story: "state empty showing guidance for add items.",
       },
     },
   },

@@ -45,37 +45,37 @@ const meta = {
   argTypes: {
     currentPage: {
       control: { type: "number" },
-      description: "Página atual (indexada em 1).",
+      description: "page atual (indexada in 1).",
       table: { type: { summary: "number" } },
     },
     rowsPerPage: {
       control: { type: "number" },
-      description: "Quantidade de linhas exibidas por página.",
+      description: "quantity of rows shown for page.",
       table: { type: { summary: "number" } },
     },
     totalItems: {
       control: { type: "number" },
-      description: "Total de itens disponíveis para paginação.",
+      description: "Total of items available for pagination.",
       table: { type: { summary: "number" } },
     },
     onPageChange: {
       control: false,
-      description: "Callback disparado quando o usuário navega de página.",
+      description: "Callback triggered when the user navega of page.",
       table: { type: { summary: "(page: number) => void" } },
     },
     onRowsPerPageChange: {
       control: false,
-      description: "Callback disparado ao alterar linhas por página.",
+      description: "Callback triggered to change rows for page.",
       table: { type: { summary: "(rowsPerPage: number) => void" } },
     },
     itemsLabel: {
       control: { type: "text" },
-      description: "Rótulo de unidade usado no resumo (ex.: rows, jobs).",
+      description: "label of unidade used in the summary (ex.: rows, jobs).",
       table: { type: { summary: "string" }, defaultValue: { summary: "items" } },
     },
     rowsPerPageLabel: {
       control: { type: "text" },
-      description: "Texto do label do seletor de linhas por página.",
+      description: "text of the label of the selector of rows for page.",
       table: {
         type: { summary: "string" },
         defaultValue: { summary: "Rows per page" },
@@ -83,7 +83,7 @@ const meta = {
     },
     rowsPerPageSelectId: {
       control: { type: "text" },
-      description: "ID aplicado no select de linhas por página.",
+      description: "ID aplicado in the select of rows for page.",
       table: {
         type: { summary: "string" },
         defaultValue: { summary: "table-rows-per-page" },
@@ -91,7 +91,7 @@ const meta = {
     },
     className: {
       control: false,
-      description: "Classe CSS adicional no container do rodapé.",
+      description: "Classe CSS adicional in the container of the footer.",
       table: { type: { summary: "string" } },
     },
   },
@@ -100,7 +100,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Rodapé de tabela com resumo de itens, paginação e seletor de linhas por página.",
+          "Table footer with item summary, pagination, and rows-per-page selector.",
       },
     },
   },
@@ -118,23 +118,23 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {
+export const Default: Story = {
   render: () => <InteractiveDemo />,
   parameters: {
     docs: {
       description: {
-        story: "Demonstra paginação interativa com total de itens e troca de densidade.",
+        story: "Demonstra pagination interativa with total of items and switch of densidade.",
       },
     },
   },
 };
 
-export const Vazio: Story = {
+export const empty: Story = {
   render: () => <InteractiveDemo totalItems={0} />,
   parameters: {
     docs: {
       description: {
-        story: "Mostra o estado sem itens, com navegação desabilitada.",
+        story: "Mostra the state without items, with navigation desabilitada.",
       },
     },
   },

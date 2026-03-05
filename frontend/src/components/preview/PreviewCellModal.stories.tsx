@@ -18,22 +18,22 @@ const meta = {
   argTypes: {
     open: {
       control: { type: "boolean" },
-      description: "Controla visibilidade do modal.",
+      description: "Controla visibility of the modal.",
       table: { type: { summary: "boolean" } },
     },
     onClose: {
       action: "close",
-      description: "Callback disparado ao fechar o modal.",
+      description: "Callback triggered to close the modal.",
       table: { type: { summary: "() => void" } },
     },
     value: {
       control: false,
-      description: "Valor bruto da célula exibido no preview.",
+      description: "value bruto of the cell shown in the preview.",
       table: { type: { summary: "string | number | boolean | object | null" } },
     },
     dialogLabel: {
       control: { type: "text" },
-      description: "Rótulo acessível aplicado ao diálogo.",
+      description: "label accessible aplicado to dialog.",
       table: { type: { summary: "string" }, defaultValue: { summary: "Cell content preview" } },
     },
   },
@@ -42,7 +42,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Modal para exibir o conteúdo completo de uma célula.",
+          "Modal to display full cell content.",
       },
     },
   },
@@ -51,11 +51,11 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {
+export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Abre o modal com um objeto de exemplo renderizado no preview de código.",
+        story: "Abre the modal with the object of Example rendered in the preview of code.",
       },
     },
   },

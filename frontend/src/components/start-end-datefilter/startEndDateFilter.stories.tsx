@@ -23,7 +23,7 @@ function InteractiveDateRangeDemo() {
     [source],
   );
 
-  // Simula mudança externa de source + date-range.
+  // Simula change externa of source + date-range.
   useEffect(() => {
     if (source === "source-b") {
       setStartDate("2026-01-20");
@@ -77,73 +77,73 @@ const meta = {
   argTypes: {
     idPrefix: {
       control: { type: "text" },
-      description: "Prefixo usado para gerar IDs dos campos de data.",
+      description: "Prefixed used for gerar IDs of the fields of date.",
       table: { type: { summary: "string" } },
     },
     startDate: {
       control: { type: "text" },
-      description: "Data inicial no formato `YYYY-MM-DD`.",
+      description: "date initial in the format `YYYY-MM-DD`.",
       table: { type: { summary: "string" } },
     },
     endDate: {
       control: { type: "text" },
-      description: "Data final no formato `YYYY-MM-DD`.",
+      description: "end date in the format `YYYY-MM-DD`.",
       table: { type: { summary: "string" } },
     },
     onStartDateChange: {
       action: "startChanged",
-      description: "Callback disparado ao alterar data inicial.",
+      description: "Callback triggered to change date initial.",
       table: { type: { summary: "(value: string) => void" } },
     },
     onEndDateChange: {
       action: "endChanged",
-      description: "Callback disparado ao alterar data final.",
+      description: "Callback triggered to change end date.",
       table: { type: { summary: "(value: string) => void" } },
     },
     startLabel: {
       control: { type: "text" },
-      description: "Rótulo do campo inicial.",
+      description: "label of the field initial.",
       table: { type: { summary: "string" }, defaultValue: { summary: "Start" } },
     },
     endLabel: {
       control: { type: "text" },
-      description: "Rótulo do campo final.",
+      description: "label of the end field.",
       table: { type: { summary: "string" }, defaultValue: { summary: "End" } },
     },
     error: {
       control: { type: "text" },
-      description: "Mensagem de erro compartilhada entre os campos.",
+      description: "message of error shared between the fields.",
       table: { type: { summary: "string" } },
     },
     width: {
       control: { type: "inline-radio" },
       options: ["full", "compact"],
-      description: "Define a largura/layout da dupla de campos.",
+      description: "Define the width/layout of the dupla of fields.",
       table: { type: { summary: "\"full\" | \"compact\"" }, defaultValue: { summary: "full" } },
     },
     className: {
       control: false,
-      description: "Classe CSS adicional do container.",
+      description: "Classe CSS adicional of the container.",
       table: { type: { summary: "string" } },
     },
     disabled: {
       control: { type: "boolean" },
-      description: "Desabilita ambos os campos de data.",
+      description: "disables both the fields of date.",
       table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
     },
     dateRange: {
       control: false,
-      description: "Limites opcionais de data mínima e máxima.",
+      description: "limits optional of date minimum and maximum.",
       table: { type: { summary: "{ minDate?: string; maxDate?: string }" } },
     },
     startWrapperClassName: {
       control: false,
-      description: "Classe CSS adicional do wrapper do campo inicial.",
+      description: "Classe CSS adicional of the wrapper of the field initial.",
       table: { type: { summary: "string" } },
     },
     endWrapperClassName: {
       control: false,
-      description: "Classe CSS adicional do wrapper do campo final.",
+      description: "Classe CSS adicional of the wrapper of the end field.",
       table: { type: { summary: "string" } },
     },
   },
@@ -159,7 +159,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Filtro de intervalo de datas com validação entre início e fim e suporte a limites mínimo/máximo.",
+          "Date range filter with start/end validation and minimum/maximum limits support.",
       },
     },
   },
@@ -175,7 +175,7 @@ export const LarguraMaxima: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Layout com campos ocupando toda a largura disponível.",
+        story: "Layout with fields occupying entire the width available.",
       },
     },
   },
@@ -188,18 +188,18 @@ export const LarguraMinima: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Layout compacto com largura fixa para cada campo.",
+        story: "Layout compacto with width fixa for each field.",
       },
     },
   },
 };
 
-export const ComDateRangeDinamico: Story = {
+export const WithDynamicDateRange: Story = {
   render: () => <InteractiveDateRangeDemo />,
   parameters: {
     docs: {
       description: {
-        story: "Demonstra atualização dinâmica dos limites de data conforme a source.",
+        story: "Demonstra update dynamic of the limits of date according to the source.",
       },
     },
   },

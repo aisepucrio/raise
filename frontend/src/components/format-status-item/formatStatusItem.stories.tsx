@@ -9,12 +9,12 @@ const meta = {
   argTypes: {
     status: {
       control: { type: "text" },
-      description: "Status bruto recebido da API para normalização e exibição.",
+      description: "Status bruto received of the API for normalization and display.",
       table: { type: { summary: "string | null" } },
     },
     className: {
       control: false,
-      description: "Classe CSS adicional aplicada ao container.",
+      description: "Classe CSS adicional aplieach to container.",
       table: { type: { summary: "string" } },
     },
   },
@@ -26,7 +26,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Exibe um status com rótulo amigável e cor consistente.",
+          "Displays a status with friendly label and consistent color.",
       },
     },
   },
@@ -42,11 +42,11 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {
+export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Exibe um status único no formato final da interface.",
+        story: "Displays a single status in final interface format.",
       },
     },
   },
@@ -81,7 +81,7 @@ export const ListaDeStatus: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Compara os principais status suportados e seus mapeamentos visuais.",
+        story: "Compara the principais status suportados and seus mapeamentos visual.",
       },
     },
   },

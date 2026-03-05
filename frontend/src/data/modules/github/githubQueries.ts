@@ -11,8 +11,8 @@ import type {
   GithubPreviewParams,
 } from "./githubTypes";
 
-// Os hooks recebem os mesmos params do service (sem camada extra de adaptação).
-// Busca os cards do dashboard do GitHub.
+// the hooks receive the same params of the service (without layer extra of adaptstion).
+// search the cards of the dashboard of the GitHub.
 export function useGithubOverviewQuery(
   params?: GithubOverviewParams,
   options?: HookQueryOptions,
@@ -24,7 +24,7 @@ export function useGithubOverviewQuery(
   });
 }
 
-// Busca a faixa mínima/máxima de datas para o repositório selecionado.
+// search the range minimum/maximum of dates for the repository selected.
 export function useGithubDateRangeQuery(
   params?: GithubDateRangeParams,
   options?: HookQueryOptions,
@@ -38,7 +38,7 @@ export function useGithubDateRangeQuery(
     queryFn: ({ signal }) => {
       if (!params) {
         throw new Error(
-          "repository_id é obrigatório para buscar date range do GitHub.",
+          "repository_id is required to fetch GitHub date range.",
         );
       }
       return githubService.getDateRange(params, { signal });
@@ -47,7 +47,7 @@ export function useGithubDateRangeQuery(
   });
 }
 
-// Conveniência para componentes que só têm `repositoryId`.
+// convenience for components that only have `repositoryId`.
 export function useGithubDateRangeByRepositoryQuery(
   repositoryId?: string,
   options?: HookQueryOptions,
@@ -60,7 +60,7 @@ export function useGithubDateRangeByRepositoryQuery(
   );
 }
 
-// Busca a série temporal do dashboard do GitHub.
+// search the series temporal of the dashboard of the GitHub.
 export function useGithubGraphQuery(
   params: GithubGraphParams,
   options?: HookQueryOptions,
@@ -72,7 +72,7 @@ export function useGithubGraphQuery(
   });
 }
 
-// Busca a tabela paginada de preview de uma seção do GitHub.
+// search the table paginada of preview of the section of the GitHub.
 export function useGithubPreviewQuery(
   section: GithubSection,
   params: GithubPreviewParams,
@@ -81,7 +81,7 @@ export function useGithubPreviewQuery(
   return useQuery({
     queryKey: queryKeys.github.preview(section, params),
     enabled: options?.enabled,
-    // Mantém a tabela atual durante mudanças de filtro/ordenação/página.
+    // keeps the table atual durante changes of filter/sorting/page.
     placeholderData: keepPreviousData,
     queryFn: ({ signal }) =>
       githubService.getPreview(section, params, { signal }),

@@ -16,15 +16,15 @@ import {
 
 type InvoiceRow = {
   id: string;
-  cliente: string;
-  status: "Pago" | "Pendente" | "Atrasado";
-  valor: string;
+  customer: string;
+  status: "Paid" | "Pending" | "Overdue";
+  value: string;
 };
 
 const rows: InvoiceRow[] = [
-  { id: "INV-001", cliente: "Acme LTDA", status: "Pago", valor: "R$ 1.250,00" },
-  { id: "INV-002", cliente: "Orbit Tech", status: "Pendente", valor: "R$ 890,00" },
-  { id: "INV-003", cliente: "Nova Dados", status: "Atrasado", valor: "R$ 2.430,00" },
+  { id: "INV-001", customer: "Acme LTDA", status: "Paid", value: "R$ 1.250,00" },
+  { id: "INV-002", customer: "Orbit Tech", status: "Pending", value: "R$ 890,00" },
+  { id: "INV-003", customer: "Nova Data", status: "Overdue", value: "R$ 2.430,00" },
 ];
 
 function DemoTable({
@@ -40,16 +40,16 @@ function DemoTable({
     <Table>
       {withCaption ? (
         <TableCaption>
-          Exemplo de tabela composável (shadcn/ui) adaptada ao tema do app.
+          Example of a composable table (shadcn/ui) adapted to the app theme.
         </TableCaption>
       ) : null}
 
       <TableHeader>
         <TableRow>
-          <TableHead>Fatura</TableHead>
-          <TableHead>Cliente</TableHead>
+          <TableHead>Invoice</TableHead>
+          <TableHead>Customer</TableHead>
           <TableHead>Status</TableHead>
-          <TableHead className="text-right">Valor</TableHead>
+          <TableHead className="text-right">Value</TableHead>
         </TableRow>
       </TableHeader>
 
@@ -60,9 +60,9 @@ function DemoTable({
             data-state={row.id === selectedRowId ? "selected" : undefined}
           >
             <TableCell className="font-medium">{row.id}</TableCell>
-            <TableCell>{row.cliente}</TableCell>
+            <TableCell>{row.customer}</TableCell>
             <TableCell>{row.status}</TableCell>
-            <TableCell className="text-right">{row.valor}</TableCell>
+            <TableCell className="text-right">{row.value}</TableCell>
           </TableRow>
         ))}
       </TableBody>
@@ -97,13 +97,13 @@ function SortableHeadDemo() {
           <TableSortableHead
             sortDirection={sortDirection}
             onSort={handleToggleSort}
-            title="Sort by fatura"
+            title="Sort by invoice"
           >
-            Fatura
+            Invoice
           </TableSortableHead>
-          <TableHead>Cliente</TableHead>
+          <TableHead>Customer</TableHead>
           <TableHead>Status</TableHead>
-          <TableHead className="text-right">Valor</TableHead>
+          <TableHead className="text-right">Value</TableHead>
         </TableRow>
       </TableHeader>
 
@@ -111,9 +111,9 @@ function SortableHeadDemo() {
         {rows.map((row) => (
           <TableRow key={row.id}>
             <TableCell className="font-medium">{row.id}</TableCell>
-            <TableCell>{row.cliente}</TableCell>
+            <TableCell>{row.customer}</TableCell>
             <TableCell>{row.status}</TableCell>
-            <TableCell className="text-right">{row.valor}</TableCell>
+            <TableCell className="text-right">{row.value}</TableCell>
           </TableRow>
         ))}
       </TableBody>
@@ -128,17 +128,17 @@ const meta = {
   argTypes: {
     className: {
       control: false,
-      description: "Classe CSS adicional aplicada ao elemento `<table>`.",
+      description: "Additional CSS class applied to `<table>`.",
       table: { type: { summary: "string" } },
     },
     withContainer: {
       control: { type: "boolean" },
-      description: "Define se a tabela vem embrulhada em container com overflow-x.",
+      description: "Defines if table is wrapped in an overflow-x container.",
       table: { type: { summary: "boolean" }, defaultValue: { summary: "true" } },
     },
     containerClassName: {
       control: false,
-      description: "Classe CSS adicional do container externo (quando habilitado).",
+      description: "Additional CSS class for outer container (when enabled).",
       table: { type: { summary: "string" } },
     },
   },
@@ -147,7 +147,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Componente de tabela baseado no `shadcn/ui`, com estrutura composável para cabeçalho, corpo, rodapé e estados de linha.",
+          "Table component based on `shadcn/ui` with composable header, body, footer, and row states.",
       },
     },
   },
@@ -163,45 +163,45 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {
+export const Default: Story = {
   render: () => <DemoTable />,
   parameters: {
     docs: {
       description: {
-        story: "Tabela base com cabeçalho e linhas de conteúdo.",
+        story: "Base table with header and content rows.",
       },
     },
   },
 };
 
-export const ComCaptionERodape: Story = {
+export const WithCaptionAndFooter: Story = {
   render: () => <DemoTable withCaption withFooter />,
   parameters: {
     docs: {
       description: {
-        story: "Exemplo com caption e rodapé.",
+        story: "Example with caption and footer.",
       },
     },
   },
 };
 
-export const LinhaSelecionada: Story = {
+export const SelectedRow: Story = {
   render: () => <DemoTable selectedRowId="INV-002" />,
   parameters: {
     docs: {
       description: {
-        story: "Mostra o estado de linha selecionada.",
+        story: "Shows selected row state.",
       },
     },
   },
 };
 
-export const ColunaOrdenavel: Story = {
+export const SortableColumn: Story = {
   render: () => <SortableHeadDemo />,
   parameters: {
     docs: {
       description: {
-        story: "Exemplo de cabeçalho com ordenação.",
+        story: "Example of sortable header.",
       },
     },
   },

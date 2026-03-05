@@ -3,7 +3,7 @@ import { useState } from "react";
 import { SelectionButton } from "@/components/selection-button";
 import type { GithubCollectType } from "@/data";
 
-// tipos opcionais do github; metadata é sempre fixo no payload final.
+// Optional GitHub types; metadata is always fixed in the final payload.
 export type GithubOptionalCollectType = Exclude<GithubCollectType, "metadata">;
 
 const OPTIONAL_COLLECT_OPTIONS: ReadonlyArray<{
@@ -23,7 +23,7 @@ export type GithubCollectTypesSectionProps = {
 export function GithubCollectTypesSection({
   onOptionalTypesChange,
 }: GithubCollectTypesSectionProps) {
-  // estado local dos tipos extras que o usuario seleciona.
+  // state local of the types extra that the user seleciona.
   const [selectedOptionalTypes, setSelectedOptionalTypes] = useState<
     GithubOptionalCollectType[]
   >([]);
@@ -33,13 +33,13 @@ export function GithubCollectTypesSection({
   );
   const selectedCollectTypesCount = 1 + selectedOptionalTypes.length;
 
-  // atualiza estado local e replica para a tela pai.
+  // updates state local and replica for the screen pai.
   function updateOptionalTypes(nextTypes: GithubOptionalCollectType[]) {
     setSelectedOptionalTypes(nextTypes);
     onOptionalTypesChange(nextTypes);
   }
 
-  // alterna uma opção individual.
+  // alterna the option individual.
   function handleToggleOptionalType(type: GithubOptionalCollectType) {
     const isSelected = selectedOptionalTypes.includes(type);
     updateOptionalTypes(
@@ -57,7 +57,7 @@ export function GithubCollectTypesSection({
             Collection Scope
           </h3>
           <p className="text-xs text-(--color-secondary-muted)">
-            Choose which GitHub data types this job should collect.
+            Choose which GitHub date types this job should collect.
           </p>
         </div>
       </div>

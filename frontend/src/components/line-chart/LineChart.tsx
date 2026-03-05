@@ -10,7 +10,7 @@ export type LineSeries = { id: string; data: LinePoint[] };
 export interface LineChartProps {
   title?: string;
 
-  // O pai já entrega no formato do Nivo:
+  // Parent already provides the Nivo shape:
   // [{ id: "commits", data: [{x:"2026-01", y:10}, ...] }, ...]
   data: LineSeries[];
 
@@ -22,13 +22,12 @@ export interface LineChartProps {
 
   emptyMessage?: string;
 
-  // Opcional: cores fixas (por índice) ou função (por id)
+  // Optional: fixed colors (by index) or resolver function (by id)
   colors?: string[] | ((serie: { id: string }) => string);
 }
 
-// O Nivo pode renderizar preto quando a cor da série chega como `var(--token)`.
-// Esta função aceita o formato da prop `colors` (array ou função) e devolve
-// o mesmo formato, mas com CSS variables já resolvidas para valores reais.
+// Nivo may render black if the series color is passed the `var(--token)`.
+// Resolve CSS variables to concrete color values before rendering.
 function normalizeLineChartColorsForNivo(
   colors: NonNullable<LineChartProps["colors"]>,
 ): NonNullable<LineChartProps["colors"]> {
@@ -44,17 +43,16 @@ function normalizeLineChartColorsForNivo(
     return computedColor || color;
   };
 
-  // Quando o caller passa uma função, preservamos a API original e só
-  // normalizamos a cor retornada por ela.
+  // Preserve function API and normalize only the returned color.
   if (typeof colors === "function") {
     return (serie) => resolveSingleColor(colors(serie));
   }
 
-  // Quando o caller passa um array, resolvemos cada entrada uma vez.
+  // Normalize each fixed color entry.
   return colors.map(resolveSingleColor);
 }
 
-// Fallback de cores (caso a série não tenha cor definida)
+// Fallback palette if the series has in explicit color.
 const DEFAULT_COLORS = [
   "var(--color-indigo)",
   "var(--color-teal)",
@@ -136,7 +134,7 @@ export function LineChart({
   emptyMessage = "No data was available for the selected criteria.",
   colors = DEFAULT_COLORS,
 }: LineChartProps) {
-  // Checa se existe pelo menos 1 ponto em qualquer série
+  // At least one point across any series.
   const hasData =
     Array.isArray(data) &&
     data.length > 0 &&

@@ -5,13 +5,13 @@ import { toPreviewString, type PreviewRow } from "@/sources/shared/PreviewShared
 import { PreviewTable, type PreviewSortState } from "./PreviewTable";
 
 const SAMPLE_ROWS: PreviewRow[] = [
-  { id: 1, title: "Ajustar autenticação", status: "open", author: "ana" },
+  { id: 1, title: "Adjust authentication", status: "open", author: "ana" },
   { id: 2, title: "Refatorar preview", status: "closed", author: "bruno" },
-  { id: 3, title: "Melhorar paginação", status: "open", author: "carla" },
-  { id: 4, title: "Adicionar testes", status: "in_review", author: "diego" },
-  { id: 5, title: "Documentar módulo", status: "open", author: "erika" },
-  { id: 6, title: "Corrigir filtros", status: "closed", author: "felipe" },
-  { id: 7, title: "Padronizar tipos", status: "open", author: "gabi" },
+  { id: 3, title: "Improve pagination", status: "open", author: "carla" },
+  { id: 4, title: "add testes", status: "in_review", author: "diego" },
+  { id: 5, title: "Document module", status: "open", author: "erika" },
+  { id: 6, title: "Corrigir filters", status: "closed", author: "felipe" },
+  { id: 7, title: "Padronizar types", status: "open", author: "gabi" },
 ];
 
 const COLUMNS = ["id", "title", "status", "author"];
@@ -86,72 +86,72 @@ const meta = {
   argTypes: {
     rows: {
       control: false,
-      description: "Linhas exibidas na página atual da tabela.",
+      description: "rows shown in the page atual of the table.",
       table: { type: { summary: "PreviewRow[]" } },
     },
     visibleColumns: {
       control: false,
-      description: "Lista de colunas visíveis para renderização.",
+      description: "list of columns visible for rendering.",
       table: { type: { summary: "string[]" } },
     },
     tableColumns: {
       control: false,
-      description: "Lista completa e ordenada de colunas da tabela.",
+      description: "list complete and ordenada of columns of the table.",
       table: { type: { summary: "string[]" } },
     },
     sortState: {
       control: false,
-      description: "Estado de ordenação atual (`field` + `direction`) ou `null`.",
+      description: "state of sorting atual (`field` + `direction`) ou `null`.",
       table: { type: { summary: "{ field: string; direction: 'asc' | 'desc' } | null" } },
     },
     onSort: {
       control: false,
-      description: "Callback chamado ao acionar ordenação em uma coluna.",
+      description: "Callback called to acionar sorting in the column.",
       table: { type: { summary: "(field: string) => void" } },
     },
     onOpenCellPreview: {
       control: false,
-      description: "Callback chamado ao abrir o preview de uma célula.",
+      description: "Callback called to open the preview of the cell.",
       table: { type: { summary: "(value: string | number | boolean | object | null) => void" } },
     },
     isTablePending: {
       control: { type: "boolean" },
-      description: "Ativa estado de carregamento da tabela.",
+      description: "Ativa state of loading of the table.",
       table: { type: { summary: "boolean" } },
     },
     emptyStateMessage: {
       control: { type: "text" },
-      description: "Mensagem exibida quando não há linhas para mostrar.",
+      description: "message shown when there are no rows to show.",
       table: { type: { summary: "string" } },
     },
     currentPage: {
       control: { type: "number" },
-      description: "Página atual (indexada em 1).",
+      description: "page atual (indexada in 1).",
       table: { type: { summary: "number" } },
     },
     rowsPerPage: {
       control: { type: "number" },
-      description: "Quantidade de linhas exibidas por página.",
+      description: "quantity of rows shown for page.",
       table: { type: { summary: "number" } },
     },
     totalItems: {
       control: { type: "number" },
-      description: "Quantidade total de itens para paginação.",
+      description: "quantity total of items for pagination.",
       table: { type: { summary: "number" } },
     },
     itemsLabel: {
       control: { type: "text" },
-      description: "Rótulo textual usado no rodapé de paginação.",
+      description: "label textual used in the footer of pagination.",
       table: { type: { summary: "string" } },
     },
     onPageChange: {
       control: false,
-      description: "Callback chamado ao navegar entre páginas.",
+      description: "Callback called to navegar between pages.",
       table: { type: { summary: "(nextPage: number) => void" } },
     },
     onRowsPerPageChange: {
       control: false,
-      description: "Callback chamado ao trocar linhas por página.",
+      description: "Callback called to trocar rows for page.",
       table: { type: { summary: "(nextRowsPerPage: number) => void" } },
     },
   },
@@ -161,7 +161,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Tabela de preview com ordenação, estados de carregamento/vazio e paginação.",
+          "table de preview com sorting, states de loading/empty e pagination.",
       },
     },
   },
@@ -179,12 +179,12 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {
+export const Default: Story = {
   render: () => <InteractiveDemo />,
   parameters: {
     docs: {
       description: {
-        story: "Fluxo completo com ordenação, paginação e abertura de preview por célula.",
+        story: "Fluxo complete with sorting, pagination and abertura of preview for cell.",
       },
     },
   },
@@ -199,7 +199,7 @@ export const Carregando: Story = {
     onSort: () => {},
     onOpenCellPreview: () => {},
     isTablePending: true,
-    emptyStateMessage: "No rows found.",
+    emptyStateMessage: "in rows found.",
     currentPage: 1,
     rowsPerPage: 10,
     totalItems: 0,
@@ -210,13 +210,13 @@ export const Carregando: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Estado de loading enquanto os dados da tabela ainda estão sendo carregados.",
+        story: "state of loading While the date of the table ainda are sendo loaded.",
       },
     },
   },
 };
 
-export const SemResultados: Story = {
+export const NoResults: Story = {
   args: {
     rows: [],
     visibleColumns: COLUMNS,
@@ -225,7 +225,7 @@ export const SemResultados: Story = {
     onSort: () => {},
     onOpenCellPreview: () => {},
     isTablePending: false,
-    emptyStateMessage: "No rows found.",
+    emptyStateMessage: "in rows found.",
     currentPage: 1,
     rowsPerPage: 10,
     totalItems: 0,
@@ -236,7 +236,7 @@ export const SemResultados: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Estado vazio com tabela pronta, mas sem registros retornados.",
+        story: "state empty with table pronta, mas without records retornados.",
       },
     },
   },

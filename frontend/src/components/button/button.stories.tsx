@@ -10,66 +10,66 @@ const meta = {
   argTypes: {
     text: {
       control: { type: "text" },
-      description: "Texto exibido no botão.",
+      description: "text shown in the button.",
       table: { type: { summary: "string" } },
     },
     icon: {
       control: false,
-      description: "Ícone opcional exibido no botão.",
+      description: "icon optional shown in the button.",
       table: { type: { summary: "ReactNode" } },
     },
     onClick: {
       action: "clicked",
-      description: "Callback disparado no clique do botão.",
+      description: "Callback triggered in the click of the button.",
       table: { type: { summary: "MouseEventHandler<HTMLButtonElement>" } },
     },
     iconSide: {
       control: { type: "inline-radio" },
       options: ["left", "right"],
-      description: "Define o lado do ícone quando há texto.",
+      description: "Define the lado of the icon when there is text.",
       table: { type: { summary: "\"left\" | \"right\"" }, defaultValue: { summary: "left" } },
     },
     type: {
       control: { type: "inline-radio" },
       options: ["button", "submit", "reset"],
-      description: "Tipo nativo do botão.",
+      description: "Tipo nativo of the button.",
       table: { type: { summary: "\"button\" | \"submit\" | \"reset\"" }, defaultValue: { summary: "button" } },
     },
     size: {
       control: { type: "inline-radio" },
       options: ["default", "sm"],
-      description: "Tamanho visual do botão.",
+      description: "size visual of the button.",
       table: { type: { summary: "\"default\" | \"sm\"" }, defaultValue: { summary: "default" } },
     },
     fullWidth: {
       control: { type: "boolean" },
-      description: "Quando `true`, ocupa largura total do container.",
+      description: "when `true`, occupies width total of the container.",
       table: { type: { summary: "boolean" }, defaultValue: { summary: "true" } },
     },
     variant: {
       control: { type: "inline-radio" },
       options: ["default", "selectable"],
-      description: "Variante visual do botão.",
+      description: "Variante visual of the button.",
       table: { type: { summary: "\"default\" | \"selectable\"" }, defaultValue: { summary: "default" } },
     },
     selected: {
       control: { type: "boolean" },
-      description: "Estado selecionado (usado na variante `selectable`).",
+      description: "state selected (used in the variante `selectable`).",
       table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
     },
     disabled: {
       control: { type: "boolean" },
-      description: "Desabilita clique e estilo interativo.",
+      description: "disables click and estilo interativo.",
       table: { type: { summary: "boolean" } },
     },
     className: {
       control: false,
-      description: "Classe CSS adicional aplicada ao botão.",
+      description: "Classe CSS adicional aplieach to button.",
       table: { type: { summary: "string" } },
     },
   },
   args: {
-    text: "Salvar",
+    text: "save",
     type: "button",
     iconSide: "left",
   },
@@ -78,7 +78,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Botão reutilizável com suporte a texto, ícone e estados comuns.",
+          "Reusable button with text, icon, and common states support.",
       },
     },
   },
@@ -94,34 +94,34 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Padrao: Story = {
+export const Default: Story = {
   args: {},
   parameters: {
     docs: {
       description: {
-        story: "Botão padrão com texto simples.",
+        story: "button standard with text simple.",
       },
     },
   },
 };
 
-export const ComIconeEsquerda: Story = {
+export const WithLeftIcon: Story = {
   args: {
-    text: "Novo registro",
+    text: "new record",
     icon: <Plus />,
     iconSide: "left",
-    "aria-label": "Novo registro",
+    "aria-label": "new record",
   },
   parameters: {
     docs: {
       description: {
-        story: "Botão com ícone à esquerda e texto.",
+        story: "button with icon to esquerda and text.",
       },
     },
   },
 };
 
-export const ComIconeDireita: Story = {
+export const WithRightIcon: Story = {
   args: {
     text: "Continuar",
     icon: <ArrowRight />,
@@ -131,7 +131,7 @@ export const ComIconeDireita: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Botão com ícone à direita e texto.",
+        story: "button with icon to direita and text.",
       },
     },
   },
@@ -141,28 +141,28 @@ export const SomenteIcone: Story = {
   args: {
     text: undefined,
     icon: <Download />,
-    "aria-label": "Baixar relatório",
-    title: "Baixar relatório",
+    "aria-label": "Baixar report",
+    title: "Baixar report",
   },
   parameters: {
     docs: {
       description: {
         story:
-          "Quando usado sem texto, defina `aria-label` para manter nome acessível.",
+          "When used without text, set `aria-label` to keep an accessible name.",
       },
     },
   },
 };
 
-export const Desabilitado: Story = {
+export const disabled: Story = {
   args: {
-    text: "Salvar alterações",
+    text: "Save changes",
     disabled: true,
   },
   parameters: {
     docs: {
       description: {
-        story: "Estado desabilitado sem interação do usuário.",
+        story: "state disabled without interaction of the user.",
       },
     },
   },

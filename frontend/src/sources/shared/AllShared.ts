@@ -1,16 +1,16 @@
-// Formato simples usado por selects em diferentes fontes/telas.
+// format simple used for selects in different sources/screens.
 export type SelectOption = {
   value: string;
   label: string;
 };
 
-// Mapeia itens vindos do backend para o formato de opcao usado por `FormSelect`.
+// maps items vindos of the backend for the format of opcao used for `FormSelect`.
 //
-// Por que existe:
-// - evita repetir `array.map(...)` em cada source (GitHub/Jira/StackOverflow)
-// - deixa explicito quais campos viram `value` e `label`
+// for that existe:
+// - avoids repetir `array.map(...)` in each source (GitHub/Jira/StackOverflow)
+// - deixa explicit quais fields viram `value` and `label`
 //
-// Exemplo:
+// Example:
 // `buildSelectOptions(repositories, {`
 // `  getValue: (item) => item.id,`
 // `  getLabel: (item) => item.repository,`

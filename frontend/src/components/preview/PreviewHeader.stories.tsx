@@ -88,28 +88,28 @@ const meta = {
   argTypes: {
     idPrefix: {
       control: { type: "text" },
-      description: "Prefixo usado para gerar IDs internos dos campos.",
+      description: "Prefixed used for gerar IDs internos of the fields.",
       table: { type: { summary: "string" } },
     },
     onSearchChange: {
       control: false,
-      description: "Callback disparado quando o texto da busca muda.",
+      description: "Callback triggered when the text of the search changes.",
       table: { type: { summary: "(searchTerm: string) => void" } },
     },
     columns: {
       control: false,
-      description: "Lista total de colunas disponíveis no filtro de visibilidade.",
+      description: "list total of columns available in the filter of visibility.",
       table: { type: { summary: "string[]" } },
     },
     hiddenColumns: {
       control: false,
-      description: "Lista de colunas atualmente ocultas.",
+      description: "list of columns atualmente hidden.",
       table: { type: { summary: "string[]" } },
     },
     onHiddenColumnsChange: {
       control: false,
       description:
-        "Callback controlado para atualizar as colunas ocultas (valor direto ou updater).",
+        "Controlled callback to update hidden columns (direct value or updater).",
       table: {
         type: {
           summary:
@@ -119,17 +119,17 @@ const meta = {
     },
     onExport: {
       control: false,
-      description: "Callback disparado no clique do botão Export.",
+      description: "Callback triggered in the click of the button Export.",
       table: { type: { summary: "() => void" } },
     },
     isExportPending: {
       control: { type: "boolean" },
-      description: "Controla estado pendente/desabilitado da exportação.",
+      description: "Controla state pending/disabled of the export.",
       table: { type: { summary: "boolean" } },
     },
     children: {
       control: false,
-      description: "Área opcional para filtros extras (source, datas etc.).",
+      description: "area optional for filters extra (source, dates etc.).",
       table: { type: { summary: "ReactNode" } },
     },
   },
@@ -139,7 +139,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Cabeçalho de preview com busca, controle de colunas e exportação, além de filtros opcionais.",
+          "Preview header with search, column controls, export, and optional filters.",
       },
     },
   },
@@ -157,12 +157,12 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const ComFiltros: Story = {
+export const WithFilters: Story = {
   render: () => <InteractiveDemo withOptionalFilters />,
   parameters: {
     docs: {
       description: {
-        story: "Cabeçalho completo com filtros adicionais, busca, colunas e exportação.",
+        story: "header complete with filters adicionais, search, columns and export.",
       },
     },
   },
@@ -173,7 +173,7 @@ export const SomenteAcoesFixas: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Versão mínima com apenas ações fixas: busca, colunas e exportação.",
+        story: "version minimum with only actions fixas: search, columns and export.",
       },
     },
   },
