@@ -31,6 +31,7 @@ const meta = {
     trackWidth: 56,
   },
   parameters: {
+    wrapperSize: "small",
     docs: {
       description: {
         component:

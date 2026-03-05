@@ -19,6 +19,7 @@ const meta = {
     hint: "Seletor de data nativo do navegador.",
   },
   parameters: {
+    wrapperSize: "medium",
     docs: {
       description: {
         component:

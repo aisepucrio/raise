@@ -51,6 +51,7 @@ const meta = {
     menuClassName: { control: false },
   },
   parameters: {
+    wrapperSize: "medium",
     docs: {
       description: {
         component:

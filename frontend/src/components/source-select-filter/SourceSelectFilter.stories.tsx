@@ -37,6 +37,7 @@ const meta = {
     onChange: { control: false },
   },
   parameters: {
+    wrapperSize: "medium",
     docs: {
       description: {
         component:

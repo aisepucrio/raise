@@ -61,6 +61,7 @@ const meta = {
     onEndDateChange: () => undefined,
   },
   parameters: {
+    wrapperSize: "large",
     docs: {
       description: {
         component:

@@ -26,6 +26,7 @@ const meta = {
     tags: TAGS,
   },
   parameters: {
+    wrapperSize: "medium",
     docs: {
       description: {
         component:

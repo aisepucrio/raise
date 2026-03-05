@@ -13,6 +13,7 @@ const meta = {
     label: "openai/openai-python",
   },
   parameters: {
+    wrapperSize: "small",
     docs: {
       description: {
         component:

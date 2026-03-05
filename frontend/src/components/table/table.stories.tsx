@@ -129,6 +129,7 @@ const meta = {
     className: { control: false },
   },
   parameters: {
+    wrapperSize: "large",
     docs: {
       description: {
         component:

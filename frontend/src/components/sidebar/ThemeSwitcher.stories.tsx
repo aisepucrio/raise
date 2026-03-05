@@ -32,6 +32,7 @@ const meta = {
   component: ThemeSwitcher,
   tags: ["autodocs"],
   parameters: {
+    wrapperSize: "small",
     docs: {
       description: {
         component:

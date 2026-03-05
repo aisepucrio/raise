@@ -125,6 +125,7 @@ const meta = {
     toastOptions: { control: false },
   },
   parameters: {
+    wrapperSize: "small",
     layout: "centered",
     docs: {
       description: {

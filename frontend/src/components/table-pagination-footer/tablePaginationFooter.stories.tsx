@@ -48,6 +48,7 @@ const meta = {
     className: { control: false },
   },
   parameters: {
+    wrapperSize: "medium",
     docs: {
       description: {
         component:

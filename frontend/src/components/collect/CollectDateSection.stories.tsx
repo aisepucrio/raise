@@ -36,6 +36,7 @@ const meta = {
     onEndDateChange: () => undefined,
   },
   parameters: {
+    wrapperSize: "medium",
     docs: {
       description: {
         component:

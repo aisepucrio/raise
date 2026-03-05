@@ -16,6 +16,7 @@ const meta = {
     ],
   },
   parameters: {
+    wrapperSize: "large",
     docs: {
       description: {
         component:

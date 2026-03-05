@@ -31,6 +31,7 @@ const meta = {
     onSearchChange: { control: false },
   },
   parameters: {
+    wrapperSize: "medium",
     docs: {
       description: {
         component:

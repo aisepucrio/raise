@@ -90,6 +90,7 @@ const meta = {
     endLabel: "End",
   },
   parameters: {
+    wrapperSize: "medium",
     docs: {
       description: {
         component:

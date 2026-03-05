@@ -55,6 +55,7 @@ const meta = {
     onClose: { control: false },
   },
   parameters: {
+    wrapperSize: "large",
     docs: {
       description: {
         component:

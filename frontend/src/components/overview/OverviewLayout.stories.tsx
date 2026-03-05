@@ -10,6 +10,7 @@ const meta = {
   component: OverviewLayout,
   tags: ["autodocs"],
   parameters: {
+    wrapperSize: "large",
     layout: "fullscreen",
     docs: {
       description: {

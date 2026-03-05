@@ -16,6 +16,7 @@ const meta = {
     onClick: noop,
   },
   parameters: {
+    wrapperSize: "small",
     docs: {
       description: {
         component:

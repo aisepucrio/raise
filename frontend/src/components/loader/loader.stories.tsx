@@ -7,6 +7,7 @@ const meta = {
   component: Loader,
   tags: ["autodocs"],
   parameters: {
+    wrapperSize: "small",
     docs: {
       description: {
         component:

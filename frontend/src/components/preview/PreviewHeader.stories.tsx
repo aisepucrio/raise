@@ -91,6 +91,7 @@ const meta = {
     onExport: { control: false },
   },
   parameters: {
+    wrapperSize: "large",
     layout: "fullscreen",
     docs: {
       description: {

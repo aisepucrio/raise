@@ -19,6 +19,7 @@ const meta = {
     cancelText: "Cancel",
   },
   parameters: {
+    wrapperSize: "medium",
     docs: {
       description: {
         component:

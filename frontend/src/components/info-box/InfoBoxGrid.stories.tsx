@@ -23,6 +23,7 @@ const meta = {
     items: baseItems,
   },
   parameters: {
+    wrapperSize: "medium",
     docs: {
       description: {
         component:

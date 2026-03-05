@@ -10,6 +10,7 @@ const meta = {
     value: "02/02/2026",
   },
   parameters: {
+    wrapperSize: "small",
     docs: {
       description: {
         component:

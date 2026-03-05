@@ -16,6 +16,7 @@ const meta = {
     isCollectDisabled: false,
   },
   parameters: {
+    wrapperSize: "medium",
     docs: {
       description: {
         component:

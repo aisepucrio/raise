@@ -13,6 +13,7 @@ const meta = {
     children: { control: false },
   },
   parameters: {
+    wrapperSize: "medium",
     layout: "fullscreen",
     docs: {
       description: {

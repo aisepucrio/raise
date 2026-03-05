@@ -26,6 +26,7 @@ const meta = {
     hint: "Campo de texto padrão.",
   },
   parameters: {
+    wrapperSize: "medium",
     docs: {
       description: {
         component:

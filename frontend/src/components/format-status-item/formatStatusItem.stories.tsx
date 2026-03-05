@@ -13,6 +13,7 @@ const meta = {
     status: "STARTED",
   },
   parameters: {
+    wrapperSize: "small",
     docs: {
       description: {
         component:

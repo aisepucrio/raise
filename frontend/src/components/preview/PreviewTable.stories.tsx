@@ -90,6 +90,7 @@ const meta = {
     onRowsPerPageChange: { control: false },
   },
   parameters: {
+    wrapperSize: "large",
     layout: "fullscreen",
     docs: {
       description: {

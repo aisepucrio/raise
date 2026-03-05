@@ -7,6 +7,7 @@ const meta = {
   component: PageHeader,
   tags: ["autodocs"],
   parameters: {
+    wrapperSize: "medium",
     docs: {
       description: {
         component:

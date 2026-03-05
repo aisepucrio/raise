@@ -19,6 +19,7 @@ const meta = {
     onClose: { action: "close" },
   },
   parameters: {
+    wrapperSize: "large",
     docs: {
       description: {
         component:

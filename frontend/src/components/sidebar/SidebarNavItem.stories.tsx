@@ -40,6 +40,7 @@ const meta = {
     defaultExpanded: false,
   },
   parameters: {
+    wrapperSize: "small",
     docs: {
       description: {
         component:

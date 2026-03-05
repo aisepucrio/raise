@@ -38,6 +38,7 @@ const meta = {
     emptyMessage: "No series found for the selected filters.",
   },
   parameters: {
+    wrapperSize: "large",
     docs: {
       description: {
         component:

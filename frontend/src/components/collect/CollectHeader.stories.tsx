@@ -15,6 +15,7 @@ const meta = {
     addButtonText: "Add repository",
   },
   parameters: {
+    wrapperSize: "medium",
     docs: {
       description: {
         component:

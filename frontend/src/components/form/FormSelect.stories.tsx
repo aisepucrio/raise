@@ -31,6 +31,7 @@ const meta = {
     ),
   },
   parameters: {
+    wrapperSize: "medium",
     docs: {
       description: {
         component:

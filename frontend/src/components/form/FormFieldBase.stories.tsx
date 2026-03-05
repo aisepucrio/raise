@@ -17,6 +17,7 @@ const meta = {
     required: false,
   },
   parameters: {
+    wrapperSize: "medium",
     docs: {
       description: {
         component:

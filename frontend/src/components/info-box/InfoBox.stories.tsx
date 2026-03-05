@@ -21,6 +21,7 @@ const meta = {
     color: "primary",
   },
   parameters: {
+    wrapperSize: "medium",
     docs: {
       description: {
         component:

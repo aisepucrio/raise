@@ -7,6 +7,7 @@ const meta = {
   component: CollectWrapper,
   tags: ["autodocs"],
   parameters: {
+    wrapperSize: "large",
     layout: "fullscreen",
     docs: {
       description: {

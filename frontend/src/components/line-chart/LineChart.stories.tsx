@@ -76,6 +76,7 @@ const meta = {
     colors: { control: false },
   },
   parameters: {
+    wrapperSize: "large",
     docs: {
       story: {
         iframeHeight: 900,

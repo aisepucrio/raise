@@ -21,6 +21,7 @@ const meta = {
     iconSide: "left",
   },
   parameters: {
+    wrapperSize: "small",
     docs: {
       description: {
         component:
