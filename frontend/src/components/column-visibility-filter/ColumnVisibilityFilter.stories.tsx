@@ -47,12 +47,12 @@ const meta = {
   argTypes: {
     columns: {
       control: false,
-      description: "list complete of columns available.",
+      description: "Complete list of available columns.",
       table: { type: { summary: "string[]" } },
     },
     hiddenColumns: {
       control: false,
-      description: "list controlled of columns hidden.",
+      description: "Controlled list of hidden columns.",
       table: { type: { summary: "string[]" } },
     },
     onHiddenColumnsChange: {
@@ -68,17 +68,17 @@ const meta = {
     },
     className: {
       control: false,
-      description: "Classe CSS adicional of the container main.",
+      description: "Additional CSS class for main container.",
       table: { type: { summary: "string" } },
     },
     buttonClassName: {
       control: false,
-      description: "Classe CSS adicional of the button gatilho.",
+      description: "Additional CSS class for trigger button.",
       table: { type: { summary: "string" } },
     },
     menuClassName: {
       control: false,
-      description: "Classe CSS adicional of the popover/menu.",
+      description: "Additional CSS class for popover/menu.",
       table: { type: { summary: "string" } },
     },
     title: {
@@ -88,7 +88,7 @@ const meta = {
     },
     description: {
       control: { type: "text" },
-      description: "text auxiliar shown in the menu of columns.",
+      description: "Auxiliary text shown in the columns menu.",
       table: {
         type: { summary: "string" },
         defaultValue: { summary: "Select which columns should appear in the table." },
@@ -121,7 +121,7 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Menu interativo for hide/display columns with summary visual.",
+        story: "Interactive menu to hide/show columns with visual summary.",
       },
     },
   },

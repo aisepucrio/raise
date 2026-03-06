@@ -10,7 +10,7 @@ function withInitialTheme(theme: ThemeName) {
     if (typeof document !== "undefined") {
       const root = document.documentElement;
 
-      root.classList.removes("light", "dark");
+      root.classList.remove("light", "dark");
       root.classList.add(theme);
       root.dataset.theme = theme;
     }
@@ -35,8 +35,7 @@ const meta = {
     wrapperSize: "small",
     docs: {
       description: {
-        component:
-          "Control to switch between light and dark themes.",
+        component: "Control to switch between light and dark themes.",
       },
     },
   },
@@ -50,7 +49,7 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Example standard of usage in the context of the sidebar.",
+        story: "Default usage example in the sidebar context.",
       },
     },
   },
@@ -62,7 +61,7 @@ export const InitialLight: Story = {
   parameters: {
     docs: {
       description: {
-        story: "starts the component in theme light.",
+        story: "Starts component in light theme.",
       },
     },
   },
@@ -74,7 +73,7 @@ export const InitialDark: Story = {
   parameters: {
     docs: {
       description: {
-        story: "starts the component in theme dark.",
+        story: "Starts component in dark theme.",
       },
     },
   },

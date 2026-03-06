@@ -13,7 +13,7 @@ const meta = {
     color: {
       control: { type: "inline-radio" },
       options: ["primary", "secondary"],
-      description: "Variante visual of the card.",
+      description: "Card visual variant.",
       table: { type: { summary: "\"primary\" | \"secondary\"" }, defaultValue: { summary: "primary" } },
     },
     title: {
@@ -23,17 +23,17 @@ const meta = {
     },
     number: {
       control: { type: "text" },
-      description: "value main of the metric.",
+      description: "Main metric value.",
       table: { type: { summary: "number | string" } },
     },
     className: {
       control: false,
-      description: "Classe CSS adicional aplieach in the card.",
+      description: "Additional CSS class applied to the card.",
       table: { type: { summary: "string" } },
     },
   },
   args: {
-    title: "Jobs processados",
+    title: "Processed Jobs",
     number: 128,
     color: "primary",
   },
@@ -62,22 +62,22 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Card of metric with estilo primary.",
+        story: "Metric card with primary style.",
       },
     },
   },
 };
 
-export const Secundario: Story = {
+export const Secondary: Story = {
   args: {
-    title: "Jobs in fila",
+    title: "Jobs in Queue",
     number: 42,
     color: "secondary",
   },
   parameters: {
     docs: {
       description: {
-        story: "same estrutura usando the variante visual secondary.",
+        story: "Same structure using secondary visual variant.",
       },
     },
   },

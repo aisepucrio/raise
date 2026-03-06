@@ -3,13 +3,13 @@ import { endpoints } from "../../api/endpoints";
 import type { JobsListResponse } from "./jobsTypes";
 
 export const jobsService = {
-  // JobsPage: list jobs of collection (rota global, independente of the source).
+  // JobsPage: lists collection jobs (global route, independent of source).
   list: () => api.get<JobsListResponse, JobsListResponse>(endpoints.jobs()),
 
-  // JobsPage: cancela/paralisa the task especifica.
+  // JobsPage: cancels/stops a specific task.
   stop: (taskId: string) => api.delete(endpoints.stopJob(taskId)),
 
-  // JobsPage: reinicia the collection the partir of the job existente.
+  // JobsPage: restarts collection from an existing job.
   restartCollection: (taskId: string) =>
     api.post(endpoints.restartCollection(taskId)),
 };

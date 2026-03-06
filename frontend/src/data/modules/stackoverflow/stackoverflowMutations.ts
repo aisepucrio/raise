@@ -6,7 +6,7 @@ import type {
   StackOverflowCollectBody,
 } from "./stackoverflowTypes";
 
-// starts the collection of Stack Overflow and updates the list global of jobs.
+// Starts Stack Overflow collection and updates the global jobs list.
 export function useStackOverflowCollectMutation() {
   const queryClient = useQueryClient();
 
@@ -17,8 +17,8 @@ export function useStackOverflowCollectMutation() {
   });
 }
 
-// HARDCODE TEMPORARIO: ESTA MUTATION EXISTE SO for the /COLLECT/ADVANCED for COMPATIBILIDADE with the IMPLEMENTACAO LEGADA.
-// FUTURO: removes and use only the MUTATION of /COLLECT with PAYLOAD.
+// TEMPORARY HARDCODE: this mutation exists only for /COLLECT/ADVANCED for legacy compatibility.
+// FUTURE: remove this and use only the /COLLECT mutation with payload.
 export function useStackOverflowCollectAdvancedMutation() {
   const queryClient = useQueryClient();
 
@@ -29,7 +29,7 @@ export function useStackOverflowCollectAdvancedMutation() {
   });
 }
 
-// Exporta date of preview of the Stack Overflow in the current standard format (json).
+// Exports Stack Overflow preview data in the current standard format (json).
 export function useStackOverflowExportMutation() {
   return useMutation({
     mutationFn: () => stackoverflowService.exportPreview(),

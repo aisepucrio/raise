@@ -30,7 +30,7 @@ export const githubService = {
       signal: options?.signal,
     }) as Promise<GithubOverviewResponse>,
 
-  // Overview and Preview: range of dates for limitar filters for repository.
+  // Overview and Preview: date range used to limit repository filters.
   getDateRange: (
     params: GithubDateRangeParams,
     options?: RequestOptions,
@@ -50,7 +50,7 @@ export const githubService = {
       signal: options?.signal,
     }) as Promise<GithubGraphResponse>,
 
-  // Preview: table paginada for section with filters and sorting.
+  // Preview: paginated table for section with filters and sorting.
   getPreview: (
     section: GithubSection,
     params: GithubPreviewParams,
@@ -61,14 +61,14 @@ export const githubService = {
       signal: options?.signal,
     }) as Promise<GithubPreviewResponse>,
 
-  // ModalDownload (Preview): exporta in the current standard format (json).
+  // Preview export: exports in the current standard format (json).
   exportPreview: (body: GithubExportBody, options?: RequestOptions) =>
     api.post(endpoints.export(SOURCE), body, {
       responseType: "blob",
       signal: options?.signal,
     }),
 
-  // Collect: starts the collection of GitHub via endpoint standardized.
+  // Collect: starts GitHub collection via standardized endpoint.
   collect: (body: GithubCollectBody, options?: RequestOptions) =>
     api.post(endpoints.collect(SOURCE), body, { signal: options?.signal }),
 };

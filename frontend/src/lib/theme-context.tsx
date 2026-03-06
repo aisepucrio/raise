@@ -1,4 +1,4 @@
-/* context for compartilhar/trocar the theme selected globalmente in the application. */
+/* Context to share/switch the globally selected application theme. */
 
 import {
   createContext,
@@ -50,7 +50,7 @@ function applyTheme(theme: ThemeMode) {
   }
 
   const root = document.documentElement;
-  root.classList.removes("light", "dark");
+  root.classList.remove("light", "dark");
   root.classList.add(theme);
   root.dataset.theme = theme;
 }

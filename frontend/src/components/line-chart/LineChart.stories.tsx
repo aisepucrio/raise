@@ -8,10 +8,10 @@ const monthlySeries: LineSeries[] = [
     id: "Commits",
     data: [
       { x: "Jan", y: 14 },
-      { x: "Fev", y: 25 },
+      { x: "Feb", y: 25 },
       { x: "Mar", y: 39 },
-      { x: "Abr", y: 46 },
-      { x: "Mai", y: 60 },
+      { x: "Apr", y: 46 },
+      { x: "May", y: 60 },
       { x: "Jun", y: 68 },
     ],
   },
@@ -19,10 +19,10 @@ const monthlySeries: LineSeries[] = [
     id: "PRs",
     data: [
       { x: "Jan", y: 6 },
-      { x: "Fev", y: 12 },
+      { x: "Feb", y: 12 },
       { x: "Mar", y: 16 },
-      { x: "Abr", y: 24 },
-      { x: "Mai", y: 33 },
+      { x: "Apr", y: 24 },
+      { x: "May", y: 33 },
       { x: "Jun", y: 41 },
     ],
   },
@@ -74,32 +74,32 @@ const meta = {
   argTypes: {
     title: {
       control: { type: "text" },
-      description: "title shown above of the chart.",
+      description: "Title shown above the chart.",
       table: { type: { summary: "string" } },
     },
     data: {
       control: false,
-      description: "series in the format `{ id, date[] }` consumed pelo Nivo.",
+      description: "Series in `{ id, data[] }` format consumed by Nivo.",
       table: { type: { summary: "LineSeries[]" } },
     },
     loading: {
       control: { type: "boolean" },
-      description: "Ativa state of loading with loader.",
+      description: "Enables loading state with loader.",
       table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
     },
     error: {
       control: { type: "text" },
-      description: "message of error shown in the place of the chart.",
+      description: "Error message shown in place of the chart.",
       table: { type: { summary: "string | null" }, defaultValue: { summary: "null" } },
     },
     height: {
       control: { type: "number" },
-      description: "Altura of the area of the chart in pixels.",
+      description: "Chart area height in pixels.",
       table: { type: { summary: "number" }, defaultValue: { summary: "450" } },
     },
     yLabel: {
       control: { type: "text" },
-      description: "label of the eixo Y.",
+      description: "Y-axis label.",
       table: { type: { summary: "string" } },
     },
     emptyMessage: {
@@ -109,7 +109,7 @@ const meta = {
     },
     colors: {
       control: false,
-      description: "Paleta of cores fixa ou function for resolver color for series.",
+      description: "Fixed color palette or function to resolve series color.",
       table: { type: { summary: "string[] | ((serie: { id: string }) => string)" } },
     },
   },
@@ -147,13 +147,13 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "view standard with series mensal of atividade.",
+        story: "Default view with monthly activity series.",
       },
     },
   },
 };
 
-export const MultiplasSeries: Story = {
+export const MultipleSeries: Story = {
   args: {
     title: "Queue Throughput",
     yLabel: "Jobs",
@@ -176,21 +176,21 @@ export const Loading: Story = {
   parameters: {
     docs: {
       description: {
-        story: "displays the state of loading.",
+        story: "Displays loading state.",
       },
     },
   },
 };
 
-export const error: Story = {
+export const Error: Story = {
   args: {
-    error: "failure to load a series historical.",
+    error: "Failed to load historical series.",
     data: monthlySeries,
   },
   parameters: {
     docs: {
       description: {
-        story: "displays the state of error of the chart.",
+        story: "Displays chart error state.",
       },
     },
   },
@@ -199,7 +199,7 @@ export const error: Story = {
 export const NoData: Story = {
   args: {
     data: [{ id: "Commits", data: [] }],
-    emptyMessage: "Nenhum ponto foi encontrado for the filters selected.",
+    emptyMessage: "No points were found for the selected filters.",
   },
   parameters: {
     docs: {

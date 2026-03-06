@@ -8,17 +8,17 @@ const meta = {
   argTypes: {
     "aria-label": {
       control: { type: "text" },
-      description: "label accessible required for leitores of screen.",
+      description: "Accessible label required for screen readers.",
       table: { type: { summary: "string" } },
     },
     checked: {
       control: { type: "boolean" },
-      description: "state controlled of the switch.",
+      description: "Controlled switch state.",
       table: { type: { summary: "boolean" } },
     },
     defaultChecked: {
       control: { type: "boolean" },
-      description: "state initial for uncontrolled usage.",
+      description: "Initial state for uncontrolled usage.",
       table: { type: { summary: "boolean" } },
     },
     disabled: {
@@ -34,13 +34,13 @@ const meta = {
     size: {
       control: { type: "inline-radio" },
       options: ["default", "sm"],
-      description: "size visual of the switch.",
+      description: "Visual size of the switch.",
       table: { type: { summary: "\"default\" | \"sm\"" }, defaultValue: { summary: "default" } },
     },
     variant: {
       control: { type: "inline-radio" },
       options: ["default", "theme-toggle"],
-      description: "Variante visual of the switch.",
+      description: "Visual variant of the switch.",
       table: {
         type: { summary: "\"default\" | \"theme-toggle\"" },
         defaultValue: { summary: "default" },
@@ -54,17 +54,17 @@ const meta = {
     },
     className: {
       control: false,
-      description: "Classe CSS adicional of the root of the switch.",
+      description: "Additional CSS class for the switch root.",
       table: { type: { summary: "string" } },
     },
     style: {
       control: false,
-      description: "Estilos inline optional aplicados to root.",
+      description: "Optional inline styles applied to the root.",
       table: { type: { summary: "CSSProperties" } },
     },
   },
   args: {
-    "aria-label": "Ativar option",
+    "aria-label": "Enable option",
     defaultChecked: false,
     size: "default",
     variant: "default",
@@ -95,20 +95,20 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Switch standard desligado.",
+        story: "Default switch, off.",
       },
     },
   },
 };
 
-export const Ligado: Story = {
+export const On: Story = {
   args: {
     defaultChecked: true,
   },
   parameters: {
     docs: {
       description: {
-        story: "Switch initializado in the state ligado.",
+        story: "Switch initialized in the on state.",
       },
     },
   },
@@ -122,13 +122,13 @@ export const ThemeToggle: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Example of the variante `theme-toggle`.",
+        story: "Example of the `theme-toggle` variant.",
       },
     },
   },
 };
 
-export const LarguraCustomizada: Story = {
+export const CustomWidth: Story = {
   render: () => (
     <div className="w-52">
       <Switch
@@ -142,18 +142,18 @@ export const LarguraCustomizada: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Example with width customizada of the track.",
+        story: "Example with custom track width.",
       },
     },
   },
 };
 
-export const EstadosDesabilitados: Story = {
+export const DisabledStates: Story = {
   render: () => (
     <div className="flex items-center gap-4">
-      <Switch aria-label="disabled desligado" disabled trackWidth={56} />
+      <Switch aria-label="disabled off" disabled trackWidth={56} />
       <Switch
-        aria-label="disabled ligado"
+        aria-label="disabled on"
         disabled
         defaultChecked
         trackWidth={56}
@@ -163,7 +163,7 @@ export const EstadosDesabilitados: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Compara states desabilitados desligado and ligado.",
+        story: "Compares disabled off and on states.",
       },
     },
   },

@@ -20,12 +20,12 @@ function normalizeJiraDomainInput(value: string) {
     .replace(/\/+$/, "");
 }
 
-// normalizes the key of the project removing spaces extra.
+// Normalizes the project key by removing extra spaces.
 function normalizeJiraProjectKeyInput(value: string) {
   return value.trim();
 }
 
-// Builds the key unica for compare duplicidade between projects.
+// Builds the unique key used to compare duplicate projects.
 function buildProjectIdentifier(jiraDomain: string, projectKey: string) {
   return `${jiraDomain}/${projectKey}`;
 }
@@ -36,13 +36,13 @@ export default function JiraCollectModal({
   onClose,
   onAddProject,
 }: JiraCollectModalProps) {
-  // states locais of the dois fields and error shared.
+  // Local state for both fields and the shared error.
   const jiraDomainInputRef = useRef<HTMLInputElement | null>(null);
   const [jiraDomainInput, setJiraDomainInput] = useState("");
   const [jiraProjectKeyInput, setJiraProjectKeyInput] = useState("");
   const [addProjectError, setAddProjectError] = useState<string | null>(null);
 
-  // reseta the fields to close the modal.
+  // Resets fields when the modal closes.
   useEffect(() => {
     if (open) return;
 
@@ -92,7 +92,7 @@ export default function JiraCollectModal({
       initialFocusRef={jiraDomainInputRef}
       onConfirm={handleConfirmAddProject}
     >
-      {/* block with the dois fields required of the jira */}
+      {/* Block with the two Jira-required fields. */}
       <div className="space-y-3">
         <FormInput
           id="jira-collect-domain-input"
