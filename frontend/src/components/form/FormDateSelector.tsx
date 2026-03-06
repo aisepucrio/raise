@@ -2,10 +2,12 @@ import type { ChangeEvent, InputHTMLAttributes } from "react";
 import { Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import FormFieldBase, {
-  getFormControlClassName,
-  type FormControlVariant,
   type FormFieldLabelPosition,
 } from "./FormFieldBase";
+import {
+  getFormControlClassName,
+  type FormControlVariant,
+} from "./formControlClassName";
 
 type NativeDateProps = Omit<InputHTMLAttributes<HTMLInputElement>, "type">;
 

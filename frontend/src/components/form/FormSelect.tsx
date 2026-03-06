@@ -4,10 +4,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { KeyboardEvent, ReactNode, SelectHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 import FormFieldBase, {
-  getFormControlClassName,
-  type FormControlVariant,
   type FormFieldLabelPosition,
 } from "./FormFieldBase";
+import {
+  getFormControlClassName,
+  type FormControlVariant,
+} from "./formControlClassName";
 
 type FormSelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
   label?: string;
