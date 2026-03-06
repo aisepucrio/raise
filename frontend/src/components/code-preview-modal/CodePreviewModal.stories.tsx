@@ -66,12 +66,12 @@ const meta = {
     },
     onClose: {
       control: false,
-      description: "Callback executesdo to close the modal.",
+      description: "Callback executed to close the modal.",
       table: { type: { summary: "() => void" } },
     },
     value: {
       control: false,
-      description: "content rendered in the block of code (text ou JSON).",
+      description: "Content rendered in the code block (text or JSON).",
       table: {
         type: {
           summary:
@@ -81,7 +81,7 @@ const meta = {
     },
     dialogLabel: {
       control: { type: "text" },
-      description: "Nome accessible of the dialog for leitores of screen.",
+      description: "Accessible dialog name for screen readers.",
       table: { type: { summary: "string" }, defaultValue: { summary: "Cell content preview" } },
     },
   },
@@ -113,7 +113,7 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Teste interativo with abertura of the modal for JSON and text simple.",
+        story: "Interactive test with modal opening for JSON and plain text.",
       },
     },
   },

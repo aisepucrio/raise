@@ -47,15 +47,15 @@ const REPOSITORY_CARD_CONFIG: readonly OverviewMetricCardConfig<GithubOverviewRe
   ];
 
 export default function GithubOverview() {
-  // filters controlled pela own screen (not stay in the URL).
+  // Filters controlled by this screen only (not stored in the URL).
   const [selectedRepositoryId, setSelectedRepositoryId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  // catalog used only for build the select of repositories.
+  // Catalog used only to build the repository selector.
   const repositoryCatalogQuery = useGithubOverviewQuery();
 
-  // adapts payload of the API for the format standard of options of the UI.
+  // Adapts API payload to the standard UI option format.
   const repositoryOptions = useMemo(
     () =>
       buildSelectOptions(repositoryCatalogQuery.data?.repositories, {
@@ -65,7 +65,7 @@ export default function GithubOverview() {
     [repositoryCatalogQuery.data?.repositories],
   );
 
-  // Params of the query of overview (cards).
+  // Query parameters for overview cards.
   const overviewParams = useMemo(
     () =>
       buildOverviewEndpointParams<GithubOverviewParams>(
@@ -80,7 +80,7 @@ export default function GithubOverview() {
   );
   const overviewQuery = useGithubOverviewQuery(overviewParams);
 
-  // series temporal usa the same filters + interval derived of the range.
+  // Time series uses the same filters plus range-derived interval.
   const graphParams = useMemo(
     () =>
       buildOverviewGraphEndpointParams<GithubGraphParams>(
@@ -96,7 +96,7 @@ export default function GithubOverview() {
   );
   const graphQuery = useGithubGraphQuery(graphParams);
 
-  // the own hook already:
+  // The hook itself already:
   // - normalizes string empty for `undefined`
   // - only enables the query when there is `repository_id`
   const dateRangeQuery = useGithubDateRangeByRepositoryQuery(
@@ -108,7 +108,7 @@ export default function GithubOverview() {
     "Failed to load the GitHub chart.",
   );
 
-  // mode scoped = the repository specific selected.
+  // Scoped mode: a specific repository is selected.
   const isRepositoryScoped = Boolean(selectedRepositoryId);
   const infoBoxItems = buildScopedOverviewMetricCardItems({
     overviewData: overviewQuery.data,

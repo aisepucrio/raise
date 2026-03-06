@@ -13,7 +13,7 @@ export default function ThemeSwitcher() {
       role="group"
       aria-label="Theme switcher"
     >
-      {/* Slot fixed of the icon for keep the switch centered and with width predictable. */}
+      {/* Fixed icon slot to keep switch centered with predictable width. */}
       <span className="inline-flex w-8 shrink-0 justify-center">
         <Sun
           aria-hidden="true"
@@ -24,7 +24,7 @@ export default function ThemeSwitcher() {
         />
       </span>
 
-      {/* area flexible: the switch occupies entire the space restante between the icons. */}
+      {/* Flexible area: switch occupies the remaining space between icons. */}
       <span className="mx-2 flex min-w-0 flex-1 items-center">
         <Switch
           checked={isDark}
@@ -32,13 +32,13 @@ export default function ThemeSwitcher() {
             setTheme(checked ? "dark" : "light");
           }}
           variant="theme-toggle"
-          // the switch occupies entire the space restante between the icons.
+          // Switch occupies all remaining space between icons.
           trackWidth="100%"
           aria-label={isDark ? "Activate light theme" : "Activate dark theme"}
         />
       </span>
 
-      {/* same slot fixed of the icon of the esquerda for keep symmetry visual. */}
+      {/* Same fixed icon slot on the left side to keep visual symmetry. */}
       <span className="inline-flex w-8 shrink-0 justify-center">
         <Moon
           aria-hidden="true"

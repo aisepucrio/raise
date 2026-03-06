@@ -11,8 +11,8 @@ import type {
   GithubPreviewParams,
 } from "./githubTypes";
 
-// the hooks receive the same params of the service (without layer extra of adaptstion).
-// search the cards of the dashboard of the GitHub.
+// Hooks receive the same params as the service layer (no extra adaptation).
+// Fetches GitHub dashboard cards.
 export function useGithubOverviewQuery(
   params?: GithubOverviewParams,
   options?: HookQueryOptions,
@@ -24,7 +24,7 @@ export function useGithubOverviewQuery(
   });
 }
 
-// search the range minimum/maximum of dates for the repository selected.
+// Fetches min/max date range for the selected repository.
 export function useGithubDateRangeQuery(
   params?: GithubDateRangeParams,
   options?: HookQueryOptions,
@@ -47,7 +47,7 @@ export function useGithubDateRangeQuery(
   });
 }
 
-// convenience for components that only have `repositoryId`.
+// Convenience wrapper for components that only have `repositoryId`.
 export function useGithubDateRangeByRepositoryQuery(
   repositoryId?: string,
   options?: HookQueryOptions,
@@ -60,7 +60,7 @@ export function useGithubDateRangeByRepositoryQuery(
   );
 }
 
-// search the series temporal of the dashboard of the GitHub.
+// Fetches GitHub dashboard time series.
 export function useGithubGraphQuery(
   params: GithubGraphParams,
   options?: HookQueryOptions,
@@ -72,7 +72,7 @@ export function useGithubGraphQuery(
   });
 }
 
-// search the table paginada of preview of the section of the GitHub.
+// Fetches paginated preview table data for a GitHub section.
 export function useGithubPreviewQuery(
   section: GithubSection,
   params: GithubPreviewParams,
@@ -81,7 +81,7 @@ export function useGithubPreviewQuery(
   return useQuery({
     queryKey: queryKeys.github.preview(section, params),
     enabled: options?.enabled,
-    // keeps the table atual durante changes of filter/sorting/page.
+    // Keeps current table data while filter/sort/page changes.
     placeholderData: keepPreviousData,
     queryFn: ({ signal }) =>
       githubService.getPreview(section, params, { signal }),

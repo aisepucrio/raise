@@ -12,7 +12,7 @@ export type ResolvedStartEndDateState = {
   endMax?: string;
 };
 
-// normalizes `YYYY-MM-DD` ou ISO datetime for the format of the input of date.
+// Normalizes `YYYY-MM-DD` or ISO datetime to date-input format.
 function toInputDate(value?: string | null): string | undefined {
   if (!value) return undefined;
 
@@ -25,7 +25,7 @@ function toInputDate(value?: string | null): string | undefined {
   return parsedDate.toISOString().slice(0, 10);
 }
 
-// clears the value se ele cair outside of the interval permitido.
+// Clears value if it falls outside the allowed range.
 function keepDateWithinRange(value: string, min?: string, max?: string) {
   if (!value) return "";
   if (min && value < min) return "";
@@ -42,15 +42,15 @@ export function resolveStartEndDateState({
   endDate: string;
   dateRange?: StartEndDateRange;
 }): ResolvedStartEndDateState {
-  // Bounds vindos of the endpoint `/date-range`.
+  // Bounds returned by the `/date-range` endpoint.
   const minDate = toInputDate(dateRange?.minDate);
   const maxDate = toInputDate(dateRange?.maxDate);
 
-  // removes dates that not pertencem to interval absoluto.
+  // Removes dates that do not belong to the absolute range.
   const nextStartDate = keepDateWithinRange(startDate, minDate, maxDate);
   let nextEndDate = keepDateWithinRange(endDate, minDate, maxDate);
 
-  // rule base: start not pode ser maior that end.
+  // Base rule: start cannot be greater than end.
   if (nextStartDate && nextEndDate && nextStartDate > nextEndDate) {
     nextEndDate = "";
   }
@@ -58,10 +58,10 @@ export function resolveStartEndDateState({
   return {
     startDate: nextStartDate,
     endDate: nextEndDate,
-    // without end definido, the start respeita only the teto absoluto of the range.
+    // Without an end date, start respects only the absolute range upper bound.
     startMin: minDate,
     startMax: nextEndDate || maxDate,
-    // without start definido, the end respeita only the piso absoluto of the range.
+    // Without a start date, end respects only the absolute range lower bound.
     endMin: nextStartDate || minDate,
     endMax: maxDate,
   };

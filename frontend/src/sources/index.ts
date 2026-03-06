@@ -8,22 +8,22 @@ export const sectionPreviewIdsBySource = {
   stackoverflow: ["questions"],
 } as const satisfies Record<SourceId, readonly string[]>;
 
-// Tipo that representa the IDs of the sources.
+// Type representing source IDs.
 export type SourceId = (typeof sourceIds)[number];
 
-// Tipo that representa the IDs of the sections of preview for each source.
+// Type representing preview-section IDs for each source.
 export type SectionPreviewIdBySource = {
   [S in SourceId]: (typeof sectionPreviewIdsBySource)[S][number];
 };
 
-// Labels for each source, usados in the UI.
+// Labels for each source, used in the UI.
 export const sourceLabels: Record<SourceId, string> = {
   github: "GitHub",
   jira: "Jira",
   stackoverflow: "Stack Overflow",
 };
 
-// Labels for each section of preview of each source, usados in the UI.
+// Labels for each source preview section, used in the UI.
 export const sectionPreviewLabelsBySource: {
   [S in SourceId]: Record<SectionPreviewIdBySource[S], string>;
 } = {
@@ -44,10 +44,10 @@ export const sectionPreviewLabelsBySource: {
   },
 };
 
-// Source default for the application, used in the start of the application.
+// Default source used when the application starts.
 export const defaultSourceId: SourceId = sourceIds[0];
 
-// Section of preview default for each source, used when the section not is especifieach (when se switch of source, for Example).
+// Default preview section for each source, used when no section is specified (for example when switching source).
 export const defaultSectionPreviewIdBySource: {
   [S in SourceId]: SectionPreviewIdBySource[S];
 } = {

@@ -15,7 +15,7 @@ const meta = {
     },
     active: {
       control: { type: "boolean" },
-      description: "Indica se the subitem representa the rota atual.",
+      description: "Indicates whether the subitem represents the current route.",
       table: { type: { summary: "boolean" } },
     },
     onClick: {
@@ -25,7 +25,7 @@ const meta = {
     },
   },
   args: {
-    label: "Resumo",
+    label: "Summary",
     active: false,
     onClick: noop,
   },
@@ -56,33 +56,33 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Subitem standard in state inativo.",
+        story: "Default subitem in inactive state.",
       },
     },
   },
 };
 
-export const Ativo: Story = {
+export const Active: Story = {
   args: {
     active: true,
   },
   parameters: {
     docs: {
       description: {
-        story: "state ativo with destaque visual in the navigation.",
+        story: "Active state with visual highlight in navigation.",
       },
     },
   },
 };
 
-export const RotuloLongo: Story = {
+export const LongLabel: Story = {
   args: {
-    label: "Resumo geral of the collection of the integration selected",
+    label: "General summary of the selected integration collection",
   },
   parameters: {
     docs: {
       description: {
-        story: "Compara truncamento/behavior with label longo.",
+        story: "Compares truncation behavior with a long label.",
       },
     },
   },
