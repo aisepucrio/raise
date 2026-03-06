@@ -50,7 +50,7 @@ function applyTheme(theme: ThemeMode) {
   }
 
   const root = document.documentElement;
-  root.classList.removes("light", "dark");
+  root.classList.remove("light", "dark");
   root.classList.add(theme);
   root.dataset.theme = theme;
 }

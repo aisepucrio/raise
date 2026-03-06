@@ -10,7 +10,7 @@ function withInitialTheme(theme: ThemeName) {
     if (typeof document !== "undefined") {
       const root = document.documentElement;
 
-      root.classList.removes("light", "dark");
+      root.classList.remove("light", "dark");
       root.classList.add(theme);
       root.dataset.theme = theme;
     }
