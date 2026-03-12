@@ -26,7 +26,7 @@ export type StartEndDateFilterProps = {
 };
 
 const CONTAINER_CLASS_BY_WIDTH: Record<StartEndDateFilterWidth, string> = {
-  // "full" deixa the fields flexible; "compact" keeps size minimum predictable.
+  // "full" keeps fields flexible; "compact" keeps a predictable minimum size.
   full: "grid grid-cols-1 gap-3 sm:grid-cols-2",
   compact: "grid grid-cols-1 gap-3 sm:grid-cols-[11.5rem_11.5rem]",
 };
@@ -47,7 +47,7 @@ export function StartEndDateFilter({
   startWrapperClassName,
   endWrapperClassName,
 }: StartEndDateFilterProps) {
-  // state derived centered: normalizes range, clears invalid and calcula min/max of the inputs.
+  // Centralized derived state: normalizes range, clears invalid values, computes input min/max.
   const resolvedDateState = useMemo(
     () =>
       resolveStartEndDateState({
@@ -58,7 +58,7 @@ export function StartEndDateFilter({
     [startDate, endDate, dateRange?.minDate, dateRange?.maxDate],
   );
 
-  // when the range changes, syncs the state external removing dates invalid.
+  // When range changes, sync external state by removing invalid dates.
   useEffect(() => {
     if (resolvedDateState.startDate !== startDate) {
       onStartDateChange(resolvedDateState.startDate);
@@ -78,7 +78,7 @@ export function StartEndDateFilter({
 
   return (
     <div className={cn(CONTAINER_CLASS_BY_WIDTH[width], className)}>
-      {/* Start usa end how teto dynamic (when filled). */}
+      {/* Start uses end date as a dynamic upper bound (when filled). */}
       <FormDateSelector
         id={`${idPrefix}-start-date`}
         label={startLabel}
@@ -91,7 +91,7 @@ export function StartEndDateFilter({
         error={error}
       />
 
-      {/* End usa start how piso dynamic (when filled). */}
+      {/* End uses start date as a dynamic lower bound (when filled). */}
       <FormDateSelector
         id={`${idPrefix}-end-date`}
         label={endLabel}

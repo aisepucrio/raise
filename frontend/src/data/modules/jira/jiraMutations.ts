@@ -3,7 +3,7 @@ import { invalidateJobsQueries } from "../../query/invalidation";
 import { jiraService } from "./jiraService";
 import type { JiraCollectBody } from "./jiraTypes";
 
-// starts the collection of Jira and updates the list global of jobs.
+// Starts Jira collection and updates the global jobs list.
 export function useJiraCollectMutation() {
   const queryClient = useQueryClient();
 
@@ -13,7 +13,7 @@ export function useJiraCollectMutation() {
   });
 }
 
-// Exporta date of preview of the Jira in the current standard format (json).
+// Exports Jira preview data in the current standard format (json).
 export function useJiraExportMutation() {
   return useMutation({
     mutationFn: () => jiraService.exportPreview(),

@@ -29,13 +29,13 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Example basic of usage in the area of loading.",
+        story: "Basic usage example in a loading area.",
       },
     },
   },
 };
 
-export const ResizePorContainer: Story = {
+export const ResizeByContainer: Story = {
   render: () => (
     <div className="grid gap-4 sm:grid-cols-3">
       <div className="h-20 rounded-lg border border-(--color-secondary-soft) bg-(--color-primary) p-2">
@@ -52,7 +52,7 @@ export const ResizePorContainer: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Mostra the behavior in containers with sizes different.",
+        story: "Shows behavior in containers of different sizes.",
       },
     },
   },

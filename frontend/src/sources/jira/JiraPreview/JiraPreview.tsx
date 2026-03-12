@@ -47,7 +47,7 @@ function buildDateFilterParams(
   startDate: string,
   endDate: string,
 ): Partial<JiraPreviewParams> {
-  // maps the field of date of the UI for the filters aceitos pela API.
+  // Maps the UI date field to the filters accepted by the API.
   if (dateFilterField === "sprint") {
     return {
       ...(startDate ? { startDate__gte: startDate } : {}),
@@ -79,29 +79,29 @@ export function JiraPreview({
   dateFilterField,
   showDateFilters = true,
 }: JiraPreviewProps) {
-  // filters of the screen
+  // Screen filters.
   const [selectedSourceId, setSelectedSourceId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [search, setSearch] = useState("");
 
-  // pagination and sorting
+  // Pagination and sorting.
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [sortState, setSortState] = useState<PreviewSortState>(null);
 
-  // modal of cell
+  // Cell preview modal.
   const [isCellModalOpen, setIsCellModalOpen] = useState(false);
   const [selectedCellValue, setSelectedCellValue] = useState<unknown>(null);
 
-  // columns hidden
+  // Hidden columns.
   const [hiddenColumns, setHiddenColumns] = useState<string[]>([]);
 
   const { data: overviewData, isPending: isProjectListPending } =
     useJiraOverviewQuery();
   const previewExportMutation = useJiraExportMutation();
 
-  // converts projects of the overview for the format of the select.
+  // Converts overview projects to select options.
   const projectOptions = useMemo(
     () =>
       buildSelectOptions(overviewData?.projects, {
@@ -111,7 +111,7 @@ export function JiraPreview({
     [overviewData?.projects],
   );
 
-  // search interval of dates of the project selected for limitar the date picker.
+  // Fetches the selected project's date range to constrain the date picker.
   const dateRangeQuery = useJiraDateRangeByProjectQuery(
     selectedSourceId || undefined,
     {
@@ -119,10 +119,10 @@ export function JiraPreview({
     },
   );
 
-  // Traduz sort local for the field ordering used pela API.
+  // Maps local sort state to the API ordering field.
   const ordering = useMemo(() => resolvePreviewOrdering(sortState), [sortState]);
 
-  // filters mudaram, returns for first page.
+  // When filters change, return to the first page.
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedSourceId, startDate, endDate, search, ordering]);
@@ -136,7 +136,7 @@ export function JiraPreview({
       ordering: orderingValue,
       dateFilters,
     }: PreviewBuildParamsInput): JiraPreviewParams => ({
-      // Concentra the conversion of the states of the screen in params of request.
+      // Centralizes screen-state conversion into request parameters.
       page,
       page_size: nextRowsPerPage,
       ...(nextSelectedSourceId ? { project: nextSelectedSourceId } : {}),
@@ -182,37 +182,37 @@ export function JiraPreview({
     ],
   );
 
-  // search the date of the table with the filters/pagination ativos.
+  // Fetches table data using current filters and pagination.
   const previewQuery = useJiraPreviewQuery(previewSection, previewParams);
   const rows = previewQuery.data?.results ?? [];
   const totalItems = previewQuery.data?.count ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
 
-  // avoids page invalid when the total changes.
+  // Prevents an invalid page when the total changes.
   useEffect(() => {
     if (currentPage <= totalPages) return;
     setCurrentPage(totalPages);
   }, [currentPage, totalPages]);
 
-  // Deriva entires the columns visible and configuration of the table the partir of the rows.
+  // Derives visible columns and table configuration from row data.
   const { columns, visibleColumns, tableColumns } = useMemo(
     () => resolvePreviewTableState(rows, hiddenColumns),
     [rows, hiddenColumns],
   );
 
-  // clears sort when the column some ou is hidden.
+  // Clears sorting when the sorted column disappears or becomes hidden.
   useEffect(() => {
     if (!isPreviewSortInvalid(sortState, columns, hiddenColumns)) return;
     setSortState(null);
   }, [sortState, columns, hiddenColumns]);
 
-  // displays error of preview.
+  // Displays preview errors.
   useEffect(() => {
     if (!previewQuery.isError) return;
     showPreviewErrorToast(previewQuery.error, loadErrorMessage);
   }, [previewQuery.isError, previewQuery.error, loadErrorMessage]);
 
-  // Prepara the request of export deste preview.
+  // Prepares the export request for this preview.
   const requestExportPayload = useCallback(
     () => previewExportMutation.mutateAsync(),
     [previewExportMutation],
@@ -226,7 +226,7 @@ export function JiraPreview({
     });
   }
 
-  // Alterna asc/desc of the column clieach.
+  // Toggles ascending/descending sort for the clicked column.
   function handleSort(field: string) {
     if (!field) return;
     setSortState((currentSortState) =>
@@ -234,7 +234,7 @@ export function JiraPreview({
     );
   }
 
-  // Abre modal for visualizar the content complete of the cell.
+  // Opens a modal to view the full cell content.
   function handleOpenCellPreview(value: unknown) {
     setSelectedCellValue(value);
     setIsCellModalOpen(true);
@@ -242,7 +242,7 @@ export function JiraPreview({
 
   return (
     <PreviewWrapper>
-      {/* Header fixed with actions global and filters of the source */}
+      {/* Fixed header with global actions and source filters. */}
       <PreviewHeader
         idPrefix={idPrefix}
         onSearchChange={setSearch}
@@ -252,7 +252,7 @@ export function JiraPreview({
         onExport={() => void handleExport()}
         isExportPending={previewExportMutation.isPending}
       >
-        {/* filters specific of the Jira */}
+        {/* Jira-specific filters. */}
         <SourceSelectFilter
           id={`${idPrefix}-source`}
           label="Project"
@@ -280,7 +280,7 @@ export function JiraPreview({
         ) : null}
       </PreviewHeader>
 
-      {/* table main with sorting, pagination and preview of cells */}
+      {/* Main table with sorting, pagination, and cell previews. */}
       <PreviewTable
         rows={rows}
         visibleColumns={visibleColumns}
@@ -301,7 +301,7 @@ export function JiraPreview({
         }}
       />
 
-      {/* Modal for display values long of cell without break layout of the table */}
+      {/* Modal that shows long cell values without breaking table layout. */}
       <PreviewCellModal
         open={isCellModalOpen}
         onClose={() => setIsCellModalOpen(false)}

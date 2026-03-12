@@ -1,4 +1,4 @@
-// Reexporta hooks and mutations for consumo direto via "@/data".
+// Re-exports hooks and mutations for direct usage via "@/data".
 export * from "./modules/github/githubQueries";
 export * from "./modules/github/githubMutations";
 export * from "./modules/jira/jiraQueries";
@@ -8,7 +8,7 @@ export * from "./modules/jobs/jobsMutations";
 export * from "./modules/stackoverflow/stackoverflowQueries";
 export * from "./modules/stackoverflow/stackoverflowMutations";
 
-// Reexporta the types of the modules in the same ponto of input shared.
+// Re-exports module types from the same shared entry point.
 export type {
   GithubCollectBody,
   GithubCollectType,
@@ -51,6 +51,6 @@ export type {
 } from "./modules/stackoverflow";
 export type { GithubSection, JiraSection, StackOverflowSection } from "./api/endpoints";
 
-// Helper of error used for components/screens.
+// Error helper used by components/screens.
 export { getQueryErrorMessage } from "./query/errors";
 export { queryClient } from "./query/client";

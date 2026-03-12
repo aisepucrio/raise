@@ -21,22 +21,22 @@ const meta = {
     },
     title: {
       control: { type: "text" },
-      description: "title main of the modal.",
+      description: "Main modal title.",
       table: { type: { summary: "string" } },
     },
     subtitle: {
       control: { type: "text" },
-      description: "subtitle optional shown below of the title.",
+      description: "Optional subtitle shown below title.",
       table: { type: { summary: "string" } },
     },
     initialFocusRef: {
       control: false,
-      description: "reference optional for focus initial to open.",
+      description: "Optional reference for initial focus on open.",
       table: { type: { summary: "{ current: HTMLElement | null }" } },
     },
     children: {
       control: false,
-      description: "content internal of the modal.",
+      description: "Modal inner content.",
       table: { type: { summary: "ReactNode" } },
     },
   },
@@ -95,7 +95,7 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Modal complete with title, subtitle and content of form.",
+        story: "Complete modal with title, subtitle, and form content.",
       },
     },
   },
@@ -109,7 +109,7 @@ export const WithoutSubtitle: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Example without subtitle for cases of dialog short.",
+        story: "Example without subtitle for short dialog cases.",
       },
     },
   },

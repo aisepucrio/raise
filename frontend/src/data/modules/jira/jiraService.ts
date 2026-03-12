@@ -28,7 +28,7 @@ export const jiraService = {
       signal: options?.signal,
     }) as Promise<JiraOverviewResponse>,
 
-  // Overview and Preview: range of dates for limitar filters for project.
+  // Overview and Preview: date range used to limit project filters.
   getDateRange: (
     params: JiraDateRangeParams,
     options?: RequestOptions,
@@ -42,7 +42,7 @@ export const jiraService = {
   getGraph: (params: JiraGraphParams, options?: RequestOptions) =>
     api.get(endpoints.dashboardGraph(SOURCE), { params, signal: options?.signal }),
 
-  // Preview: table paginada for section with filters and sorting.
+  // Preview: paginated table for section with filters and sorting.
   getPreview: (
     section: JiraSection,
     params: JiraPreviewParams,
@@ -53,14 +53,14 @@ export const jiraService = {
       signal: options?.signal,
     }) as Promise<JiraPreviewResponse>,
 
-  // ModalDownload (Preview): exporta in the current standard format (json).
+  // Preview export: exports in the current standard format (json).
   exportPreview: (options?: RequestOptions) =>
     api.post(endpoints.export(SOURCE), { format: "json" }, {
       responseType: "blob",
       signal: options?.signal,
     }),
 
-  // Collect: starts the collection of Jira via endpoint standardized.
+  // Collect: starts Jira collection via standardized endpoint.
   collect: (body: JiraCollectBody, options?: RequestOptions) =>
     api.post(endpoints.collect(SOURCE), body, { signal: options?.signal }),
 };

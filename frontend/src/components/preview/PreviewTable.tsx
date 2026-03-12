@@ -74,7 +74,7 @@ export function PreviewTable({
   onPageChange,
   onRowsPerPageChange,
 }: PreviewTableProps) {
-  // reference of the header for sincronizar the scroll horizontal.
+  // Header reference used to synchronize horizontal scroll.
   const headerScrollRef = useRef<HTMLDivElement | null>(null);
 
   // syncs scroll between body and header.
@@ -87,7 +87,7 @@ export function PreviewTable({
     <section className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden rounded-xl border-2 border-(--color-secondary-soft) p-4">
       <div className="min-h-0 flex-1 overflow-hidden">
         {isTablePending ? (
-          // state of loading.
+          // Loading state.
           <div className="h-full">
             <Loader />
           </div>
@@ -113,10 +113,10 @@ export function PreviewTable({
                   <TableHeader>
                     <TableRow>
                       {visibleColumns.length === 0 ? (
-                        // Fallback when entires the columns are hidden.
+                        // Fallback when all columns are hidden.
                         <TableHead>No columns selected</TableHead>
                       ) : (
-                        // Header sortable for column.
+                        // Sortable header per column.
                         visibleColumns.map((column) => {
                           const isColumnSorted = sortState?.field === column;
 
@@ -168,7 +168,7 @@ export function PreviewTable({
                         </TableCell>
                       </TableRow>
                     ) : rows.length === 0 ? (
-                      // Empty state without date.
+                      // Empty state without data.
                       <TableRow>
                         <TableCell
                           colSpan={Math.max(visibleColumns.length, 1)}
@@ -178,7 +178,7 @@ export function PreviewTable({
                         </TableCell>
                       </TableRow>
                     ) : (
-                      // rows of date.
+                      // Data rows.
                       rows.map((row, rowIndex) => (
                         <TableRow key={resolvePreviewRowKey(row, rowIndex)}>
                           {visibleColumns.map((column) => {
@@ -202,7 +202,7 @@ export function PreviewTable({
                                 className="max-w-88"
                               >
                                 {isObjectLike ? (
-                                  // Objetos/arrays abrem in the modal.
+                                  // Objects/arrays open in the modal.
                                   <Button
                                     text="Show"
                                     fullWidth={false}
@@ -211,7 +211,7 @@ export function PreviewTable({
                                     onClick={() => onOpenCellPreview(value)}
                                   />
                                 ) : (
-                                  // Primitivos also abrem in the modal.
+                                  // Primitive values also open in the modal.
                                   <button
                                     type="button"
                                     className="max-w-full cursor-pointer text-left whitespace-normal wrap-break-word text-(--color-secondary) hover:underline"
@@ -236,7 +236,7 @@ export function PreviewTable({
       </div>
 
       {!isTablePending ? (
-        // pagination only after load.
+        // Show pagination only after loading finishes.
         <div className="shrink-0">
           <TablePaginationFooter
             currentPage={currentPage}

@@ -38,7 +38,7 @@ export default function JobsPage() {
   const stopJobMutation = useStopJobMutation();
   const restartCollectionMutation = useRestartCollectionMutation();
 
-  // pagination and sorting are state puramente visual; stay in this page and not leak for the date layer.
+  // Pagination and sorting are purely visual state; they stay on this page only.
   const jobs = jobsQuery.data?.results ?? [];
   const orderedJobs = isReversed ? [...jobs].reverse() : jobs;
   const totalItems = orderedJobs.length;
@@ -54,9 +54,9 @@ export default function JobsPage() {
   }, [currentPage, totalPages]);
 
   useEffect(() => {
-    // Auto-reload of the listing the each 5s (independente of the button manual).
+    // Auto-reloads the list every 5s (independent from manual reload).
     const intervalId = window.setInterval(() => {
-      // keeps feedback visual consistent: auto-reload also animatestes the icon.
+      // Keeps visual feedback consistent: auto-reload also animates the icon.
       setReloadIconAnimationKey((value) => value + 1);
       void jobsQuery.refetch();
     }, 5000);
@@ -66,7 +66,7 @@ export default function JobsPage() {
     };
   }, [jobsQuery.refetch]);
 
-  // the error of action pode vir of any the of the mutations, then reads both and prioriza the display.
+  // Action errors can come from either mutation, so read both and prioritize display.
   const actionError = stopJobMutation.isError
     ? stopJobMutation.error
     : restartCollectionMutation.isError
@@ -76,13 +76,13 @@ export default function JobsPage() {
     ? getQueryErrorMessage(actionError, "Failed to run job action.")
     : null;
 
-  // While the action of row (stop/restart) is pending, disables the buttons dessa row to avoid actions concurrent.
+  // While row action (stop/restart) is pending, disable row buttons to avoid concurrent actions.
   const isRowActionPending =
     stopJobMutation.isPending ||
     restartCollectionMutation.isPending ||
     isActionSyncPending;
 
-  // Effect to trigger toast of error when the action failure.
+  // Shows an error toast when an action fails.
   useEffect(() => {
     if (!actionErrorMessage) return;
 
@@ -91,7 +91,7 @@ export default function JobsPage() {
     });
   }, [actionErrorMessage]);
 
-  // Effect to trigger toast of error when the action of stop task is successful.
+  // Shows a success toast when stop action succeeds.
   useEffect(() => {
     if (!stopJobMutation.isSuccess) return;
 
@@ -100,7 +100,7 @@ export default function JobsPage() {
     });
   }, [stopJobMutation.isSuccess]);
 
-  // Effect to trigger toast of error when the action of restart task is successful.
+  // Shows a success toast when restart action succeeds.
   useEffect(() => {
     if (!restartCollectionMutation.isSuccess) return;
 
@@ -114,7 +114,7 @@ export default function JobsPage() {
     setIsActionSyncPending(isLocked);
   }
 
-  // function utility to run the action of job (stop/restart) with lock to avoid concurrency and refetch of the listing at the end.
+  // Utility that runs job actions (stop/restart) with a lock and refetches at the end.
   async function runJobAction(action: () => Promise<unknown>) {
     if (actionLockRef.current) return;
 
@@ -124,42 +124,42 @@ export default function JobsPage() {
       await action();
       await jobsQuery.refetch();
     } catch {
-      // the toast of error usa the state of the mutation; avoids error not tratado in the handler.
+      // Error toast uses mutation state, avoiding unhandled errors here.
     } finally {
       setActionLock(false);
     }
   }
 
-  // Calls mutation of stop (and locks actions concurrent until complete with runJobAction).
+  // Calls stop mutation (locks concurrent actions until runJobAction completes).
   function handleStopJob(taskId: string) {
     stopJobMutation.reset();
     restartCollectionMutation.reset();
     void runJobAction(() => stopJobMutation.mutateAsync(taskId));
   }
 
-  // Calls mutation of restart (and locks actions concurrent until complete with runJobAction).
+  // Calls restart mutation (locks concurrent actions until runJobAction completes).
   function handleRestartJob(taskId: string) {
     stopJobMutation.reset();
     restartCollectionMutation.reset();
     void runJobAction(() => restartCollectionMutation.mutateAsync(taskId));
   }
 
-  // Handler of click of the button of reload: triggers refetch and animatestes the icon.
+  // Reload button handler: triggers refetch and animates the icon.
   function handleReloadClick() {
-    // each click reBuilds the icon to run the animatestestion the single vez.
+    // Each click remounts the icon to replay the animation once.
     setReloadIconAnimationKey((value) => value + 1);
     void jobsQuery.refetch();
   }
 
   return (
     <section className="flex h-full min-h-0 flex-col overflow-hidden">
-      {/* header main of the screen: context quick of the that esta page displays. */}
+      {/* Main page header: quick context of what this page shows. */}
       <PageHeader
         title="Jobs"
         subtitle="Monitor collection jobs, inspect raw records, and run simple retry/stop actions."
       />
 
-      {/* actions global of the screen: sorting visual and reload of the consulta. */}
+      {/* Global page actions: visual sorting and list reload. */}
       <div className="mb-4 flex shrink-0 flex-wrap justify-end gap-2">
         <Button
           fullWidth={false}
@@ -188,19 +188,19 @@ export default function JobsPage() {
         />
       </div>
 
-      {/* Card/block main that agrupa feedbacks, table and controles of pagination. */}
+      {/* Main card/block that groups feedback, table, and pagination controls. */}
       <section className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden rounded-xl border-2 border-(--color-secondary-soft) p-4">
-        {/* error of the listing: failure to fetch jobs (query main of the page). */}
+        {/* Listing error: failed to fetch jobs (main page query). */}
         {jobsQuery.isError ? (
           <p className="shrink-0 text-sm text-(--color-red)">
             {getQueryErrorMessage(jobsQuery.error, "Failed to load jobs.")}
           </p>
         ) : null}
 
-        {/* table of jobs (fields crus of the API, with date/status formatados for components dedicados). */}
+        {/* Jobs table (raw API fields, with date/status formatted by dedicated components). */}
         <div className="min-h-0 flex-1 overflow-auto">
           <Table>
-            {/* header of the columns visible in the listing. */}
+            {/* Header for visible listing columns. */}
             <TableHeader>
               <TableRow>
                 <TableHead>Project</TableHead>
@@ -212,7 +212,7 @@ export default function JobsPage() {
             </TableHeader>
 
             <TableBody>
-              {/* state of loading initial of the query: occupies the row entire of the table. */}
+              {/* Initial loading state: occupies a full table row. */}
               {jobsQuery.isPending ? (
                 <TableRow>
                   <TableCell colSpan={5} className="py-2">
@@ -223,7 +223,7 @@ export default function JobsPage() {
                 </TableRow>
               ) : null}
 
-              {/* state empty: query completed without records for display. */}
+              {/* Empty state: query finished with no records. */}
               {!jobsQuery.isPending && paginatedJobs.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="py-6 text-center">
@@ -232,10 +232,10 @@ export default function JobsPage() {
                 </TableRow>
               ) : null}
 
-              {/* rows of date paginadas: renderiza only the recorte of the page atual. */}
+              {/* Paginated data rows: renders only the current page slice. */}
               {!jobsQuery.isPending &&
                 paginatedJobs.map((job) => {
-                  // the component of status centraliza color/label and also exposes the actions valid.
+                  // Status component centralizes color/label and exposes valid actions.
                   const statusInfo = getFormatStatusItemInfo(job.status);
                   const canStop = statusInfo.actions.stopActionActive;
                   const canRestart = statusInfo.actions.restartActionActive;
@@ -246,7 +246,7 @@ export default function JobsPage() {
                       <TableCell className="font-medium">
                         {job.repository ?? ""}
                       </TableCell>
-                      {/* Description (quebra row se muito grande) */}
+                      {/* Description (wraps line when too long). */}
                       <TableCell className="max-w-160 whitespace-normal wrap-break-word">
                         {job.operation ?? ""}
                       </TableCell>
@@ -261,7 +261,7 @@ export default function JobsPage() {
                         <FormatStatusItem status={job.status} />
                       </TableCell>
                       <TableCell className="text-right">
-                        {/* actions of the row: only appear when the status permite. */}
+                        {/* Row actions: shown only when status allows them. */}
                         <div className="flex justify-end gap-2">
                           {canStop ? (
                             <Button
@@ -295,7 +295,7 @@ export default function JobsPage() {
           </Table>
         </div>
 
-        {/* footer reusable of pagination of the table. */}
+        {/* Reusable table pagination footer. */}
         <div className="shrink-0">
           <TablePaginationFooter
             currentPage={currentPage}

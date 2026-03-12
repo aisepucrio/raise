@@ -42,21 +42,21 @@ type RunPreviewExportWithFeedbackOptions = {
   errorFallbackMessage?: string;
 };
 
-// Detecta strings of date in format ISO for Improve display in the table.
+// Detects ISO date strings to improve table display.
 export function isIsoDateString(value: string) {
   return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?$/.test(
     value,
   );
 }
 
-// Formata date ISO for the locale of the navegador mantendo fallback safe.
+// Formats an ISO date using the browser locale, with safe fallback.
 export function formatIsoDate(value: string) {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
   return parsed.toLocaleString();
 }
 
-// converts any value of cell for string readable (UI and modal).
+// Converts any cell value into a readable string (UI and modal).
 export function toPreviewString(value: unknown) {
   if (value === null || value === undefined) return "";
   if (typeof value === "string") return value;
@@ -70,7 +70,7 @@ export function toPreviewString(value: unknown) {
   }
 }
 
-// generates nome of arquivo consistent for exports of preview.
+// Generates a consistent filename for preview exports.
 export function buildPreviewExportFileName(
   fileNamePrefix: string,
   extension = "json",
@@ -84,7 +84,7 @@ export function buildPreviewExportFileName(
   return `${fileNamePrefix}-${timestamp}.${extension}`;
 }
 
-// normalizes payload of export for Blob.
+// Normalizes export payload into a Blob.
 export function toPreviewExportBlob(
   exportPayload: unknown,
   mimeType = "application/json",
@@ -96,7 +96,7 @@ export function toPreviewExportBlob(
   });
 }
 
-// Faz the download of the arquivo exportado in the browser.
+// Downloads the exported file in the browser.
 export function downloadPreviewExportFile({
   exportPayload,
   fileNamePrefix,
@@ -116,7 +116,7 @@ export function downloadPreviewExportFile({
   URL.revokeObjectURL(objectUrl);
 }
 
-// displays error of preview with fallback standard.
+// Displays preview errors with a standard fallback.
 export function showPreviewErrorToast(
   error: unknown,
   fallbackMessage: string,
@@ -126,7 +126,7 @@ export function showPreviewErrorToast(
   });
 }
 
-// executes export with feedback standard of success/error.
+// Executes export with standard success/error feedback.
 export async function runPreviewExportWithFeedback({
   execute,
   fileNamePrefix,
@@ -148,7 +148,7 @@ export async function runPreviewExportWithFeedback({
   }
 }
 
-// converts state of sort for format esperado pelo backend.
+// Converts sort state to the format expected by the backend.
 export function resolvePreviewOrdering(sortState: PreviewSortStateLike) {
   if (!sortState?.field) return undefined;
 
@@ -157,7 +157,7 @@ export function resolvePreviewOrdering(sortState: PreviewSortStateLike) {
     : `-${sortState.field}`;
 }
 
-// Alterna state of sort for the column.
+// Toggles sort state for a column.
 export function togglePreviewSortState(
   currentSortState: PreviewSortStateLike,
   field: string,
@@ -172,7 +172,7 @@ export function togglePreviewSortState(
   };
 }
 
-// resolves columns available with base in the payload atual.
+// Resolves available columns from the current payload.
 function collectPreviewColumns(rows: PreviewRow[]) {
   const keys = new Set<string>();
   rows.forEach((row) => {
@@ -181,7 +181,7 @@ function collectPreviewColumns(rows: PreviewRow[]) {
   return Array.from(keys);
 }
 
-// removes columns hidden selecionadas pelo user.
+// Removes columns hidden by the user.
 function filterPreviewVisibleColumns(
   columns: string[],
   hiddenColumns: string[],
@@ -189,12 +189,12 @@ function filterPreviewVisibleColumns(
   return columns.filter((column) => !hiddenColumns.includes(column));
 }
 
-// Garante fallback when entires the columns estiverem hidden.
+// Ensures a fallback when all columns are hidden.
 function resolvePreviewTableColumns(visibleColumns: string[]) {
   return visibleColumns.length > 0 ? visibleColumns : ["_fallback"];
 }
 
-// validates se the sort atual ainda existe between the columns visible.
+// Validates whether current sorting still exists among visible columns.
 export function isPreviewSortInvalid(
   sortState: PreviewSortStateLike,
   columns: string[],
@@ -209,7 +209,7 @@ export function isPreviewSortInvalid(
   );
 }
 
-// resolves columns of the table the partir of the rows and of the columns hidden.
+// Resolves table columns from rows and hidden-column settings.
 export function resolvePreviewTableState(
   rows: PreviewRow[],
   hiddenColumns: string[],
@@ -225,7 +225,7 @@ export function resolvePreviewTableState(
   };
 }
 
-// heuristic of width for tipo of column for reduzir cortes visual.
+// Column-width heuristic by column type to reduce visual clipping.
 export function resolveColumnWidth(column: string) {
   const normalized = column.toLowerCase();
 

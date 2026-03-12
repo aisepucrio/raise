@@ -11,8 +11,8 @@ import type {
   JiraPreviewParams,
 } from "./jiraTypes";
 
-// the hooks receive the same params of the service (without layer extra of adaptstion).
-// search the cards of the dashboard of the Jira.
+// Hooks receive the same params as the service layer (no extra adaptation).
+// Fetches Jira dashboard cards.
 export function useJiraOverviewQuery(
   params?: JiraOverviewParams,
   options?: HookQueryOptions,
@@ -24,7 +24,7 @@ export function useJiraOverviewQuery(
   });
 }
 
-// search the range minimum/maximum of dates for the project selected.
+// Fetches min/max date range for the selected project.
 export function useJiraDateRangeQuery(
   params?: JiraDateRangeParams,
   options?: HookQueryOptions,
@@ -44,7 +44,7 @@ export function useJiraDateRangeQuery(
   });
 }
 
-// convenience for components that only have `projectId`.
+// Convenience wrapper for components that only have `projectId`.
 export function useJiraDateRangeByProjectQuery(
   projectId?: string,
   options?: HookQueryOptions,
@@ -57,7 +57,7 @@ export function useJiraDateRangeByProjectQuery(
   );
 }
 
-// search the series temporal of the dashboard of the Jira.
+// Fetches Jira dashboard time series.
 export function useJiraGraphQuery(
   params: JiraGraphParams,
   options?: HookQueryOptions,
@@ -69,7 +69,7 @@ export function useJiraGraphQuery(
   });
 }
 
-// search the table paginada of preview of the section of the Jira.
+// Fetches paginated preview table data for a Jira section.
 export function useJiraPreviewQuery(
   section: JiraSection,
   params: JiraPreviewParams,
@@ -78,7 +78,7 @@ export function useJiraPreviewQuery(
   return useQuery({
     queryKey: queryKeys.jira.preview(section, params),
     enabled: options?.enabled,
-    // keeps the table atual durante changes of filter/sorting/page.
+    // Keeps current table data while filter/sort/page changes.
     placeholderData: keepPreviousData,
     queryFn: ({ signal }) => jiraService.getPreview(section, params, { signal }),
   });
