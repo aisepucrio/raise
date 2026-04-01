@@ -1,0 +1,105 @@
+name: raise
+
+services:
+  raiseapi:
+    build: ./backend/
+    volumes:
+      - ./backend/:/app
+      - ./backend/static:/static
+      - static_volume_raise:/app/static
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db_raise
+    environment:
+      IS_DEBUG: ${IS_DEBUG}
+      DJANGO_DB_HOST: db
+      DJANGO_DB_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      DJANGO_SUPERUSER_USER: ${DJANGO_SUPERUSER_USER}
+      DJANGO_SUPERUSER_PASSWORD: ${DJANGO_SUPERUSER_PASSWORD}
+      DJANGO_SUPERUSER_EMAIL: ${DJANGO_SUPERUSER_EMAIL}
+      JIRA_API_TOKEN: ${JIRA_API_TOKEN}
+      JIRA_URL: ${JIRA_URL}
+      JIRA_EMAIL: ${JIRA_EMAIL}
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+      STACK_API_KEY: ${STACK_API_KEY}
+      STACK_ACCESS_TOKEN: ${STACK_ACCESS_TOKEN}
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+    env_file:
+      - .env
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - frontend_dist:/app/dist
+    depends_on:
+      - raiseapi
+    environment:
+      IS_DEBUG: ${IS_DEBUG}
+      VITE_API_URL: ${VITE_API_URL}
+    restart: unless-stopped
+      
+  db_raise:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_raise:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - static_volume_raise:/app/static
+      - frontend_dist:/app/dist
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "8080:8080"
+    depends_on:
+      - raiseapi
+      - frontend
+    profiles:
+      - production
+    restart: unless-stopped
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 30s
+      retries: 3
+
+  worker:
+    build: ./backend/
+    command: uv run celery -A dataminer_api worker --loglevel=info
+    volumes:
+      - ./backend:/app
+      - ./exports:/app/exports
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+
+volumes:
+  pg_raise:
+    driver: local
+  static_volume_raise:
+    driver: local
+  frontend_dist:
+    driver: local

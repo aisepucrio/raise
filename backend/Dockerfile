@@ -5,6 +5,7 @@ ENV UV_LINK_MODE=copy
 
 RUN apt-get update && apt-get install -y \
     git \
+    build-essential \
     curl \
     netcat-openbsd \
     postgresql-client \
@@ -17,7 +18,7 @@ ENV PATH="/root/.local/bin/:$PATH"
 
 WORKDIR /app
 COPY --chmod=755 . /app/
-RUN uv sync --locked
+RUN uv sync
 
-RUN chmod +x ./run.sh
+RUN chmod +x ./start.sh
 CMD ["/bin/bash", "./start.sh"]
