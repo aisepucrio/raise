@@ -9,12 +9,12 @@ const meta = {
   argTypes: {
     title: {
       control: { type: "text" },
-      description: "title main of the page.",
+      description: "Main page title.",
       table: { type: { summary: "string" } },
     },
     subtitle: {
       control: { type: "text" },
-      description: "description complementar shown below of the title.",
+      description: "Complementary description shown below title.",
       table: { type: { summary: "string" } },
     },
   },
@@ -48,13 +48,13 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "header standard with title and subtitle curtos.",
+        story: "Default header with short title and subtitle.",
       },
     },
   },
 };
 
-export const TextoLongo: Story = {
+export const LongText: Story = {
   args: {
     title: "Preview",
     subtitle:
@@ -63,7 +63,7 @@ export const TextoLongo: Story = {
   parameters: {
     docs: {
       description: {
-        story: "validates behavior visual with text mais longo in the subtitle.",
+        story: "Validates visual behavior with longer subtitle text.",
       },
     },
   },

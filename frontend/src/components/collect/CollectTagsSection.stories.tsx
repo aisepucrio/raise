@@ -22,12 +22,12 @@ const meta = {
   argTypes: {
     tagsHeading: {
       control: { type: "text" },
-      description: "title of the section of tags.",
+      description: "Title of the tags section.",
       table: { type: { summary: "string" } },
     },
     tags: {
       control: false,
-      description: "list of tags removable (`id`, `label`, `onRemove`).",
+      description: "List of removable tags (`id`, `label`, `onRemove`).",
       table: { type: { summary: "readonly { id: string; label: string; onRemove: () => void }[]" } },
     },
     emptyTagsMessage: {
@@ -67,13 +67,13 @@ export const WithItems: Story = {
   parameters: {
     docs: {
       description: {
-        story: "state with repositories already added.",
+        story: "State with repositories already added.",
       },
     },
   },
 };
 
-export const empty: Story = {
+export const Empty: Story = {
   args: {
     tagsHeading: "Repositories (0)",
     tags: [],
@@ -81,7 +81,7 @@ export const empty: Story = {
   parameters: {
     docs: {
       description: {
-        story: "state empty showing guidance for add items.",
+        story: "Empty state showing guidance to add items.",
       },
     },
   },

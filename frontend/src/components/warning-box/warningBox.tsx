@@ -23,7 +23,7 @@ export type WarningBoxProps = {
   className?: string;
 };
 
-// estilos fixeds for variante, alinhados to the tokens usados in the toast.
+// Fixed styles by variant, aligned with tokens used in toast.
 const VARIANT_STYLE: Record<WarningBoxVariant, CSSProperties> = {
   default: {
     backgroundColor: "var(--color-primary)",
@@ -60,7 +60,7 @@ const VARIANT_STYLE: Record<WarningBoxVariant, CSSProperties> = {
   },
 };
 
-// icon fixed for variante, without action of close.
+// Fixed icon by variant, without close action.
 const VARIANT_ICON = {
   default: InfoIcon,
   success: CircleCheckIcon,

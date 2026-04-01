@@ -11,8 +11,8 @@ import type {
   StackOverflowPreviewParams,
 } from "./stackoverflowTypes";
 
-// the hooks receive the same params of the service (without layer extra of adaptstion).
-// search the cards of the dashboard of the Stack Overflow.
+// Hooks receive the same params as the service layer (no extra adaptation).
+// Fetches Stack Overflow dashboard cards.
 export function useStackOverflowOverviewQuery(
   params?: StackOverflowOverviewParams,
   options?: HookQueryOptions,
@@ -24,7 +24,7 @@ export function useStackOverflowOverviewQuery(
   });
 }
 
-// search the range minimum/maximum of dates for the question selected.
+// Fetches min/max date range for the selected question.
 export function useStackOverflowDateRangeQuery(
   params?: StackOverflowDateRangeParams,
   options?: HookQueryOptions,
@@ -46,7 +46,7 @@ export function useStackOverflowDateRangeQuery(
   });
 }
 
-// convenience for components that only have `questionId`.
+// Convenience wrapper for components that only have `questionId`.
 export function useStackOverflowDateRangeByQuestionQuery(
   questionId?: string,
   options?: HookQueryOptions,
@@ -59,7 +59,7 @@ export function useStackOverflowDateRangeByQuestionQuery(
   );
 }
 
-// search the series temporal of the dashboard of the Stack Overflow.
+// Fetches Stack Overflow dashboard time series.
 export function useStackOverflowGraphQuery(
   params: StackOverflowGraphParams,
   options?: HookQueryOptions,
@@ -71,7 +71,7 @@ export function useStackOverflowGraphQuery(
   });
 }
 
-// search the table paginada of preview of the section of the Stack Overflow.
+// Fetches paginated preview table data for a Stack Overflow section.
 export function useStackOverflowPreviewQuery(
   section: StackOverflowSection,
   params: StackOverflowPreviewParams,
@@ -80,7 +80,7 @@ export function useStackOverflowPreviewQuery(
   return useQuery({
     queryKey: queryKeys.stackoverflow.preview(section, params),
     enabled: options?.enabled,
-    // keeps the table atual durante changes of filter/sorting/page.
+    // Keeps current table data while filter/sort/page changes.
     placeholderData: keepPreviousData,
     queryFn: ({ signal }) =>
       stackoverflowService.getPreview(section, params, { signal }),

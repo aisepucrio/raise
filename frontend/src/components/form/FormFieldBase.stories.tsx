@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import FormFieldBase, { getFormControlClassName } from "./FormFieldBase";
+import FormFieldBase from "./FormFieldBase";
+import { getFormControlClassName } from "./formControlClassName";
 
 const meta = {
   title: "Components/Form/FormFieldBase",

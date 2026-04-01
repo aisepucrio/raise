@@ -13,7 +13,7 @@ const meta = {
     },
     label: {
       control: { type: "text" },
-      description: "label shown above of the field.",
+      description: "Label shown above the field.",
       table: { type: { summary: "string" } },
     },
     hint: {
@@ -23,32 +23,32 @@ const meta = {
     },
     error: {
       control: { type: "text" },
-      description: "message of error shown below of the field.",
+      description: "Error message shown below the field.",
       table: { type: { summary: "string" } },
     },
     required: {
       control: { type: "boolean" },
-      description: "Marca the field how required.",
+      description: "Marks the field as required.",
       table: { type: { summary: "boolean" } },
     },
     defaultValue: {
       control: { type: "text" },
-      description: "value initial for uncontrolled usage.",
+      description: "Initial value for uncontrolled usage.",
       table: { type: { summary: "string | number | readonly string[]" } },
     },
     value: {
       control: { type: "text" },
-      description: "value controlled of the select.",
+      description: "Controlled select value.",
       table: { type: { summary: "string | number | readonly string[]" } },
     },
     children: {
       control: false,
-      description: "options (`<option>`) renderizadas inside of the select.",
+      description: "Options (`<option>`) rendered inside the select.",
       table: { type: { summary: "ReactNode" } },
     },
     wrapperClassName: {
       control: false,
-      description: "Classe CSS adicional of the wrapper.",
+      description: "Additional CSS class for the wrapper.",
       table: { type: { summary: "string" } },
     },
     labelPosition: {
@@ -60,7 +60,7 @@ const meta = {
     variant: {
       control: { type: "inline-radio" },
       options: ["outlined", "filled"],
-      description: "Variante visual of the select.",
+      description: "Visual select variant.",
       table: { type: { summary: "\"outlined\" | \"filled\"" }, defaultValue: { summary: "outlined" } },
     },
     onChange: {
@@ -73,7 +73,7 @@ const meta = {
     id: "form-select-demo",
     label: "source",
     defaultValue: "",
-    hint: "Select with icon animatestesdo and states standard.",
+    hint: "Select with animated icon and standard states.",
     children: (
       <>
         <option value="" disabled>
@@ -103,13 +103,13 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Select standard with options of source.",
+        story: "Default select with source options.",
       },
     },
   },
 };
 
-export const ObrigatorioComErro: Story = {
+export const RequiredWithError: Story = {
   args: {
     id: "form-select-error",
     required: true,
@@ -119,22 +119,22 @@ export const ObrigatorioComErro: Story = {
   parameters: {
     docs: {
       description: {
-        story: "state of validation with field required and error.",
+        story: "Validation state with required field and error message.",
       },
     },
   },
 };
 
-export const PreSelecionado: Story = {
+export const Preselected: Story = {
   args: {
     id: "form-select-selected",
     defaultValue: "jira",
-    hint: "Example with value initial.",
+    hint: "Example with initial value.",
   },
   parameters: {
     docs: {
       description: {
-        story: "displays select with value initial already selected.",
+        story: "Displays select with initial value already selected.",
       },
     },
   },
@@ -145,12 +145,12 @@ export const FilledVariant: Story = {
     id: "form-select-filled",
     defaultValue: "github",
     variant: "filled",
-    hint: "Example with the variante filled.",
+    hint: "Example using the filled variant.",
   },
   parameters: {
     docs: {
       description: {
-        story: "Example visual with variante `filled`.",
+        story: "Visual example with `filled` variant.",
       },
     },
   },

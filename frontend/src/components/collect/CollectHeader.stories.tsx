@@ -9,22 +9,22 @@ const meta = {
   argTypes: {
     title: {
       control: { type: "text" },
-      description: "title main of the section of collection.",
+      description: "Main title of the collection section.",
       table: { type: { summary: "string" } },
     },
     description: {
       control: { type: "text" },
-      description: "description auxiliar of the section.",
+      description: "Supporting description of the section.",
       table: { type: { summary: "string" } },
     },
     addButtonText: {
       control: { type: "text" },
-      description: "text of the button of add item.",
+      description: "Add-item button text.",
       table: { type: { summary: "string" } },
     },
     onAddClick: {
       action: "addClick",
-      description: "Callback triggered to click in add.",
+      description: "Callback triggered when add is clicked.",
       table: { type: { summary: "() => void" } },
     },
   },
@@ -58,7 +58,7 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "header standard with title, description and action main.",
+        story: "Default header with title, description, and main action.",
       },
     },
   },

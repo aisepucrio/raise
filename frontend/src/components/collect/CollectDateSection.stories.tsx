@@ -28,17 +28,17 @@ const meta = {
   argTypes: {
     startDate: {
       control: { type: "text" },
-      description: "date initial in the format `YYYY-MM-DD`.",
+      description: "Start date in `YYYY-MM-DD` format.",
       table: { type: { summary: "string" } },
     },
     endDate: {
       control: { type: "text" },
-      description: "end date in the format `YYYY-MM-DD`.",
+      description: "End date in `YYYY-MM-DD` format.",
       table: { type: { summary: "string" } },
     },
     onStartDateChange: {
       action: "startDateChange",
-      description: "Callback triggered to change date initial.",
+      description: "Callback triggered to change start date.",
       table: { type: { summary: "(value: string) => void" } },
     },
     onEndDateChange: {
@@ -48,7 +48,7 @@ const meta = {
     },
     dateFilterIdPrefix: {
       control: { type: "text" },
-      description: "Prefixed used for gerar IDs internos of the filter.",
+      description: "Prefix used to generate internal filter IDs.",
       table: { type: { summary: "string" } },
     },
     dateWarningMessage: {
@@ -58,12 +58,12 @@ const meta = {
     },
     startLabel: {
       control: { type: "text" },
-      description: "label of the field of date initial.",
+      description: "Label of the start-date field.",
       table: { type: { summary: "string" }, defaultValue: { summary: "Start" } },
     },
     endLabel: {
       control: { type: "text" },
-      description: "label of the field of end date.",
+      description: "Label of the end-date field.",
       table: { type: { summary: "string" }, defaultValue: { summary: "Finish" } },
     },
   },
@@ -103,7 +103,7 @@ export const WithWarning: Story = {
   parameters: {
     docs: {
       description: {
-        story: "state initial without dates filled, showing warning.",
+        story: "Initial state with empty dates and warning visible.",
       },
     },
   },
@@ -118,7 +118,7 @@ export const WithFilledDates: Story = {
   parameters: {
     docs: {
       description: {
-        story: "state with period complete, without display of the warning.",
+        story: "State with complete period and no warning displayed.",
       },
     },
   },

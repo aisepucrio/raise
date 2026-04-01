@@ -18,7 +18,7 @@ export type RunCollectWithFeedbackParams = {
   navigate: NavigateFunction;
 };
 
-// Verifica se the string existe in the list ignorando caixa alta/baixa to avoid duplicatas visual.
+// Checks whether a string exists in the list, ignoring case, to avoid visual duplicates.
 export function containsItemIgnoreCase(
   list: readonly string[],
   value: string,
@@ -36,7 +36,7 @@ export function containsItemIgnoreCase(
   return false;
 }
 
-// adapts the list for the format of tags removiveis used in the collect.
+// Adapts the list to the removable-tag format used in collect screens.
 export function mapItemsToCollectTags<T>(
   items: readonly T[],
   getId: (item: T) => string,
@@ -53,7 +53,7 @@ export function mapItemsToCollectTags<T>(
   });
 }
 
-// executes the collection with feedback Default of success/error.
+// Executes collection with default success/error feedback.
 export async function runCollectWithFeedback({
   execute,
   successDescription,
