@@ -12,6 +12,8 @@ safe-outputs:
   add-comment:
     hide-older-comments: true
     allowed-reasons: [outdated]
+  noop:
+    report-as-issue: false
     
 tools:
   github:
