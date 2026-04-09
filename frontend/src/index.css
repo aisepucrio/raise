@@ -10,39 +10,39 @@
 @theme {
   /* Main app contextual colors. */
   --color-primary-light: #f3f4f7;
-  --color-primary-dark: #15161f;
+  --color-primary-dark: #0f1526;
   --color-secondary-light: #1e2f93;
-  --color-secondary-dark: #5f81ff;
+  --color-secondary-dark: #e7efff;
 
   /* Named colors (mapped by theme). */
   --color-indigo-light: #6675e6;
-  --color-indigo-dark: #a8b4ff;
+  --color-indigo-dark: #6f95ff;
   --color-amber-light: #d08a12;
-  --color-amber-dark: #ffd36b;
+  --color-amber-dark: #e6bd73;
   --color-teal-light: #1f9b8f;
-  --color-teal-dark: #63e6cf;
+  --color-teal-dark: #56cbb5;
   --color-rose-light: #e35d72;
-  --color-rose-dark: #ff8da1;
+  --color-rose-dark: #ee9eac;
   --color-slate-light: #7c879d;
-  --color-slate-dark: #c5cee0;
+  --color-slate-dark: #b7c6e6;
   --color-steel-light: #62759a;
-  --color-steel-dark: #9fb0cf;
+  --color-steel-dark: #92a9d2;
   --color-red-light: #b42318;
-  --color-red-dark: #ffb4b4;
+  --color-red-dark: #f2a0ac;
 
   --color-transparent: transparent;
 
   /* Shadcn/Tailwind integration. */
   --color-shadcn-border-light: oklch(0.923 0.003 48.717);
   --color-shadcn-ring-light: oklch(0.709 0.01 56.259);
-  --color-shadcn-border-dark: oklch(1 0 0 / 10%);
-  --color-shadcn-ring-dark: oklch(0.553 0.013 58.071);
+  --color-shadcn-border-dark: #2b3755;
+  --color-shadcn-ring-dark: #76a0ff;
 
   /* Native date-picker icon filter. */
   --filter-date-picker-light: brightness(0) saturate(100%) invert(97%) sepia(8%)
     saturate(233%) hue-rotate(191deg) brightness(105%) contrast(94%);
-  --filter-date-picker-dark: brightness(0) saturate(100%) invert(8%) sepia(56%)
-    saturate(3258%) hue-rotate(229deg) brightness(88%) contrast(103%);
+  --filter-date-picker-dark: brightness(0) saturate(100%) invert(92%) sepia(10%)
+    saturate(520%) hue-rotate(188deg) brightness(102%) contrast(101%);
 }
 
 /* Base + generic aliases (without component coupling). */
