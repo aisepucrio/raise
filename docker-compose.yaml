@@ -24,7 +24,7 @@ services:
       JIRA_API_TOKEN: ${JIRA_API_TOKEN}
       JIRA_URL: ${JIRA_URL}
       JIRA_EMAIL: ${JIRA_EMAIL}
-      GITHUB_TOKEN: ${GITHUB_TOKEN}
+      GITHUB_TOKENS: ${GITHUB_TOKENS}
       STACK_API_KEY: ${STACK_API_KEY}
       STACK_ACCESS_TOKEN: ${STACK_ACCESS_TOKEN}
     restart: unless-stopped

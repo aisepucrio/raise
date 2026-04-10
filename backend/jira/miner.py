@@ -4,7 +4,6 @@ from datetime import datetime
 from urllib.parse import quote
 
 import requests
-from dotenv import load_dotenv
 from requests.auth import HTTPBasicAuth
 
 from django.utils import timezone
@@ -32,7 +31,6 @@ class JiraMiner:
         pass
 
     def __init__(self, jira_domain, task_obj=None):
-        load_dotenv()
         self.jira_domain = jira_domain.strip()
         self.task_obj = task_obj 
         self.log_progress(f" Received domain in JiraMiner: '{self.jira_domain}'")
