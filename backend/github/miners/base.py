@@ -2,7 +2,6 @@ import os
 import time
 import requests
 from datetime import datetime, timezone, timedelta
-from dotenv import load_dotenv
 from typing import Dict, List, Optional, Any
 from .utils import APIMetrics
 
@@ -72,7 +71,6 @@ class BaseMiner:
 
     def load_tokens(self) -> Dict[str, Any]:
         """Loads GitHub tokens from .env file or environment variables"""
-        load_dotenv()
         tokens_str = os.getenv("GITHUB_TOKENS")
         if not tokens_str:
             return {
