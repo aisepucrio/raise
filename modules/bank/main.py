@@ -4,4 +4,4 @@ def calculate(x, y):
 
 if __name__ == "__main__":
     result = calculate(5, 10)
-    print(f"The result is: {result}")
+    print(f"{result}")
