@@ -1,8 +1,8 @@
 # RAISE
 
-RAISE is a platform designed to to collect and achive data from multiple external platorms:
+RAISE isv a platform designed to to collect and achive data from multiple external platorms:
 
-- GitHub
+- GitHubm
 - JIRA
 - StackOverflow
 
