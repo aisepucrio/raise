@@ -1,0 +1,217 @@
+name: GithubDocs PR Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  githubdocs:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        prompt_file:
+          - changelog/changelog.jinja
+          - readme-update/readme_update.jinja
+
+    env:
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      PR_BRANCH_NAME: ${{ github.head_ref }}
+      PR_REPO_PATH: ${{ github.workspace }}/pr-repo
+
+    steps:
+      - name: Checkout do código do PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: pr-repo
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Criar branch local do PR
+        working-directory: pr-repo
+        run: |
+          git checkout -B "${{ env.PR_BRANCH_NAME }}" "${{ env.PR_HEAD_SHA }}"
+          git branch --list
+          git rev-parse --abbrev-ref HEAD
+
+      - name: Checkout do GithubDocs
+        uses: actions/checkout@v4
+        with:
+          repository: aisepucrio/GithubDocs
+          ref: test/github-action
+          token: ${{ secrets.ORG_SHARED_REPO_TOKEN }}
+          path: github-docs
+          fetch-depth: 0
+
+      - name: Configurar Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Instalar uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Recriar ambiente com Python 3.13
+        working-directory: github-docs
+        run: |
+          rm -rf .venv
+          uv python pin 3.13
+          uv sync --python 3.13
+
+      - name: Validar versão usada pelo uv
+        working-directory: github-docs
+        run: |
+          uv run --python 3.13 python --version
+
+      - name: Gerar config temporário com valores dinâmicos
+        id: config
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          import re
+          import os
+
+          workspace = Path(os.environ["GITHUB_WORKSPACE"])
+          original = workspace / "pr-repo" / ".github" / "githubdocs" / "config_example.toml"
+          generated = workspace / "pr-repo" / ".github" / "githubdocs" / f'config_runtime_{os.environ["PR_HEAD_SHA"][:8]}_{Path("${{ matrix.prompt_file }}").stem}.toml'
+
+          prompt_file = "${{ matrix.prompt_file }}"
+          pr_head_sha = os.environ["PR_HEAD_SHA"]
+          pr_branch_name = os.environ["PR_BRANCH_NAME"]
+          pr_repo_path = os.environ["PR_REPO_PATH"]
+
+          if not original.exists():
+              raise FileNotFoundError(f"Arquivo não encontrado: {original}")
+
+          content = original.read_text(encoding="utf-8")
+
+          updated_content, repo_replacements = re.subn(
+              r'repo_path\s*=\s*".*?"',
+              f'repo_path = "{pr_repo_path}"',
+              content,
+              count=1
+          )
+          if repo_replacements == 0:
+              raise ValueError("Não foi possível localizar a chave repo_path no config_example.toml")
+
+          updated_content, branch_replacements = re.subn(
+              r'branch_name\s*=\s*".*?"',
+              f'branch_name = "{pr_branch_name}"',
+              updated_content,
+              count=1
+          )
+          if branch_replacements == 0:
+              raise ValueError("Não foi possível localizar a chave branch_name no config_example.toml")
+
+          updated_content, commit_replacements = re.subn(
+              r'commit_list\s*=\s*\[[^\]]*\]',
+              f'commit_list = ["{pr_head_sha}"]',
+              updated_content,
+              count=1
+          )
+          if commit_replacements == 0:
+              raise ValueError("Não foi possível localizar a chave commit_list no config_example.toml")
+
+          updated_content, prompt_replacements = re.subn(
+              r'prompt_file\s*=\s*".*?"',
+              f'prompt_file = "{prompt_file}"',
+              updated_content,
+              count=1
+          )
+          if prompt_replacements == 0:
+              raise ValueError("Não foi possível localizar a chave prompt_file no config_example.toml")
+
+          generated.write_text(updated_content, encoding="utf-8")
+
+          print(f"Arquivo original: {original}")
+          print(f"Arquivo gerado: {generated}")
+          print(f"repo_path atualizado para: {pr_repo_path}")
+          print(f"branch_name atualizado para: {pr_branch_name}")
+          print(f"commit_list atualizado para: ['{pr_head_sha}']")
+          print(f"prompt_file atualizado para: {prompt_file}")
+          PY
+
+          echo "config_file=$GITHUB_WORKSPACE/pr-repo/.github/githubdocs/config_runtime_${PR_HEAD_SHA::8}_$(basename '${{ matrix.prompt_file }}' .jinja).toml" >> "$GITHUB_OUTPUT"
+
+      - name: Exibir config gerado
+        run: |
+          echo "Usando prompt: ${{ matrix.prompt_file }}"
+          echo "Usando repo_path: ${{ env.PR_REPO_PATH }}"
+          echo "Usando branch do PR: ${{ env.PR_BRANCH_NAME }}"
+          echo "Usando commit do PR: ${{ env.PR_HEAD_SHA }}"
+          echo "Usando arquivo: ${{ steps.config.outputs.config_file }}"
+          cat "${{ steps.config.outputs.config_file }}"
+
+      - name: Limpar saída anterior
+        working-directory: github-docs
+        run: |
+          rm -f output/benchmark_22.md
+          rm -f "raw_output_$(basename '${{ matrix.prompt_file }}' .jinja).txt"
+
+      - name: Executar GithubDocs
+        id: run_docs
+        working-directory: github-docs
+        run: |
+          set -o pipefail
+          uv run --python 3.13 python main.py "${{ steps.config.outputs.config_file }}" > "raw_output_$(basename '${{ matrix.prompt_file }}' .jinja).txt" 2>&1
+
+      - name: Comentar no PR
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const prNumber = context.issue.number;
+            const promptFile = '${{ matrix.prompt_file }}';
+            const promptName = path.basename(promptFile, '.jinja');
+            const resultFile = path.join(process.env.GITHUB_WORKSPACE, 'github-docs', 'output', 'benchmark_22.md');
+            const logFile = path.join(process.env.GITHUB_WORKSPACE, 'github-docs', `raw_output_${promptName}.txt`);
+
+            let body = `## Resultado GithubDocs - \`${promptFile}\`\n\n`;
+            body += `**Repositório analisado:** \`${process.env.PR_REPO_PATH}\`\n`;
+            body += `**Branch analisada:** \`${process.env.PR_BRANCH_NAME}\`\n`;
+            body += `**Commit analisado:** \`${process.env.PR_HEAD_SHA}\`\n\n`;
+
+            if (fs.existsSync(resultFile)) {
+              const content = fs.readFileSync(resultFile, 'utf8').trim();
+              if (content) {
+                body += content;
+              } else {
+                body += '⚠️ O arquivo `output/benchmark_22.md` foi encontrado, mas está vazio.';
+              }
+            } else {
+              let logs = 'Nenhum log disponível.';
+              if (fs.existsSync(logFile)) {
+                logs = fs.readFileSync(logFile, 'utf8')
+                  .replace(/\x1B\[[0-9;]*[mK]/g, '')
+                  .trim();
+              }
+
+              body += [
+                '⚠️ O arquivo `output/benchmark_22.md` não foi encontrado.',
+                '',
+                'Logs da execução:',
+                '```text',
+                logs,
+                '```'
+              ].join('\n');
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body
+            });

@@ -1,0 +1,31 @@
+[target_information]
+repo_path = "__REPO_PATH__"
+branch_name = "__BRANCH__"
+commit_list = ["__COMMIT__"]
+ignore_files = [
+  "README.md",
+  "CHANGELOG.md",
+  "CONTRIBUTING.md",
+  "RELEASE_NOTES.md"
+]
+
+# github_repo_name = "__OWNER__/__REPO__"
+
+[agents]
+
+[[agents.output]]
+result_path = "output/"
+log_path = "logs/"
+result_file_name = "benchmark_22.md"
+
+[[agents.orchestration]]
+step = 1
+model_name = "gemini-2.5-flash"
+temperature = 0.2
+template_path = "prompt/"
+prompt_file = "__PROMPT_FILE__"
+prompt_variables = {
+  name = "default instructions",
+  repo = "__REPO_PATH__"
+}
+tools = []
