@@ -144,7 +144,17 @@ export function TableSortableHead({
         : ArrowUpDown;
 
   return (
-    <TableHead className={className} {...props}>
+    <TableHead
+      className={className}
+      aria-sort={
+        sortDirection === "asc"
+          ? "ascending"
+          : sortDirection === "desc"
+            ? "descending"
+            : undefined
+      }
+      {...props}
+    >
       <button
         type="button"
         className={cn(

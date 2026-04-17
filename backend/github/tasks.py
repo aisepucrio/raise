@@ -496,6 +496,9 @@ def fetch_metadata(self, repo_name, task_pk=None):
 
         metadata = miner.get_repository_metadata(repo_name, task_obj)
 
+        if metadata is None:
+            raise RuntimeError(f"Metadata extraction returned no data for {repo_name}. Check GitHub API availability and token permissions.")
+
         metadata_dict = {
             'repository': metadata.repository,
             'owner': metadata.owner,

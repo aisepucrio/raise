@@ -166,10 +166,11 @@ export function togglePreviewSortState(
     return { field, direction: "asc" };
   }
 
-  return {
-    field,
-    direction: currentSortState.direction === "asc" ? "desc" : "asc",
-  };
+  if (currentSortState.direction === "desc") {
+    return null;
+  }
+
+  return { field, direction: "desc" };
 }
 
 // Resolves available columns from the current payload.

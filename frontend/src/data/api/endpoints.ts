@@ -8,11 +8,13 @@ export type StackOverflowSection = SectionBySource["stackoverflow"];
 
 export const endpoints = {
   // ==> OVERVIEW
-  dashboard: (source: Source) => `/api/${source}/dashboard`,
-  dashboardGraph: (source: Source) => `/api/${source}/dashboard/graph`,
+  // Trailing slashes are required: Django's APPEND_SLASH redirect strips CORS headers,
+  // causing net::ERR_EMPTY_RESPONSE on cross-origin GET requests.
+  dashboard: (source: Source) => `/api/${source}/dashboard/`,
+  dashboardGraph: (source: Source) => `/api/${source}/dashboard/graph/`,
 
   // ==> DATE RANGE (OVERVIEW / PREVIEW)
-  dateRange: (source: Source) => `/api/${source}/date-range`,
+  dateRange: (source: Source) => `/api/${source}/date-range/`,
 
   // ==> COLLECT
   collect: (source: Source) => `/api/${source}/collect/`,
@@ -23,7 +25,7 @@ export const endpoints = {
 
   // ==> PREVIEW
   previewList: <S extends Source>(source: S, section: SectionBySource[S]) =>
-    `/api/${source}/${section}`,
+    `/api/${source}/${section}/`,
   export: (source: Source) => `/api/${source}/export/`,
 
   // ==> JOBS

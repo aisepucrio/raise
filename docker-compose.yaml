@@ -24,7 +24,9 @@ services:
       JIRA_API_TOKEN: ${JIRA_API_TOKEN}
       JIRA_URL: ${JIRA_URL}
       JIRA_EMAIL: ${JIRA_EMAIL}
-      GITHUB_TOKEN: ${GITHUB_TOKEN}
+      # Backend reads GITHUB_TOKENS (plural) for multi-token rotation support.
+      # Map the single .env token to the expected variable name.
+      GITHUB_TOKENS: ${GITHUB_TOKEN}
       STACK_API_KEY: ${STACK_API_KEY}
       STACK_ACCESS_TOKEN: ${STACK_ACCESS_TOKEN}
     restart: unless-stopped
@@ -92,6 +94,9 @@ services:
       - ./exports:/app/exports
     env_file:
       - .env
+    environment:
+      # Backend reads GITHUB_TOKENS (plural) for multi-token rotation support.
+      GITHUB_TOKENS: ${GITHUB_TOKEN}
     depends_on:
       redis:
         condition: service_healthy

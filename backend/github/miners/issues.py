@@ -200,10 +200,15 @@ class IssuesMiner(BaseMiner):
                                 processed_issue['comments_data'] = existing_issue.comments
                                 processed_issue['timeline_events'] = existing_issue.timeline_events
 
-                        metadata_obj = GitHubMetadata.objects.filter(repository=repo_name).first()
-                        if metadata_obj is None:
-                            log_progress(f"📛 [ISSUES] GitHubMetadata not found for {repo_name}. Skipping.")
-                            continue
+                        metadata_obj, _ = GitHubMetadata.objects.get_or_create(
+                            repository=repo_name,
+                            defaults={
+                                'owner': repo_name.split('/')[0],
+                                'html_url': f'https://github.com/{repo_name}',
+                                'github_created_at': timezone.now(),
+                                'github_updated_at': timezone.now(),
+                            }
+                        )
 
                         GitHubIssuePullRequest.objects.update_or_create(
                             record_id=processed_issue['id'],

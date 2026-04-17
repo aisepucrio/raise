@@ -157,24 +157,24 @@ export function PreviewTable({
                   </colgroup>
 
                   <TableBody>
-                    {visibleColumns.length === 0 ? (
-                      // Fallback without columns visible.
-                      <TableRow>
-                        <TableCell
-                          colSpan={1}
-                          className="py-6 text-center text-(--color-secondary-muted)"
-                        >
-                          Use the Columns filter to enable at least one column.
-                        </TableCell>
-                      </TableRow>
-                    ) : rows.length === 0 ? (
-                      // Empty state without data.
+                    {rows.length === 0 ? (
+                      // Empty state: no data for current filters (takes priority over column state).
                       <TableRow>
                         <TableCell
                           colSpan={Math.max(visibleColumns.length, 1)}
                           className="py-6 text-center text-(--color-secondary-muted)"
                         >
                           {emptyStateMessage}
+                        </TableCell>
+                      </TableRow>
+                    ) : visibleColumns.length === 0 ? (
+                      // All columns hidden by user.
+                      <TableRow>
+                        <TableCell
+                          colSpan={1}
+                          className="py-6 text-center text-(--color-secondary-muted)"
+                        >
+                          Use the Columns filter to enable at least one column.
                         </TableCell>
                       </TableRow>
                     ) : (
