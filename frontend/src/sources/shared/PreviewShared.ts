@@ -157,7 +157,8 @@ export function resolvePreviewOrdering(sortState: PreviewSortStateLike) {
     : `-${sortState.field}`;
 }
 
-// Toggles sort state for a column.
+// Cycles sort state: none → asc → desc → none (3 states).
+// Previously only toggled between asc and desc, making it impossible to clear sorting.
 export function togglePreviewSortState(
   currentSortState: PreviewSortStateLike,
   field: string,

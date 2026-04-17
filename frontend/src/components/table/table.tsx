@@ -144,6 +144,7 @@ export function TableSortableHead({
         : ArrowUpDown;
 
   return (
+    // aria-sort is required on the <th> so Playwright (and screen readers) can assert sort state.
     <TableHead
       className={className}
       aria-sort={

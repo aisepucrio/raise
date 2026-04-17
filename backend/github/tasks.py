@@ -496,6 +496,9 @@ def fetch_metadata(self, repo_name, task_pk=None):
 
         metadata = miner.get_repository_metadata(repo_name, task_obj)
 
+        # BUG-004: get_repository_metadata can return None on API errors; without this
+        # guard the attribute access below crashes with AttributeError and the task records
+        # a NoneType exception instead of a meaningful error message.
         if metadata is None:
             raise RuntimeError(f"Metadata extraction returned no data for {repo_name}. Check GitHub API availability and token permissions.")
 

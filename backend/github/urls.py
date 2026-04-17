@@ -24,6 +24,8 @@ router.register(r'branches/collect', views.GitHubBranchViewSet, basename='branch
 router.register(r'metadata/collect', views.GitHubMetadataViewSet, basename='metadata-collect')
 # /collect/ is the canonical bulk-collection endpoint matching the frontend contract
 # POST /api/<source>/collect/. /collect-all/ is kept as a backwards-compatible alias.
+# BUG-001: frontend posts to /api/github/collect/ — this registration must exist.
+# collect-all is kept as a backwards-compatible alias.
 router.register(r'collect', views.GitHubCollectAllViewSet, basename='collect')
 router.register(r'collect-all', views.GitHubCollectAllViewSet, basename='collect-all')
 

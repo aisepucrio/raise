@@ -8,8 +8,8 @@ export type StackOverflowSection = SectionBySource["stackoverflow"];
 
 export const endpoints = {
   // ==> OVERVIEW
-  // Trailing slashes are required: Django's APPEND_SLASH redirect strips CORS headers,
-  // causing net::ERR_EMPTY_RESPONSE on cross-origin GET requests.
+  // BUG-001: trailing slashes are required — Django's APPEND_SLASH redirect strips CORS
+  // headers on cross-origin requests, causing net::ERR_EMPTY_RESPONSE.
   dashboard: (source: Source) => `/api/${source}/dashboard/`,
   dashboardGraph: (source: Source) => `/api/${source}/dashboard/graph/`,
 

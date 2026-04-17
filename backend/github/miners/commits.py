@@ -170,6 +170,9 @@ class CommitsMiner(BaseMiner):
             else:
                 total_commits = 1
 
+            # BUG-005: previously returned [] silently when GitHubMetadata was absent,
+            # so the repo never appeared in the selector and zero rows were stored.
+            # get_or_create ensures a stub row exists so commits are always linked.
             metadata_obj, _ = GitHubMetadata.objects.get_or_create(
                 repository=repo_name,
                 defaults={

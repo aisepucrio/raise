@@ -200,6 +200,8 @@ class IssuesMiner(BaseMiner):
                                 processed_issue['comments_data'] = existing_issue.comments
                                 processed_issue['timeline_events'] = existing_issue.timeline_events
 
+                        # BUG-005: previously returned [] silently when GitHubMetadata was absent.
+                        # get_or_create ensures a stub row exists so issues are always linked.
                         metadata_obj, _ = GitHubMetadata.objects.get_or_create(
                             repository=repo_name,
                             defaults={

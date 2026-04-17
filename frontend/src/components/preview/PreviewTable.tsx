@@ -158,7 +158,9 @@ export function PreviewTable({
 
                   <TableBody>
                     {rows.length === 0 ? (
-                      // Empty state: no data for current filters (takes priority over column state).
+                      // Empty state checked first: when rows=[] the columns array is also empty
+                      // (derived from row keys), so visibleColumns.length===0 would fire instead
+                      // and show the wrong "Use the Columns filter" message.
                       <TableRow>
                         <TableCell
                           colSpan={Math.max(visibleColumns.length, 1)}

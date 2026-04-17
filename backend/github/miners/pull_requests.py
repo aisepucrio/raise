@@ -233,6 +233,8 @@ class PullRequestsMiner(BaseMiner):
                             'commits_data': []  
                         }
 
+                        # BUG-005: previously returned [] silently when GitHubMetadata was absent.
+                        # get_or_create ensures a stub row exists so pull requests are always linked.
                         metadata_obj, _ = GitHubMetadata.objects.get_or_create(
                             repository=repo_name,
                             defaults={
