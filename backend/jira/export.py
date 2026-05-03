@@ -44,7 +44,7 @@ class ExportDataView(APIView):
         serializer = ExportDataSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+        
         validated = serializer.validated_data
         table = validated['table']
         ids = validated.get('ids', [])
