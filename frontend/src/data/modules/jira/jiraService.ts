@@ -8,6 +8,7 @@ import {
 import type {
   JiraCollectBody,
   JiraDateRangeParams,
+  JiraExportBody,
   JiraGraphParams,
   JiraOverviewParams,
   JiraOverviewResponse,
@@ -54,8 +55,8 @@ export const jiraService = {
     }) as Promise<JiraPreviewResponse>,
 
   // Preview export: exports in the current standard format (json).
-  exportPreview: (options?: RequestOptions) =>
-    api.post(endpoints.export(SOURCE), { format: "json" }, {
+  exportPreview: (body: JiraExportBody, options?: RequestOptions) =>
+    api.post(endpoints.export(SOURCE), body, {
       responseType: "blob",
       signal: options?.signal,
     }),

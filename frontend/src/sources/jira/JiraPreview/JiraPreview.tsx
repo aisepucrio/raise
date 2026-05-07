@@ -36,6 +36,8 @@ export type JiraPreviewProps = {
   itemsLabel: string;
   emptyStateMessage: string;
   loadErrorMessage: string;
+  exportTable: string;
+  exportDataType?: string;
   exportFileNamePrefix: string;
   exportSuccessMessage?: string;
   dateFilterField?: JiraPreviewDateFilterField;
@@ -75,6 +77,8 @@ export function JiraPreview({
   emptyStateMessage,
   loadErrorMessage,
   exportFileNamePrefix,
+  exportTable,
+  exportDataType,
   exportSuccessMessage = "Jira preview exported successfully.",
   dateFilterField,
   showDateFilters = true,
@@ -214,8 +218,14 @@ export function JiraPreview({
 
   // Prepares the export request for this preview.
   const requestExportPayload = useCallback(
-    () => previewExportMutation.mutateAsync(),
-    [previewExportMutation],
+    () => previewExportMutation.mutateAsync(
+      {
+        format: "json",
+        table: exportTable,
+        ...(exportDataType ? { date_type: exportDataType } : {}),
+      }
+    ),
+    [previewExportMutation, exportTable, exportDataType],
   );
 
   async function handleExport() {

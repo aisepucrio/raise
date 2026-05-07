@@ -9,7 +9,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from jira.models import JiraIssue
+from jira.models import JiraComment, JiraIssue, JiraProject, JiraSprint, JiraUser
 from .serializers import ExportDataSerializer
 
 logger = logging.getLogger(__name__)
@@ -43,6 +43,7 @@ class ExportDataView(APIView):
     def post(self, request):
         serializer = ExportDataSerializer(data=request.data)
         if not serializer.is_valid():
+            print("Erro no serializer")
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         validated = serializer.validated_data
@@ -52,10 +53,14 @@ class ExportDataView(APIView):
         issue_type = validated.get('issue_type')
 
         model_mapping = {
+            'jirauser': JiraUser,
             'jiraissue': JiraIssue,
+            'jiracomment': JiraComment,
+            'jirasprint': JiraSprint,
         }
 
         if table not in model_mapping:
+            print("Tabela não encontrada no mapeamento")
             return Response({"error": f"Table '{table}' not found"}, status=status.HTTP_404_NOT_FOUND)
 
         model = model_mapping[table]
