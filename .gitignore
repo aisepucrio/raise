@@ -237,3 +237,5 @@ dist-ssr
 *.sw?
 
 .vite
+/package-lock.json
+/package.json
