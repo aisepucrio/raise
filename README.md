@@ -36,7 +36,7 @@ Open the newly created `.env` file in a text editor. Replace all placeholder val
 
 For example:
 
-- `GITHUB_TOKEN`: Replace `<YOUR_GITHUB_TOKEN>` with a valid GitHub personal access token.
+- `GITHUB_TOKENS`: Replace `<YOUR_GITHUB_TOKEN>` with a valid GitHub personal access token.
 - `JIRA_URL`: Replace `<https://your-domain.atlassian.net>` with your actual JIRA instance URL.
 - Update any other variables as needed for your environment.
 
