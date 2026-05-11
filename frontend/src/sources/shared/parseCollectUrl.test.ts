@@ -42,6 +42,32 @@ describe("parseGithubUrl", () => {
   it("returns null for empty string", () => {
     expect(parseGithubUrl("")).toBeNull();
   });
+  it("strips .git suffix from clone URLs", () => {
+    expect(parseGithubUrl("https://github.com/owner/repo.git")).toBe(
+      "owner/repo",
+    );
+  });
+  it("returns null for SSH clone URL", () => {
+    expect(parseGithubUrl("git@github.com:owner/repo.git")).toBeNull();
+  });
+  it("returns null for owner-only URL (no repo segment)", () => {
+    expect(parseGithubUrl("https://github.com/owner")).toBeNull();
+  });
+  it("handles trailing slash on repo URL", () => {
+    expect(parseGithubUrl("https://github.com/owner/repo/")).toBe(
+      "owner/repo",
+    );
+  });
+  it("returns owner/repo from a releases URL", () => {
+    expect(
+      parseGithubUrl("https://github.com/owner/repo/releases/tag/v1.0.0"),
+    ).toBe("owner/repo");
+  });
+  it("trims surrounding whitespace", () => {
+    expect(parseGithubUrl("  https://github.com/owner/repo  ")).toBe(
+      "owner/repo",
+    );
+  });
 });
 
 // ── parseJiraUrl ──────────────────────────────────────────────────────────────
@@ -84,6 +110,35 @@ describe("parseJiraUrl", () => {
   it("returns null for empty string", () => {
     expect(parseJiraUrl("")).toBeNull();
   });
+  it("extracts from a self-hosted (non-Atlassian) Jira URL", () => {
+    expect(
+      parseJiraUrl("https://jira.company.com/browse/PROJ-123"),
+    ).toEqual({ jira_domain: "jira.company.com", project_key: "PROJ" });
+  });
+  it("extracts from a browse URL with no issue number", () => {
+    expect(
+      parseJiraUrl("https://stone-puc.atlassian.net/browse/APIMINER"),
+    ).toEqual({ jira_domain: "stone-puc.atlassian.net", project_key: "APIMINER" });
+  });
+  it("extracts from a roadmap URL", () => {
+    expect(
+      parseJiraUrl(
+        "https://stone-puc.atlassian.net/jira/software/projects/APIMINER/roadmap",
+      ),
+    ).toEqual({ jira_domain: "stone-puc.atlassian.net", project_key: "APIMINER" });
+  });
+  it("uppercases a lowercase project key", () => {
+    expect(
+      parseJiraUrl("https://stone-puc.atlassian.net/browse/apiminer-42"),
+    ).toEqual({ jira_domain: "stone-puc.atlassian.net", project_key: "APIMINER" });
+  });
+  it("trims surrounding whitespace", () => {
+    expect(
+      parseJiraUrl(
+        "  https://stone-puc.atlassian.net/browse/APIMINER-701  ",
+      ),
+    ).toEqual({ jira_domain: "stone-puc.atlassian.net", project_key: "APIMINER" });
+  });
 });
 
 // ── parseStackOverflowUrl ─────────────────────────────────────────────────────
@@ -120,5 +175,40 @@ describe("parseStackOverflowUrl", () => {
   });
   it("returns null for empty string", () => {
     expect(parseStackOverflowUrl("")).toBeNull();
+  });
+  it("decodes URL-encoded tag (c# → c%23)", () => {
+    expect(
+      parseStackOverflowUrl(
+        "https://stackoverflow.com/questions/tagged/c%23",
+      ),
+    ).toBe("c#");
+  });
+  it("decodes URL-encoded tag (c++ → c%2B%2B)", () => {
+    expect(
+      parseStackOverflowUrl(
+        "https://stackoverflow.com/questions/tagged/c%2B%2B",
+      ),
+    ).toBe("c++");
+  });
+  it("handles tag with dot (node.js)", () => {
+    expect(
+      parseStackOverflowUrl(
+        "https://stackoverflow.com/questions/tagged/node.js",
+      ),
+    ).toBe("node.js");
+  });
+  it("ignores query params and returns just the tag", () => {
+    expect(
+      parseStackOverflowUrl(
+        "https://stackoverflow.com/questions/tagged/javascript?tab=newest&page=2",
+      ),
+    ).toBe("javascript");
+  });
+  it("handles trailing slash on tag URL", () => {
+    expect(
+      parseStackOverflowUrl(
+        "https://stackoverflow.com/questions/tagged/javascript/",
+      ),
+    ).toBe("javascript");
   });
 });

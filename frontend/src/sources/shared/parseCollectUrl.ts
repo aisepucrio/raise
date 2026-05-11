@@ -17,7 +17,8 @@ export function parseGithubUrl(input: string): string | null {
     const parts = url.pathname.split("/").filter(Boolean);
     if (parts.length < 2) return null;
 
-    return `${parts[0]}/${parts[1]}`;
+    const repo = parts[1].replace(/\.git$/i, "");
+    return `${parts[0]}/${repo}`;
   } catch {
     return null;
   }
