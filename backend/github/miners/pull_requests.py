@@ -233,10 +233,17 @@ class PullRequestsMiner(BaseMiner):
                             'commits_data': []  
                         }
 
-                        metadata_obj = GitHubMetadata.objects.filter(repository=repo_name).first()
-                        if metadata_obj is None:
-                            log_error(pr_number, f"GitHubMetadata not found for {repo_name}. Skipping PR.")
-                            continue
+                        # BUG-005: previously returned [] silently when GitHubMetadata was absent.
+                        # get_or_create ensures a stub row exists so pull requests are always linked.
+                        metadata_obj, _ = GitHubMetadata.objects.get_or_create(
+                            repository=repo_name,
+                            defaults={
+                                'owner': repo_name.split('/')[0],
+                                'html_url': f'https://github.com/{repo_name}',
+                                'github_created_at': timezone.now(),
+                                'github_updated_at': timezone.now(),
+                            }
+                        )
 
                         GitHubIssuePullRequest.objects.update_or_create(
                             record_id=processed_pr['id'],

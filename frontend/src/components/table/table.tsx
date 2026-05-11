@@ -144,7 +144,18 @@ export function TableSortableHead({
         : ArrowUpDown;
 
   return (
-    <TableHead className={className} {...props}>
+    // aria-sort is required on the <th> so Playwright (and screen readers) can assert sort state.
+    <TableHead
+      className={className}
+      aria-sort={
+        sortDirection === "asc"
+          ? "ascending"
+          : sortDirection === "desc"
+            ? "descending"
+            : undefined
+      }
+      {...props}
+    >
       <button
         type="button"
         className={cn(
