@@ -1,11 +1,12 @@
 // Sources available in the application.
-export const sourceIds = ["github", "jira", "stackoverflow"] as const;
+export const sourceIds = ["github", "jira", "stackoverflow", "reddit"] as const;
 
 // Sections of preview available for each source.
 export const sectionPreviewIdsBySource = {
   github: ["issues", "pull-requests", "commits", "users"],
   jira: ["users", "issues", "comments", "sprints"],
   stackoverflow: ["questions"],
+  reddit: ["posts", "comments", "users"],
 } as const satisfies Record<SourceId, readonly string[]>;
 
 // Tipo that representa the IDs of the sources.
@@ -21,6 +22,7 @@ export const sourceLabels: Record<SourceId, string> = {
   github: "GitHub",
   jira: "Jira",
   stackoverflow: "Stack Overflow",
+  reddit: "Reddit",
 };
 
 // Labels for each section of preview of each source, usados in the UI.
@@ -42,6 +44,11 @@ export const sectionPreviewLabelsBySource: {
   stackoverflow: {
     questions: "Questions",
   },
+  reddit: {
+    posts: "Posts",
+    comments: "Comments",
+    users: "Users",
+  },
 };
 
 // Source default for the application, used in the start of the application.
@@ -54,6 +61,7 @@ export const defaultSectionPreviewIdBySource: {
   github: sectionPreviewIdsBySource.github[0],
   jira: sectionPreviewIdsBySource.jira[0],
   stackoverflow: sectionPreviewIdsBySource.stackoverflow[0],
+  reddit: sectionPreviewIdsBySource.reddit[0],
 };
 
 // maps id and label. useful for dropdowns and forms.
@@ -75,6 +83,10 @@ export const sectionPreviewOptionsBySource = {
   stackoverflow: sectionPreviewIdsBySource.stackoverflow.map((id) => ({
     id,
     label: sectionPreviewLabelsBySource.stackoverflow[id],
+  })),
+  reddit: sectionPreviewIdsBySource.reddit.map((id) => ({
+  id,
+  label: sectionPreviewLabelsBySource.reddit[id],
   })),
 } as const satisfies {
   [S in SourceId]: readonly {

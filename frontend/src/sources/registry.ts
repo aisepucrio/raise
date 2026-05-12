@@ -20,11 +20,23 @@ import StackoverflowCollect from "./stackoverflow/StackoverflowCollect";
 import StackoverflowOverview from "./stackoverflow/StackoverflowOverview";
 import { StackoverflowPreviewQuestions } from "./stackoverflow/StackoverflowPreview/index";
 
+//reddit
+import RedditCollect from "./reddit/RedditCollect";
+import RedditOverview from "./reddit/RedditOverview";
+
+import {
+  RedditPreviewPosts,
+  RedditPreviewComments,
+  RedditPreviewUsers,
+} from "./reddit/RedditPreview";
+
 // maps each sourceId for modules of UI of overview and Collect.
 type SourceUiModuleSet = {
   collect: ComponentType;
   overview: ComponentType;
 };
+
+
 
 export const sourceUiModules: Record<SourceId, SourceUiModuleSet> = {
   github: {
@@ -38,6 +50,10 @@ export const sourceUiModules: Record<SourceId, SourceUiModuleSet> = {
   stackoverflow: {
     collect: StackoverflowCollect,
     overview: StackoverflowOverview,
+  },
+  reddit: {
+    collect: RedditCollect,
+    overview: RedditOverview,
   },
 };
 
@@ -61,5 +77,10 @@ export const sourceSectionPreviewUiModules: SourcePreviewUiModuleSet = {
   },
   stackoverflow: {
     questions: StackoverflowPreviewQuestions,
+  },
+  reddit: {
+    posts: RedditPreviewPosts,
+    comments: RedditPreviewComments,
+    users: RedditPreviewUsers,
   },
 };

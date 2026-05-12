@@ -17,7 +17,7 @@ npm install
 3. Configure the environment variable in `frontend/.env`:
 
 ```env
-VITE_API_URL=http://localhost:8000 (or your backend location)
+VITE_API_URL=http://locanlhost:8000 (or your backend location)
 ```
 
 4. Start the development server:

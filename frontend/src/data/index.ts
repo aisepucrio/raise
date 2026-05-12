@@ -8,6 +8,8 @@ export * from "./modules/jobs/jobsMutations";
 export * from "./modules/stackoverflow/stackoverflowQueries";
 export * from "./modules/stackoverflow/stackoverflowMutations";
 
+export * from "./modules/reddit";
+
 // Reexporta the types of the modules in the same ponto of input shared.
 export type {
   GithubCollectBody,
