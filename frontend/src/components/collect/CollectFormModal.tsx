@@ -15,7 +15,7 @@ export type CollectFormModalProps = {
   children: ReactNode;
 };
 
-// base shared for modais of inclusion in screens of collect.
+// Shared base for add-item modals on collect screens.
 export function CollectFormModal({
   open,
   onClose,
@@ -27,7 +27,7 @@ export function CollectFormModal({
   cancelText = "Cancel",
   children,
 }: CollectFormModalProps) {
-  // enter in any input triggers the confirmation.
+  // Pressing Enter in any input triggers confirmation.
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     onConfirm();
@@ -44,7 +44,7 @@ export function CollectFormModal({
       <form onSubmit={handleSubmit}>
         {children}
 
-        {/* actions standard of the modal */}
+        {/* Standard modal actions. */}
         <div className="mt-4 flex justify-end gap-2">
           <Button
             type="button"

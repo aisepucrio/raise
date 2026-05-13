@@ -51,7 +51,7 @@ function parseOptionalNumber(value: string): number | undefined {
   return numberValue;
 }
 
-// converts the state local of the ui for the payload of the endpoint advanced.
+// Converts local UI state into the advanced-endpoint payload.
 function buildAdvancedFiltersPayload(
   filters: StackoverflowAdvancedFiltersFormState,
 ): StackOverflowAdvancedCollectFilters | undefined {
@@ -85,15 +85,15 @@ function buildAdvancedFiltersPayload(
 export function StackoverflowAdvancedFiltersSection({
   onChange,
 }: StackoverflowAdvancedFiltersSectionProps) {
-  // controla se the mode advanced is ativo.
+  // Controls whether advanced mode is enabled.
   const [advancedFiltersEnabled, setAdvancedFiltersEnabled] = useState(false);
-  // guarda the fields of the form advanced.
+  // Stores advanced-form field values.
   const [advancedFilters, setAdvancedFilters] =
     useState<StackoverflowAdvancedFiltersFormState>(
       INITIAL_ADVANCED_FILTERS_STATE,
     );
 
-  // notifica the screen pai with the state atual normalizado.
+  // Notifies the parent screen with normalized current state.
   function emitChange(
     nextEnabled: boolean,
     nextFilters: StackoverflowAdvancedFiltersFormState,
@@ -104,7 +104,7 @@ export function StackoverflowAdvancedFiltersSection({
     });
   }
 
-  // updates the ou mais fields mantendo the restante.
+  // Updates one or more fields while preserving the rest.
   function updateFilters(patch: Partial<StackoverflowAdvancedFiltersFormState>) {
     setAdvancedFilters((currentFilters) => {
       const nextFilters = { ...currentFilters, ...patch };

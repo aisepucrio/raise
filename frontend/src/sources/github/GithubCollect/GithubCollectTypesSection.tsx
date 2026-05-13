@@ -23,7 +23,7 @@ export type GithubCollectTypesSectionProps = {
 export function GithubCollectTypesSection({
   onOptionalTypesChange,
 }: GithubCollectTypesSectionProps) {
-  // state local of the types extra that the user seleciona.
+  // Local state for extra types selected by the user.
   const [selectedOptionalTypes, setSelectedOptionalTypes] = useState<
     GithubOptionalCollectType[]
   >([]);
@@ -33,13 +33,13 @@ export function GithubCollectTypesSection({
   );
   const selectedCollectTypesCount = 1 + selectedOptionalTypes.length;
 
-  // updates state local and replica for the screen pai.
+  // Updates local state and propagates changes to the parent screen.
   function updateOptionalTypes(nextTypes: GithubOptionalCollectType[]) {
     setSelectedOptionalTypes(nextTypes);
     onOptionalTypesChange(nextTypes);
   }
 
-  // alterna the option individual.
+  // Toggles an individual option.
   function handleToggleOptionalType(type: GithubOptionalCollectType) {
     const isSelected = selectedOptionalTypes.includes(type);
     updateOptionalTypes(

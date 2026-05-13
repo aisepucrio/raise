@@ -3,14 +3,14 @@ export type FormatDateItemProps = {
   locale?: string;
 };
 
-// Tenta parsear formatos comuns vindos of the API/UI without depender of the parser nativo in cases ambiguous.
+// Tries to parse common formats from API/UI without depending on native parser behavior in ambiguous cases.
 function parseDateValue(value?: string | null): Date | null {
   if (typeof value !== "string") return null;
 
   const trimmedValue = value.trim();
   if (!trimmedValue) return null;
 
-  // Caso ISO with date only (YYYY-MM-DD), criar in time local to avoid deslocamento of fuso.
+  // ISO date-only case (YYYY-MM-DD): create in local time to avoid timezone shifts.
   const isoDateOnlyMatch = trimmedValue.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (isoDateOnlyMatch) {
     const year = Number(isoDateOnlyMatch[1]);
@@ -21,7 +21,7 @@ function parseDateValue(value?: string | null): Date | null {
     return Number.isNaN(date.getTime()) ? null : date;
   }
 
-  // Caso dia/month/ano (ex.: 02/02/2026). here assumimos standard BR for clareza.
+  // Day/month/year case (for example: 02/02/2026). We assume BR format for clarity.
   const brDateMatch = trimmedValue.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (brDateMatch) {
     const day = Number(brDateMatch[1]);
@@ -32,7 +32,7 @@ function parseDateValue(value?: string | null): Date | null {
     return Number.isNaN(date.getTime()) ? null : date;
   }
 
-  // Fallback for formatos completos with time/timezone (ISO datetime etc.).
+  // Fallback for full formats with time/timezone (ISO datetime, etc.).
   const parsedDate = new Date(trimmedValue);
   if (Number.isNaN(parsedDate.getTime())) return null;
 

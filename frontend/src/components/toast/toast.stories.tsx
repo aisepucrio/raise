@@ -42,7 +42,7 @@ function ToastDemo(props: ToastProps) {
             type="button"
             onClick={() =>
               toast("Update completed", {
-                description: "Feedback quick for actions comuns of the interface.",
+                description: "Quick feedback for common interface actions.",
               })
             }
             className="rounded-md border border-(--color-secondary-soft) px-3 py-2 text-sm"
@@ -53,8 +53,8 @@ function ToastDemo(props: ToastProps) {
           <button
             type="button"
             onClick={() =>
-              toast.success("record salvo", {
-                description: "Example of confirmation visual temporary.",
+              toast.success("Record saved", {
+                description: "Example of temporary visual confirmation.",
               })
             }
             className="rounded-md border border-(--color-secondary-soft) px-3 py-2 text-sm"
@@ -65,8 +65,8 @@ function ToastDemo(props: ToastProps) {
           <button
             type="button"
             onClick={() =>
-              toast.info("Sincronizando date", {
-                description: "message informativa without bloquear the fluxo.",
+              toast.info("Syncing data", {
+                description: "Informational message without blocking the flow.",
               })
             }
             className="rounded-md border border-(--color-secondary-soft) px-3 py-2 text-sm"
@@ -89,8 +89,8 @@ function ToastDemo(props: ToastProps) {
           <button
             type="button"
             onClick={() =>
-              toast.error("failure to processar", {
-                description: "Example of error for feedback of operation.",
+              toast.error("Failed to process request", {
+                description: "Example of error feedback for an operation.",
               })
             }
             className="rounded-md border border-(--color-secondary-soft) px-3 py-2 text-sm"
@@ -117,12 +117,12 @@ const meta = {
   argTypes: {
     closeButton: {
       control: { type: "boolean" },
-      description: "displays button of close in each toast.",
+      description: "Displays a close button on each toast.",
       table: { type: { summary: "boolean" } },
     },
     richColors: {
       control: { type: "boolean" },
-      description: "Ativa paleta of cores for tipo (success, error etc.).",
+      description: "Enables color palette by type (success, error, etc.).",
       table: { type: { summary: "boolean" } },
     },
     position: {
@@ -135,32 +135,32 @@ const meta = {
         "bottom-center",
         "bottom-right",
       ],
-      description: "position of the container of toasts in the screen.",
+      description: "Position of the toast container on screen.",
       table: { type: { summary: "ToasterProps['position']" } },
     },
     className: {
       control: false,
-      description: "Classe CSS adicional of the container.",
+      description: "Additional CSS class for the container.",
       table: { type: { summary: "string" } },
     },
     icons: {
       control: false,
-      description: "Mapeamento optional of icons for tipo of toast.",
+      description: "Optional icon mapping by toast type.",
       table: { type: { summary: "ToasterProps['icons']" } },
     },
     style: {
       control: false,
-      description: "Estilos inline optional of the container.",
+      description: "Optional inline styles for the container.",
       table: { type: { summary: "CSSProperties" } },
     },
     theme: {
       control: false,
-      description: "theme visual used pelo container of toasts.",
+      description: "Visual theme used by the toast container.",
       table: { type: { summary: "ToasterProps['theme']" } },
     },
     toastOptions: {
       control: false,
-      description: "configurations standard aplieachs to the toasts disparados.",
+      description: "Default configuration applied to triggered toasts.",
       table: { type: { summary: "ToasterProps['toastOptions']" } },
     },
   },
@@ -188,7 +188,7 @@ export const Playground: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Use the buttons to trigger Examples of toast and toggle the theme.",
+        story: "Use buttons to trigger toast examples and toggle theme.",
       },
     },
   },

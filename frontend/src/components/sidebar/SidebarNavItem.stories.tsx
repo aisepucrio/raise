@@ -17,12 +17,12 @@ const meta = {
   argTypes: {
     label: {
       control: { type: "text" },
-      description: "text main of the item of the sidebar.",
+      description: "Main text of the sidebar item.",
       table: { type: { summary: "string" } },
     },
     active: {
       control: { type: "boolean" },
-      description: "Marca the item how ativo.",
+      description: "Marks the item as active.",
       table: { type: { summary: "boolean" } },
     },
     onClick: {
@@ -38,14 +38,14 @@ const meta = {
     },
     defaultExpanded: {
       control: "boolean",
-      description: "Define the state initial of expansion.",
+      description: "Defines initial expansion state.",
       table: { type: { summary: "boolean" } },
     },
     icon: {
       control: { type: "select" },
       options: Object.keys(iconOptions),
       mapping: iconOptions,
-      description: "icon Lucide shown to esquerda of the label.",
+      description: "Lucide icon shown to the left of the label.",
       table: { type: { summary: "LucideIcon" } },
     },
   },
@@ -83,26 +83,26 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "item of navigation standard without subitems.",
+        story: "Default navigation item without subitems.",
       },
     },
   },
 };
 
-export const Ativo: Story = {
+export const Active: Story = {
   args: {
     active: true,
   },
   parameters: {
     docs: {
       description: {
-        story: "Mostra the destaque visual of the state ativo.",
+        story: "Shows visual highlight for active state.",
       },
     },
   },
 };
 
-export const RotuloLongo: Story = {
+export const LongLabel: Story = {
   args: {
     label: "configurations and preferences of integration",
     icon: Briefcase,
@@ -110,7 +110,7 @@ export const RotuloLongo: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Compara behavior of layout with label longo.",
+        story: "Compares layout behavior with a long label.",
       },
     },
   },
@@ -123,21 +123,21 @@ export const WithSubitems: Story = {
     active: false,
     defaultExpanded: false,
     subItems: [
-      { label: "Resumo", active: true, onClick: noop },
-      { label: "Detalhes", active: false, onClick: noop },
-      { label: "history", active: false, onClick: noop },
+      { label: "Summary", active: true, onClick: noop },
+      { label: "Details", active: false, onClick: noop },
+      { label: "History", active: false, onClick: noop },
     ],
   },
   parameters: {
     docs: {
       description: {
-        story: "Mostra the behavior expandable when existem subitems.",
+        story: "Shows expandable behavior when subitems exist.",
       },
     },
   },
 };
 
-export const EmContexto: Story = {
+export const InContext: Story = {
   render: () => {
     return (
       <>
@@ -170,8 +170,8 @@ export const EmContexto: Story = {
           icon={Eye}
           active={false}
           subItems={[
-            { label: "Resumo", active: false, onClick: noop },
-            { label: "Detalhes", active: true, onClick: noop },
+            { label: "Summary", active: false, onClick: noop },
+            { label: "Details", active: true, onClick: noop },
           ]}
         />
       </>
@@ -180,7 +180,7 @@ export const EmContexto: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Example with multiple items for compare the states visual.",
+        story: "Example with multiple items to compare visual states.",
       },
     },
   },

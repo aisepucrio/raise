@@ -1,4 +1,4 @@
-// types and helpers shareds between modules (services and queries).
+// Types and helpers shared across modules (services and queries).
 
 export type RequestOptions = {
   signal?: AbortSignal;
@@ -14,7 +14,7 @@ export type ApiDateRangeResponse = {
   max_date?: string | null;
 };
 
-// option enxuta used pelos hooks of query for ligar/desligar Callsdas.
+// Lightweight option used by query hooks to enable/disable calls.
 export type HookQueryOptions = {
   enabled?: boolean;
 };
@@ -29,7 +29,7 @@ export type DateInputBounds = {
   max?: string;
 };
 
-// normalizes the response of date-range of the API for the format simple used in the UI.
+// Normalizes the API date-range response to the simple UI format.
 export function toDateBounds(response?: ApiDateRangeResponse | null): DateBounds {
   return {
     minDate: response?.min_date ?? undefined,
@@ -37,7 +37,7 @@ export function toDateBounds(response?: ApiDateRangeResponse | null): DateBounds
   };
 }
 
-// converts bounds of the UI for atributos of `<input type="date">`.
+// Converts UI date bounds to `<input type="date">` attributes.
 export function getDateInputBounds(bounds?: DateBounds | null): DateInputBounds {
   return {
     min: bounds?.minDate ?? undefined,

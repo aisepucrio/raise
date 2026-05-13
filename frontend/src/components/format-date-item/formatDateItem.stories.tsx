@@ -9,7 +9,7 @@ const meta = {
   argTypes: {
     value: {
       control: { type: "text" },
-      description: "date bruta recebida for formatting.",
+      description: "Raw date value received for formatting.",
       table: { type: { summary: "string | null" } },
     },
     locale: {
@@ -46,13 +46,13 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "formatting standard of the value of date single.",
+        story: "Default formatting for a single date value.",
       },
     },
   },
 };
 
-export const VariacoesComuns: Story = {
+export const CommonVariations: Story = {
   render: () => {
     const values = [
       "02/02/2026",
@@ -81,7 +81,7 @@ export const VariacoesComuns: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Compara inputs comuns (ISO, BR, invalid and empty).",
+        story: "Compares common inputs (ISO, BR, invalid, and empty).",
       },
     },
   },

@@ -43,15 +43,15 @@ const PROJECT_CARD_CONFIG: readonly OverviewMetricCardConfig<JiraOverviewRespons
   ];
 
 export default function JiraOverview() {
-  // filters controlled pela own screen (not stay in the URL).
+  // Filters controlled by this screen only (not stored in the URL).
   const [selectedProjectId, setSelectedProjectId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  // catalog used only for build the select of projects.
+  // Catalog used only to build the project selector.
   const projectCatalogQuery = useJiraOverviewQuery();
 
-  // adapts payload of the API for the format standard of options of the UI.
+  // Adapts API payload to the standard UI option format.
   const projectOptions = useMemo(
     () =>
       buildSelectOptions(projectCatalogQuery.data?.projects, {
@@ -61,7 +61,7 @@ export default function JiraOverview() {
     [projectCatalogQuery.data?.projects],
   );
 
-  // Params of the query of overview (cards).
+  // Query parameters for overview cards.
   const overviewParams = useMemo(
     () =>
       buildOverviewEndpointParams<JiraOverviewParams>(
@@ -76,7 +76,7 @@ export default function JiraOverview() {
   );
   const overviewQuery = useJiraOverviewQuery(overviewParams);
 
-  // series temporal usa the same filters + interval derived of the range.
+  // Time series uses the same filters plus range-derived interval.
   const graphParams = useMemo(
     () =>
       buildOverviewGraphEndpointParams<JiraGraphParams>(
@@ -92,7 +92,7 @@ export default function JiraOverview() {
   );
   const graphQuery = useJiraGraphQuery(graphParams);
 
-  // the own hook already:
+  // The hook itself already:
   // - normalizes string empty for `undefined`
   // - only enables the query when there is `project_id`
   const dateRangeQuery = useJiraDateRangeByProjectQuery(selectedProjectId);
@@ -102,7 +102,7 @@ export default function JiraOverview() {
     "Failed to load the Jira chart.",
   );
 
-  // mode scoped = the project specific selected.
+  // Scoped mode: a specific project is selected.
   const isProjectScoped = Boolean(selectedProjectId);
   const infoBoxItems = buildScopedOverviewMetricCardItems({
     overviewData: overviewQuery.data,

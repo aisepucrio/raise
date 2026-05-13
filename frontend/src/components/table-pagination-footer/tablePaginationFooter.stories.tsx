@@ -45,37 +45,37 @@ const meta = {
   argTypes: {
     currentPage: {
       control: { type: "number" },
-      description: "page atual (indexada in 1).",
+      description: "Current page (1-based index).",
       table: { type: { summary: "number" } },
     },
     rowsPerPage: {
       control: { type: "number" },
-      description: "quantity of rows shown for page.",
+      description: "Number of rows shown per page.",
       table: { type: { summary: "number" } },
     },
     totalItems: {
       control: { type: "number" },
-      description: "Total of items available for pagination.",
+      description: "Total number of items available for pagination.",
       table: { type: { summary: "number" } },
     },
     onPageChange: {
       control: false,
-      description: "Callback triggered when the user navega of page.",
+      description: "Callback triggered when user changes page.",
       table: { type: { summary: "(page: number) => void" } },
     },
     onRowsPerPageChange: {
       control: false,
-      description: "Callback triggered to change rows for page.",
+      description: "Callback triggered when rows per page changes.",
       table: { type: { summary: "(rowsPerPage: number) => void" } },
     },
     itemsLabel: {
       control: { type: "text" },
-      description: "label of unidade used in the summary (ex.: rows, jobs).",
+      description: "Unit label used in summary text (e.g., rows, jobs).",
       table: { type: { summary: "string" }, defaultValue: { summary: "items" } },
     },
     rowsPerPageLabel: {
       control: { type: "text" },
-      description: "text of the label of the selector of rows for page.",
+      description: "Label text for the rows-per-page selector.",
       table: {
         type: { summary: "string" },
         defaultValue: { summary: "Rows per page" },
@@ -83,7 +83,7 @@ const meta = {
     },
     rowsPerPageSelectId: {
       control: { type: "text" },
-      description: "ID aplicado in the select of rows for page.",
+      description: "ID applied to the rows-per-page select.",
       table: {
         type: { summary: "string" },
         defaultValue: { summary: "table-rows-per-page" },
@@ -91,7 +91,7 @@ const meta = {
     },
     className: {
       control: false,
-      description: "Classe CSS adicional in the container of the footer.",
+      description: "Additional CSS class for the footer container.",
       table: { type: { summary: "string" } },
     },
   },
@@ -123,18 +123,18 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Demonstra pagination interativa with total of items and switch of densidade.",
+        story: "Demonstrates interactive pagination with total items and rows-per-page switching.",
       },
     },
   },
 };
 
-export const empty: Story = {
+export const Empty: Story = {
   render: () => <InteractiveDemo totalItems={0} />,
   parameters: {
     docs: {
       description: {
-        story: "Mostra the state without items, with navigation desabilitada.",
+        story: "Shows empty state with navigation disabled.",
       },
     },
   },

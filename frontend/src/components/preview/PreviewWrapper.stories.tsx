@@ -9,7 +9,7 @@ const meta = {
   argTypes: {
     children: {
       control: false,
-      description: "content internal shown inside of the container main.",
+      description: "Inner content shown inside the main container.",
       table: { type: { summary: "ReactNode" } },
     },
   },
@@ -50,7 +50,7 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Example of the wrapper with the block of content internal.",
+        story: "Wrapper example with an inner content block.",
       },
     },
   },

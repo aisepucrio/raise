@@ -24,16 +24,16 @@ import {
 } from "./sidebarNavigation";
 import ThemeSwitcher from "@/components/sidebar/ThemeSwitcher";
 
-// Tipo for items of the sidebar.
+// Type for sidebar items.
 type SidebarRouteItem = {
   label: string;
   to: string;
   icon: LucideIcon;
 };
 
-// definition of the sidebar, label, rota and icon (and order).
-// in the caso of the preview the logic of "active" is delegada for the subitems, that are dynamic according to source.
-// the logic of "active" is baseada in the URL, without necessidade of state adicional.
+// Sidebar definition: label, route, icon, and order.
+// In Preview, "active" logic is delegated to subitems, which are source-driven.
+// Active state is URL-based, without extra local state.
 const sidebarItems: SidebarRouteItem[] = [
   { label: "Overview", to: "/", icon: Home },
   { label: "Collect", to: "/collect", icon: Download },
@@ -45,16 +45,16 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // the sidebar usa source/section of the URL how source single of the verdade.
+  // Sidebar uses source/section from the URL as the single source of truth.
   // `resolveSidebarRouteContext` already returns values valid for render.
   const { source, section, normalizedSearch, shouldNormalize } =
     resolveSidebarRouteContext(location.pathname, location.search);
 
-  // URL of the API for linkar in the "API DOCS".
+  // API URL used in the "API DOCS" link.
   const apiDocsUrl = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
-    // fixes URL invalid of way silenciosa (replace), without poluir history.
+    // Silently fixes invalid URL (replace) without polluting history.
     if (!shouldNormalize) return;
 
     navigate(
@@ -66,11 +66,11 @@ export default function Sidebar() {
     );
   }, [location.pathname, navigate, normalizedSearch, shouldNormalize]);
 
-  // Handler for change of source, reaproveitando the build centralizada of the query string.
+  // Handles source changes by reusing centralized query-string building.
   const handleSourceChange = (nextSource: SourceId) => {
     if (nextSource === source) return;
 
-    // switch of source reuses the rule single of query of the sidebar.
+    // Source switching reuses the sidebar's single query rule.
     const nextSearch = buildSidebarSearch({
       targetPathname: location.pathname,
       currentSearch: location.search,
@@ -84,7 +84,7 @@ export default function Sidebar() {
     });
   };
 
-  // function centralizada for navigation the partir of the sidebar, garantindo consistency in the build of the query string.
+  // Centralized sidebar navigation to guarantee consistent query-string building.
   const handleNavigate = (
     pathname: string,
     options?: { section?: string | null },
@@ -102,7 +102,7 @@ export default function Sidebar() {
     });
   };
 
-  // subitems of preview are derivados dinamicamente of the source selected.
+  // Preview subitems are derived dynamically from the selected source.
   const previewSubItems = sectionPreviewOptionsBySource[source].map(
     (sectionOption) => ({
       label: sectionOption.label,
@@ -115,7 +115,7 @@ export default function Sidebar() {
     <aside className="shrink-0 border-b-2 border-(--color-secondary-soft) p-4 md:flex md:min-h-dvh md:w-[15%] md:min-w-55 md:max-w-125 md:flex-col md:border-r-2 md:border-b-0">
       <div className="space-y-4">
         <div className="p-3">
-          {/* Logos for light/dark, usando the classe `dark` of the Tailwind for control. */}
+          {/* Light/dark logos controlled by Tailwind's `dark` class. */}
           <div className="dark:hidden">
             <img
               src="/LOGO_DARK.svg"
@@ -133,13 +133,13 @@ export default function Sidebar() {
           </div>
         </div>
 
-        {/* separator visual between logo and navigation. */}
+        {/* Visual separator between logo and navigation. */}
         <div
           className="border-t-2 border-(--color-secondary-soft)"
           aria-hidden="true"
         />
 
-        {/* filter of source. */}
+        {/* Source filter. */}
         <FormSelect
           id="sidebar-source-filter"
           variant="filled"
@@ -159,12 +159,12 @@ export default function Sidebar() {
           ))}
         </FormSelect>
 
-        {/* navigation main of the sidebar. */}
+        {/* Main sidebar navigation. */}
         <nav className="flex flex-col gap-1">
           {sidebarItems.map((item) => {
             const active = isSidebarItemActive(location.pathname, item.to);
             {
-              /* in preview, passa subitems dynamic baseados in the source selected. */
+              /* In preview, passes dynamic subitems based on selected source. */
             }
             const subItems =
               item.to === "/preview" ? previewSubItems : undefined;
@@ -200,7 +200,7 @@ export default function Sidebar() {
           }}
         />
 
-        {/* separator visual + modificador of theme*/}
+        {/* Visual separator + theme switcher. */}
         <div className="mt-4 border-t-2 border-(--color-secondary-soft) pt-4">
           <ThemeSwitcher />
         </div>

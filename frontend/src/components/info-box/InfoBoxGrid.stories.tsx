@@ -6,10 +6,10 @@ const storyWrapperClassName =
   "rounded-xl border border-(--color-secondary-soft) bg-(--color-primary) p-4 text-(--color-secondary)";
 
 const baseItems = [
-  { title: "Processados", number: 128 },
-  { title: "Em fila", number: 42 },
-  { title: "Falhas", number: 7 },
-  { title: "Cancelados", number: 3 },
+  { title: "Processed", number: 128 },
+  { title: "In Queue", number: 42 },
+  { title: "Failures", number: 7 },
+  { title: "Canceled", number: 3 },
 ];
 
 const meta = {
@@ -24,12 +24,12 @@ const meta = {
     },
     className: {
       control: false,
-      description: "Classe CSS adicional aplieach in the grid.",
+      description: "Additional CSS class applied to the grid.",
       table: { type: { summary: "string" } },
     },
     style: {
       control: false,
-      description: "Estilos inline optional aplicados in the container.",
+      description: "Optional inline styles applied to the container.",
       table: { type: { summary: "CSSProperties" } },
     },
   },
@@ -61,7 +61,7 @@ export const DefaultZebra: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Grid standard with alternation automatic of cores (zebra).",
+        story: "Standard grid with automatic zebra color alternation.",
       },
     },
   },
@@ -70,16 +70,16 @@ export const DefaultZebra: Story = {
 export const WithExplicitColors: Story = {
   args: {
     items: [
-      { title: "Processados", number: 128, color: "secondary" },
-      { title: "Em fila", number: 42, color: "secondary" },
-      { title: "Falhas", number: 7, color: "primary" },
-      { title: "Cancelados", number: 3, color: "primary" },
+      { title: "Processed", number: 128, color: "secondary" },
+      { title: "In Queue", number: 42, color: "secondary" },
+      { title: "Failures", number: 7, color: "primary" },
+      { title: "Canceled", number: 3, color: "primary" },
     ],
   },
   parameters: {
     docs: {
       description: {
-        story: "when the color is definida in the item, ela is used diretamente.",
+        story: "When color is defined on the item, it is used directly.",
       },
     },
   },

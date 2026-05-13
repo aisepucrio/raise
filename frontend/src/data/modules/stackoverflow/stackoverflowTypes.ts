@@ -10,7 +10,7 @@ export type StackOverflowPreviewParams = {
   creation_date__lte?: string;
 };
 
-// response of the dashboard/overview (cards + list of questions).
+// Dashboard/overview response (cards + question list).
 export type StackOverflowOverviewQuestion = {
   id?: string | number;
   question_id?: string | number;

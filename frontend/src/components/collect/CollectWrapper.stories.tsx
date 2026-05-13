@@ -9,7 +9,7 @@ const meta = {
   argTypes: {
     children: {
       control: false,
-      description: "content internal of the area main of collect.",
+      description: "Inner content of the main collect area.",
       table: { type: { summary: "ReactNode" } },
     },
   },
@@ -39,14 +39,14 @@ export const Default: Story = {
   render: () => (
     <CollectWrapper>
       <div className="rounded-lg border border-(--color-secondary-soft) p-3 text-sm text-(--color-secondary-muted)">
-        content interno do collect
+        collect inner content
       </div>
     </CollectWrapper>
   ),
   parameters: {
     docs: {
       description: {
-        story: "Container base of the module Collect with content internal.",
+        story: "Base container for the Collect module with inner content.",
       },
     },
   },

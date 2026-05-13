@@ -8,22 +8,24 @@ export type StackOverflowSection = SectionBySource["stackoverflow"];
 
 export const endpoints = {
   // ==> OVERVIEW
-  dashboard: (source: Source) => `/api/${source}/dashboard`,
-  dashboardGraph: (source: Source) => `/api/${source}/dashboard/graph`,
+  // BUG-001: trailing slashes are required — Django's APPEND_SLASH redirect strips CORS
+  // headers on cross-origin requests, causing net::ERR_EMPTY_RESPONSE.
+  dashboard: (source: Source) => `/api/${source}/dashboard/`,
+  dashboardGraph: (source: Source) => `/api/${source}/dashboard/graph/`,
 
   // ==> DATE RANGE (OVERVIEW / PREVIEW)
-  dateRange: (source: Source) => `/api/${source}/date-range`,
+  dateRange: (source: Source) => `/api/${source}/date-range/`,
 
   // ==> COLLECT
   collect: (source: Source) => `/api/${source}/collect/`,
 
-  // HARDCODE TEMPORARIO: the --StackOverflow-- AINDA USA /COLLECT/ADVANCED for COMPATIBILIDADE with the IMPLEMENTACAO LEGADA.
-  // FUTURO: MERGEAR with /COLLECT USANDO only PAYLOAD.
+  // TEMPORARY HARDCODE: Stack Overflow still uses /COLLECT/ADVANCED for legacy compatibility.
+  // FUTURE: merge into /COLLECT using payload only.
   collectAdvanced: (source: Source) => `/api/${source}/collect/advanced/`,
 
   // ==> PREVIEW
   previewList: <S extends Source>(source: S, section: SectionBySource[S]) =>
-    `/api/${source}/${section}`,
+    `/api/${source}/${section}/`,
   export: (source: Source) => `/api/${source}/export/`,
 
   // ==> JOBS

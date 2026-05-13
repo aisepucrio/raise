@@ -29,7 +29,7 @@ export function InfoBoxGrid({ items, className, style }: InfoBoxGridProps) {
           key={`${item.title}-${index}`}
           title={item.title}
           number={item.number}
-          // Alterna the cores for index for keep the standard zebra in the grid.
+          // Alternates colors by index to keep the standard zebra pattern in the grid.
           color={item.color ?? (index % 2 === 0 ? "primary" : "secondary")}
         />
       ))}

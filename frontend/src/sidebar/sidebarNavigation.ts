@@ -4,7 +4,7 @@ import {
   resolveSourceId,
 } from "@/lib/source-section-resolver";
 
-// types and functions relacionados to navigation of the sidebar.
+// Types and functions related to sidebar navigation.
 type SidebarRouteContext = {
   source: SourceId;
   section: SectionPreviewIdBySource[SourceId];
@@ -12,7 +12,7 @@ type SidebarRouteContext = {
   shouldNormalize: boolean;
 };
 
-// Estrutura minimum for calcular the query string of navigation.
+// Minimal structure used to compute navigation query strings.
 type BuildSidebarSearchParams = {
   targetPathname: string;
   currentSearch: string;
@@ -26,7 +26,7 @@ function toSearchString(searchParams: URLSearchParams) {
   return search ? `?${search}` : "";
 }
 
-// Aux: verifica se the item main of the sidebar is ativo.
+// Helper: checks whether a main sidebar item is active.
 export function isSidebarItemActive(pathname: string, routePath: string) {
   if (routePath === "/") {
     return pathname === "/";
@@ -35,13 +35,13 @@ export function isSidebarItemActive(pathname: string, routePath: string) {
   return pathname === routePath || pathname.startsWith(`${routePath}/`);
 }
 
-// Aux: identifica se the rota atual is of preview.
+// Helper: identifies whether the current route is preview.
 function isPreviewRoute(pathname: string) {
   return pathname === "/preview" || pathname.startsWith("/preview/");
 }
 
-// reads source/section of the URL and returns values already sanitized for the UI.
-// also sinaliza se the URL precisa ser fixed (ex.: source invalid).
+// Reads source/section from URL and returns values already sanitized for the UI.
+// Also indicates whether the URL needs normalization (for example: invalid source).
 export function resolveSidebarRouteContext(
   pathname: string,
   search: string,
@@ -75,9 +75,9 @@ export function resolveSidebarRouteContext(
   };
 }
 
-// generates the query string for navigations disparadas pela sidebar.
+// Generates query strings for sidebar-triggered navigations.
 // rules:
-// - always preserva `source`
+// - always preserves `source`
 // - in Preview keeps/resolves `section` for the source provided
 // - outside of preview removes `section`
 export function buildSidebarSearch({

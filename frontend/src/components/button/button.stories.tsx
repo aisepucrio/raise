@@ -20,51 +20,51 @@ const meta = {
     },
     onClick: {
       action: "clicked",
-      description: "Callback triggered in the click of the button.",
+      description: "Callback triggered on button click.",
       table: { type: { summary: "MouseEventHandler<HTMLButtonElement>" } },
     },
     iconSide: {
       control: { type: "inline-radio" },
       options: ["left", "right"],
-      description: "Define the lado of the icon when there is text.",
+      description: "Defines icon side when text is present.",
       table: { type: { summary: "\"left\" | \"right\"" }, defaultValue: { summary: "left" } },
     },
     type: {
       control: { type: "inline-radio" },
       options: ["button", "submit", "reset"],
-      description: "Tipo nativo of the button.",
+      description: "Native button type.",
       table: { type: { summary: "\"button\" | \"submit\" | \"reset\"" }, defaultValue: { summary: "button" } },
     },
     size: {
       control: { type: "inline-radio" },
       options: ["default", "sm"],
-      description: "size visual of the button.",
+      description: "Visual button size.",
       table: { type: { summary: "\"default\" | \"sm\"" }, defaultValue: { summary: "default" } },
     },
     fullWidth: {
       control: { type: "boolean" },
-      description: "when `true`, occupies width total of the container.",
+      description: "When `true`, occupies full container width.",
       table: { type: { summary: "boolean" }, defaultValue: { summary: "true" } },
     },
     variant: {
       control: { type: "inline-radio" },
       options: ["default", "selectable"],
-      description: "Variante visual of the button.",
+      description: "Visual button variant.",
       table: { type: { summary: "\"default\" | \"selectable\"" }, defaultValue: { summary: "default" } },
     },
     selected: {
       control: { type: "boolean" },
-      description: "state selected (used in the variante `selectable`).",
+      description: "Selected state (used in `selectable` variant).",
       table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
     },
     disabled: {
       control: { type: "boolean" },
-      description: "disables click and estilo interativo.",
+      description: "Disables click and interactive styling.",
       table: { type: { summary: "boolean" } },
     },
     className: {
       control: false,
-      description: "Classe CSS adicional aplieach to button.",
+      description: "Additional CSS class applied to button.",
       table: { type: { summary: "string" } },
     },
   },
@@ -99,7 +99,7 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "button standard with text simple.",
+        story: "Default button with simple text.",
       },
     },
   },
@@ -115,7 +115,7 @@ export const WithLeftIcon: Story = {
   parameters: {
     docs: {
       description: {
-        story: "button with icon to esquerda and text.",
+        story: "Button with left icon and text.",
       },
     },
   },
@@ -123,26 +123,26 @@ export const WithLeftIcon: Story = {
 
 export const WithRightIcon: Story = {
   args: {
-    text: "Continuar",
+    text: "Continue",
     icon: <ArrowRight />,
     iconSide: "right",
-    "aria-label": "Continuar",
+    "aria-label": "Continue",
   },
   parameters: {
     docs: {
       description: {
-        story: "button with icon to direita and text.",
+        story: "Button with right icon and text.",
       },
     },
   },
 };
 
-export const SomenteIcone: Story = {
+export const IconOnly: Story = {
   args: {
     text: undefined,
     icon: <Download />,
-    "aria-label": "Baixar report",
-    title: "Baixar report",
+    "aria-label": "Download report",
+    title: "Download report",
   },
   parameters: {
     docs: {
@@ -162,7 +162,7 @@ export const disabled: Story = {
   parameters: {
     docs: {
       description: {
-        story: "state disabled without interaction of the user.",
+        story: "Disabled state with no user interaction.",
       },
     },
   },

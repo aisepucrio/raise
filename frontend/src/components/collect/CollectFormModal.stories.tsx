@@ -10,47 +10,47 @@ const meta = {
   argTypes: {
     open: {
       control: { type: "boolean" },
-      description: "Controla visibility of the modal.",
+      description: "Controls modal visibility.",
       table: { type: { summary: "boolean" } },
     },
     onClose: {
       action: "close",
-      description: "Callback triggered to cancelar/close modal.",
+      description: "Callback triggered to cancel/close the modal.",
       table: { type: { summary: "() => void" } },
     },
     title: {
       control: { type: "text" },
-      description: "title main of the modal.",
+      description: "Main modal title.",
       table: { type: { summary: "string" } },
     },
     subtitle: {
       control: { type: "text" },
-      description: "subtitle optional of the modal.",
+      description: "Optional modal subtitle.",
       table: { type: { summary: "string" } },
     },
     initialFocusRef: {
       control: false,
-      description: "Ref optional for focus initial to open modal.",
+      description: "Optional ref for initial focus when opening modal.",
       table: { type: { summary: "{ current: HTMLElement | null }" } },
     },
     onConfirm: {
       action: "confirm",
-      description: "Callback triggered to confirmar the form.",
+      description: "Callback triggered to confirm the form.",
       table: { type: { summary: "() => void" } },
     },
     confirmText: {
       control: { type: "text" },
-      description: "text of the button of confirmation.",
+      description: "Confirmation button text.",
       table: { type: { summary: "string" }, defaultValue: { summary: "Add" } },
     },
     cancelText: {
       control: { type: "text" },
-      description: "text of the button of cancelamento.",
+      description: "Cancel button text.",
       table: { type: { summary: "string" }, defaultValue: { summary: "Cancel" } },
     },
     children: {
       control: false,
-      description: "content of form rendered inside of the modal.",
+      description: "Form content rendered inside modal.",
       table: { type: { summary: "ReactNode" } },
     },
   },
@@ -66,7 +66,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "Modal de form com actions standard de cancelar e confirmar.",
+          "Form modal with standard cancel and confirm actions.",
       },
     },
   },
@@ -89,7 +89,7 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Modal with content of form and actions of confirmar/cancelar.",
+        story: "Modal with form content and confirm/cancel actions.",
       },
     },
   },

@@ -7,7 +7,7 @@ export type JiraGraphParams = DateFilterRange & {
   project_id?: string;
 };
 
-// response of the dashboard/overview (cards + list of projects)
+// Dashboard/overview response (cards + project list).
 export type JiraOverviewProject = {
   id: string;
   name: string;
@@ -26,7 +26,7 @@ export type JiraOverviewResponse = {
 export type JiraPreviewParams = {
   page: number;
   page_size: number;
-  // in the preview of the Jira the filter usa `project` (and not `project_id`).
+  // In Jira preview, the filter uses `project` (not `project_id`).
   project?: string;
   search?: string;
   ordering?: string;

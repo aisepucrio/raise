@@ -5,11 +5,11 @@ import { Button } from "@/components/button";
 import { cn } from "@/lib/utils";
 
 export type ColumnVisibilityFilterProps = {
-  // list complete of columns available in the table.
+  // Complete list of columns available in the table.
   columns: string[];
-  // list controlled of columns hidden.
+  // Controlled list of hidden columns.
   hiddenColumns: string[];
-  // Callback controlled for update of the columns hidden.
+  // Controlled callback to update hidden columns.
   onHiddenColumnsChange: (
     nextHiddenColumns:
       | string[]
@@ -32,11 +32,11 @@ export function ColumnVisibilityFilter({
   title = "Visible columns",
   description = "Select which columns should appear in the table.",
 }: ColumnVisibilityFilterProps) {
-  // state local only of the visibility of the popover.
+  // Local state only for popover visibility.
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  // list derivada for summary visual quick in the button.
+  // Derived list used for quick visual summary in the button.
   const visibleColumnsCount = useMemo(
     () => columns.filter((column) => !hiddenColumns.includes(column)).length,
     [columns, hiddenColumns],
@@ -57,7 +57,7 @@ export function ColumnVisibilityFilter({
     });
   }, [columns, onHiddenColumnsChange]);
 
-  // Fecha the popover in click outside ou key ESC.
+  // Closes popover on outside click or ESC key.
   useEffect(() => {
     if (!isOpen) return;
 
@@ -110,7 +110,7 @@ export function ColumnVisibilityFilter({
 
   return (
     <div ref={containerRef} className={cn("relative", className)}>
-      {/* button main with summary X/Y of the columns visible */}
+      {/* Main button with X/Y summary of visible columns. */}
       <Button
         text={`Columns (${visibleColumnsCount}/${columns.length})`}
         icon={<SlidersHorizontal />}
@@ -129,7 +129,7 @@ export function ColumnVisibilityFilter({
             menuClassName,
           )}
         >
-          {/* header textual of the popover for orientar the user */}
+          {/* Text header in popover to guide the user. */}
           <p className="text-sm font-semibold text-(--color-secondary)">
             {title}
           </p>
@@ -138,7 +138,7 @@ export function ColumnVisibilityFilter({
           </p>
 
           <div className="mt-3 max-h-56 space-y-1 overflow-auto pr-1">
-            {/* list of checkboxes for control of visibility for column */}
+            {/* Checkbox list to control per-column visibility. */}
             {columns.map((column) => {
               const isVisible = !hiddenColumns.includes(column);
 
@@ -164,7 +164,7 @@ export function ColumnVisibilityFilter({
           </div>
 
           <div className="mt-3 flex items-center justify-between gap-2">
-            {/* Atalhos for toggle visibility of way global */}
+            {/* Shortcuts to toggle visibility globally. */}
             <div className="flex items-center gap-2">
               <button
                 type="button"

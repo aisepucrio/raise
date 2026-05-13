@@ -29,7 +29,7 @@ export const stackoverflowService = {
       signal: options?.signal,
     }) as Promise<StackOverflowOverviewResponse>,
 
-  // Overview and Preview: range of dates for limitar filters for question.
+  // Overview and Preview: date range used to limit question filters.
   getDateRange: (
     params: StackOverflowDateRangeParams,
     options?: RequestOptions,
@@ -46,7 +46,7 @@ export const stackoverflowService = {
       signal: options?.signal,
     }),
 
-  // Preview: table paginada of questions with filters and sorting.
+  // Preview: paginated questions table with filters and sorting.
   getPreview: (
     section: StackOverflowSection,
     params: StackOverflowPreviewParams,
@@ -57,19 +57,19 @@ export const stackoverflowService = {
       signal: options?.signal,
     }) as Promise<StackOverflowPreviewResponse>,
 
-  // ModalDownload (Preview): exporta in the current standard format (json).
+  // Preview export: exports in the current standard format (json).
   exportPreview: (options?: RequestOptions) =>
     api.post(endpoints.export(SOURCE), { format: "json" }, {
       responseType: "blob",
       signal: options?.signal,
     }),
 
-  // Collect: starts the collection of Stack Overflow via endpoint standardized.
+  // Collect: starts Stack Overflow collection via standardized endpoint.
   collect: (body: StackOverflowCollectBody, options?: RequestOptions) =>
     api.post(endpoints.collect(SOURCE), body, { signal: options?.signal }),
 
-  // HARDCODE TEMPORARIO: the SO AINDA USA /COLLECT/ADVANCED for COMPATIBILIDADE with the IMPLEMENTACAO LEGADA.
-  // FUTURO: MERGEAR with /COLLECT USANDO only PAYLOAD.
+  // TEMPORARY HARDCODE: SO still uses /COLLECT/ADVANCED for legacy compatibility.
+  // FUTURE: merge into /COLLECT using payload only.
   collectAdvanced: (
     body: StackOverflowAdvancedCollectBody,
     options?: RequestOptions,

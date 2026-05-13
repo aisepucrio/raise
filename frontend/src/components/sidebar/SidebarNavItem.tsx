@@ -17,8 +17,8 @@ type SidebarNavItemProps = {
 };
 
 /**
- * item main of navigation of the sidebar.
- * Pode funcionar how action simple ou how agrupador expandable of subitems.
+ * Main sidebar navigation item.
+ * Can behave as a simple action or an expandable subitem group.
  */
 export default function SidebarNavItem({
   label,

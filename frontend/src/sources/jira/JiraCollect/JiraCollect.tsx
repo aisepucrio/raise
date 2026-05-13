@@ -22,23 +22,23 @@ import JiraCollectModal from "./JiraCollectModal";
 export default function JiraCollect() {
   // Redirects to jobs with source=jira after starting collection.
   const navigate = useNavigate();
-  // Mutation responsible for enviar the payload of projects for the endpoint Jira.
+  // Mutation responsible for sending the project payload to the Jira endpoint.
   const collectMutation = useJiraCollectMutation();
 
-  // list of projects selected in the format { jira_domain, project_key }.
+  // Selected projects in the { jira_domain, project_key } format.
   const [projects, setProjects] = useState<JiraProject[]>([]);
-  // filter of period optional sent to backend.
+  // Optional date-range filter sent to the backend.
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  // state of the modal that adds novos projects.
+  // Modal state for adding new projects.
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  // adds the project already validated pelo modal.
+  // Adds a project already validated by the modal.
   function handleAddProject(project: JiraProject) {
     setProjects((currentProjects) => [...currentProjects, project]);
   }
 
-  // removes the item exact of the list comparing domain + project key.
+  // Removes the exact project by matching domain + project key.
   function handleRemoveProject(projectToRemove: JiraProject) {
     setProjects((currentProjects) =>
       currentProjects.filter(
@@ -53,7 +53,7 @@ export default function JiraCollect() {
 
   // Builds the final Jira collection payload and executes the mutation.
   async function handleCollect() {
-    // when dates not are filled, the collection roda for entire the period available.
+    // If dates are empty, collection runs over the full available period.
     const payload: JiraCollectBody = {
       projects,
       ...(startDate ? { start_date: startDate } : {}),
@@ -69,7 +69,7 @@ export default function JiraCollect() {
     });
   }
 
-  // converts projects for the format of tags shown in the block of tags.
+  // Converts projects to the tag format used in the tags section.
   const projectTags = mapItemsToCollectTags(
     projects,
     (project) => `${project.jira_domain}/${project.project_key}`,
@@ -78,9 +78,9 @@ export default function JiraCollect() {
 
   return (
     <>
-      {/* Estrutura visual shared: header, list of projects, dates and submit. */}
+      {/* Shared visual structure: header, project list, dates, and submit. */}
       <CollectWrapper>
-        {/* Header main with title, description and action of add item */}
+        {/* Main header with title, description, and add-item action. */}
         <CollectHeader
           title="Jira Collect"
           description="Configure projects and optional date range."
@@ -88,14 +88,14 @@ export default function JiraCollect() {
           onAddClick={() => setIsAddModalOpen(true)}
         />
 
-        {/* list of items added (repositories/projects/tags) */}
+        {/* List of added items (repositories/projects/tags). */}
         <CollectTagsSection
           tagsHeading={`Projects (${projects.length})`}
           tags={projectTags}
           emptyTagsMessage='No projects added yet. Click the "Add project" button above to get started.'
         />
 
-        {/* filter of date shared and warning contextual */}
+        {/* Shared date filter and contextual warning. */}
         <CollectDateSection
           startDate={startDate}
           endDate={endDate}
@@ -105,7 +105,7 @@ export default function JiraCollect() {
           dateWarningMessage="Leaving both date fields empty will mine date from the entire period."
         />
 
-        {/* final action to trigger collection */}
+        {/* Final action that starts collection. */}
         <CollectActions
           collectButtonText="Collect"
           collectPendingButtonText="Collecting..."
@@ -115,7 +115,7 @@ export default function JiraCollect() {
         />
       </CollectWrapper>
 
-      {/* Modal specific of the Jira for inclusion of domain + key of project. */}
+      {/* Jira-specific modal to add a domain + project key. */}
       <JiraCollectModal
         open={isAddModalOpen}
         projects={projects}

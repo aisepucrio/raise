@@ -23,7 +23,7 @@ function InteractiveDateRangeDemo() {
     [source],
   );
 
-  // Simula change externa of source + date-range.
+  // Simulates external source + date-range change.
   useEffect(() => {
     if (source === "source-b") {
       setStartDate("2026-01-20");
@@ -77,22 +77,22 @@ const meta = {
   argTypes: {
     idPrefix: {
       control: { type: "text" },
-      description: "Prefixed used for gerar IDs of the fields of date.",
+      description: "Prefix used to generate IDs for date fields.",
       table: { type: { summary: "string" } },
     },
     startDate: {
       control: { type: "text" },
-      description: "date initial in the format `YYYY-MM-DD`.",
+      description: "Start date in `YYYY-MM-DD` format.",
       table: { type: { summary: "string" } },
     },
     endDate: {
       control: { type: "text" },
-      description: "end date in the format `YYYY-MM-DD`.",
+      description: "End date in `YYYY-MM-DD` format.",
       table: { type: { summary: "string" } },
     },
     onStartDateChange: {
       action: "startChanged",
-      description: "Callback triggered to change date initial.",
+      description: "Callback triggered to change start date.",
       table: { type: { summary: "(value: string) => void" } },
     },
     onEndDateChange: {
@@ -102,7 +102,7 @@ const meta = {
     },
     startLabel: {
       control: { type: "text" },
-      description: "label of the field initial.",
+      description: "Start field label.",
       table: { type: { summary: "string" }, defaultValue: { summary: "Start" } },
     },
     endLabel: {
@@ -112,38 +112,38 @@ const meta = {
     },
     error: {
       control: { type: "text" },
-      description: "message of error shared between the fields.",
+      description: "Shared error message for both fields.",
       table: { type: { summary: "string" } },
     },
     width: {
       control: { type: "inline-radio" },
       options: ["full", "compact"],
-      description: "Define the width/layout of the dupla of fields.",
+      description: "Defines width/layout of the field pair.",
       table: { type: { summary: "\"full\" | \"compact\"" }, defaultValue: { summary: "full" } },
     },
     className: {
       control: false,
-      description: "Classe CSS adicional of the container.",
+      description: "Additional CSS class for container.",
       table: { type: { summary: "string" } },
     },
     disabled: {
       control: { type: "boolean" },
-      description: "disables both the fields of date.",
+      description: "Disables both date fields.",
       table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
     },
     dateRange: {
       control: false,
-      description: "limits optional of date minimum and maximum.",
+      description: "Optional min/max date limits.",
       table: { type: { summary: "{ minDate?: string; maxDate?: string }" } },
     },
     startWrapperClassName: {
       control: false,
-      description: "Classe CSS adicional of the wrapper of the field initial.",
+      description: "Additional CSS class for start-field wrapper.",
       table: { type: { summary: "string" } },
     },
     endWrapperClassName: {
       control: false,
-      description: "Classe CSS adicional of the wrapper of the end field.",
+      description: "Additional CSS class for end-field wrapper.",
       table: { type: { summary: "string" } },
     },
   },
@@ -168,27 +168,27 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const LarguraMaxima: Story = {
+export const FullWidth: Story = {
   args: {
     width: "full",
   },
   parameters: {
     docs: {
       description: {
-        story: "Layout with fields occupying entire the width available.",
+        story: "Layout with fields occupying full available width.",
       },
     },
   },
 };
 
-export const LarguraMinima: Story = {
+export const CompactWidth: Story = {
   args: {
     width: "compact",
   },
   parameters: {
     docs: {
       description: {
-        story: "Layout compacto with width fixa for each field.",
+        story: "Compact layout with fixed width for each field.",
       },
     },
   },
@@ -199,7 +199,7 @@ export const WithDynamicDateRange: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Demonstra update dynamic of the limits of date according to the source.",
+        story: "Demonstrates dynamic date-limit updates according to selected source.",
       },
     },
   },

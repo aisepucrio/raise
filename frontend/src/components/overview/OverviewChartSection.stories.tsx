@@ -38,22 +38,22 @@ const meta = {
     },
     data: {
       control: false,
-      description: "series of date in the format esperado pelo chart of row.",
+      description: "Data series in the format expected by the line chart.",
       table: { type: { summary: "LineSeries[]" } },
     },
     loading: {
       control: { type: "boolean" },
-      description: "Ativa the state of loading.",
+      description: "Enables loading state.",
       table: { type: { summary: "boolean" } },
     },
     error: {
       control: { type: "text" },
-      description: "message of error shown in the place of the chart.",
+      description: "Error message shown in place of the chart.",
       table: { type: { summary: "string | null" } },
     },
     emptyMessage: {
       control: { type: "text" },
-      description: "message shown when there are no points for render.",
+      description: "Message shown when there are no points to render.",
       table: { type: { summary: "string" } },
     },
   },
@@ -62,7 +62,7 @@ const meta = {
     data: GRAPH_date,
     loading: false,
     error: null,
-    emptyMessage: "in series found for the selected filters.",
+    emptyMessage: "No series found for the selected filters.",
   },
   parameters: {
     wrapperSize: "large",
@@ -89,7 +89,7 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "state standard with date loaded and prontos for reading.",
+        story: "Default state with loaded data ready to read.",
       },
     },
   },
@@ -102,7 +102,7 @@ export const Loading: Story = {
   parameters: {
     docs: {
       description: {
-        story: "state of loading of the section of chart.",
+        story: "Loading state for the chart section.",
       },
     },
   },
@@ -115,7 +115,7 @@ export const Empty: Story = {
   parameters: {
     docs: {
       description: {
-        story: "state empty when nenhum ponto returns for the filters.",
+        story: "Empty state when no points are returned for filters.",
       },
     },
   },

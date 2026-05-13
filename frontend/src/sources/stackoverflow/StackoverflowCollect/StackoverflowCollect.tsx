@@ -25,44 +25,44 @@ import {
 import StackoverflowCollectModal from "./StackoverflowCollectModal";
 
 export default function StackoverflowCollect() {
-  // Redirects for jobs with the context of the source to concluir the action.
+  // Redirects to jobs with source context after the action completes.
   const navigate = useNavigate();
-  // collection standard (without endpoint advanced).
+  // Standard collection (without advanced endpoint).
   const collectMutation = useStackOverflowCollectMutation();
-  // collection advanced (endpoint /collect/advanced/ + filters optional).
+  // Advanced collection (endpoint /collect/advanced/ + optional filters).
   const collectAdvancedMutation = useStackOverflowCollectAdvancedMutation();
 
-  // Tags optional usadas for restringir the collection.
+  // Optional tags used to narrow collection.
   const [tags, setTags] = useState<string[]>([]);
   // dates required for Stack Overflow.
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  // espelha the state of the component of filters advanced.
+  // Mirrors the state from the advanced-filters component.
   const [advancedFiltersState, setAdvancedFiltersState] =
     useState<StackoverflowAdvancedFiltersSectionState>({
       enabled: false,
       filters: undefined,
     });
-  // Abre/fecha modal of inclusion of tags.
+  // Opens/closes the tag-add modal.
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  // the UI usa the single state of loading combinando the dois caminhos of collection.
+  // The UI uses one loading state combining both collection paths.
   const isCollectPending =
     collectMutation.isPending || collectAdvancedMutation.isPending;
 
-  // adds the nova tag to list local.
+  // Adds a new tag to local state.
   function handleAddTag(tag: string) {
     setTags((currentTags) => [...currentTags, tag]);
   }
 
-  // removes the tag specific of the list local.
+  // Removes a specific tag from local state.
   function handleRemoveTag(tagToRemove: string) {
     setTags((currentTags) => currentTags.filter((tag) => tag !== tagToRemove));
   }
 
-  // Builds payload and decide between fluxo default ou advanced.
+  // Builds payload and chooses between default and advanced flow.
   async function handleCollect() {
-    // Payload base comum to the modes default and advanced.
+    // Common base payload for default and advanced modes.
     const basePayload: StackOverflowCollectBody = {
       options: ["collect_questions"],
       start_date: startDate,
@@ -72,11 +72,11 @@ export default function StackoverflowCollect() {
 
     await runCollectWithFeedback({
       execute: async () => {
-        // starts the collection in the endpoint standard ou advanced, dependendo of the mode selected.
+        // Starts collection on standard or advanced endpoint, based on selected mode.
         if (advancedFiltersState.enabled) {
-          // HARDCODE TEMPORARIO: when ADVANCED ESTA ATIVO, the SO Calls /COLLECT/ADVANCED.
-          // MOTIVO: COMPATIBILIDADE with the IMPLEMENTACAO LEGADA.
-          // FUTURO: MERGEAR TUDO in the /COLLECT with PAYLOAD.
+          // TEMPORARY HARDCODE: when advanced mode is on, SO calls /COLLECT/ADVANCED.
+          // REASON: compatibility with legacy implementation.
+          // FUTURE: merge everything into /COLLECT using payload only.
           const advancedPayload: StackOverflowAdvancedCollectBody = {
             ...basePayload,
             mode: "advanced",
@@ -98,14 +98,14 @@ export default function StackoverflowCollect() {
     });
   }
 
-  // adapts tags for the format of items removable consumed pelo block of tags.
+  // Adapts tags to the removable-item format consumed by the tags block.
   const tagItems = mapItemsToCollectTags(tags, (tag) => tag, handleRemoveTag);
 
   return (
     <>
-      {/* Estrutura visual base shared (title, tags, dates and button of collection). */}
+      {/* Shared base visual structure (title, tags, dates, collect button). */}
       <CollectWrapper>
-        {/* Header main with title, description and action of add item */}
+        {/* Main header with title, description, and add-item action. */}
         <CollectHeader
           title="Stack Overflow Collect"
           description="Configure tags, required date range and optional advanced filters."
@@ -113,14 +113,14 @@ export default function StackoverflowCollect() {
           onAddClick={() => setIsAddModalOpen(true)}
         />
 
-        {/* list of items added (repositories/projects/tags) */}
+        {/* List of added items (repositories/projects/tags). */}
         <CollectTagsSection
           tagsHeading={`Tags (${tags.length})`}
           tags={tagItems}
           emptyTagsMessage='No tags added yet. You can collect without tags or click "Add tag" to target specific tags.'
         />
 
-        {/* filter of date shared and warning contextual */}
+        {/* Shared date filter and contextual warning. */}
         <CollectDateSection
           startDate={startDate}
           endDate={endDate}
@@ -130,10 +130,10 @@ export default function StackoverflowCollect() {
           dateWarningMessage="Start and finish dates are required for Stack Overflow."
         />
 
-        {/* area of extension for content specific of the source */}
+        {/* Extension area for source-specific content. */}
         <StackoverflowAdvancedFiltersSection onChange={setAdvancedFiltersState} />
 
-        {/* final action to trigger collection */}
+        {/* Final action that starts collection. */}
         <CollectActions
           collectButtonText="Collect"
           collectPendingButtonText="Collecting..."
@@ -143,7 +143,7 @@ export default function StackoverflowCollect() {
         />
       </CollectWrapper>
 
-      {/* Modal specific for add tags optional of Stack Overflow. */}
+      {/* Stack Overflow-specific modal to add optional tags. */}
       <StackoverflowCollectModal
         open={isAddModalOpen}
         tags={tags}

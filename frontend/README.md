@@ -2,6 +2,10 @@
 
 This README centralizes the frontend architecture and the flow to create a new source (full module of `overview + collect + preview + date`).
 
+## Prerequisites
+
+- **Node.js** (v18 or higher recommended) — required to run the project and install dependencies. If you don't have it installed, download it from [https://nodejs.org](https://nodejs.org).
+
 ## Stack and quick setup
 
 - `React + Vite` -> SPA application base.

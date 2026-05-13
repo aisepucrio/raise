@@ -9,12 +9,12 @@ const meta = {
   argTypes: {
     status: {
       control: { type: "text" },
-      description: "Status bruto received of the API for normalization and display.",
+      description: "Raw status received from API for normalization and display.",
       table: { type: { summary: "string | null" } },
     },
     className: {
       control: false,
-      description: "Classe CSS adicional aplieach to container.",
+      description: "Additional CSS class applied to container.",
       table: { type: { summary: "string" } },
     },
   },
@@ -52,7 +52,7 @@ export const Default: Story = {
   },
 };
 
-export const ListaDeStatus: Story = {
+export const StatusList: Story = {
   render: () => {
     const statuses = [
       "STARTED",
@@ -81,7 +81,7 @@ export const ListaDeStatus: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Compara the principais status suportados and seus mapeamentos visual.",
+        story: "Compares supported statuses and their visual mappings.",
       },
     },
   },

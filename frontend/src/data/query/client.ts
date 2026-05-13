@@ -1,6 +1,6 @@
 import { QueryClient } from "@tanstack/react-query";
 
-// Cliente single of the React Query for entire the application.
+// Single React Query client for the entire application.
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

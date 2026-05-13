@@ -16,7 +16,7 @@ export type CodePreviewModalProps = {
   dialogLabel?: string;
 };
 
-// converts the value received for string safe and readable in the block of code.
+// Converts received value into a safe, readable code-block string.
 function toCodePreviewString(value: unknown) {
   if (value === null || value === undefined) return "";
   if (typeof value === "string") return value;
@@ -40,7 +40,7 @@ export function CodePreviewModal({
   const { theme } = useAppTheme();
   const [copied, setCopied] = useState(false);
 
-  // Se the content for JSON valid, aplica pretty-print for Improve reading.
+  // If content is valid JSON, apply pretty-printing for readability.
   const codeString = useMemo(() => {
     const rawString = toCodePreviewString(value);
     if (!rawString) return "";
@@ -53,14 +53,14 @@ export function CodePreviewModal({
     }
   }, [value]);
 
-  // Feedback visual temporary of the button of copy.
+  // Temporary visual feedback for the copy button.
   useEffect(() => {
     if (!copied) return;
     const timeoutId = window.setTimeout(() => setCopied(false), 1200);
     return () => window.clearTimeout(timeoutId);
   }, [copied]);
 
-  // Fecha the modal in the ESC for keep consistency with outros overlays of the UI.
+  // Closes modal on ESC to match behavior of other UI overlays.
   useEffect(() => {
     if (!open) return;
 

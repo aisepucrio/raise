@@ -1,10 +1,12 @@
 import { forwardRef, type InputHTMLAttributes, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import FormFieldBase, {
-  getFormControlClassName,
-  type FormControlVariant,
   type FormFieldLabelPosition,
 } from "./FormFieldBase";
+import {
+  getFormControlClassName,
+  type FormControlVariant,
+} from "./formControlClassName";
 
 type FormInputProps = InputHTMLAttributes<HTMLInputElement> & {
   label?: string;

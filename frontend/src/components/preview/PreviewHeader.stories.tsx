@@ -88,7 +88,7 @@ const meta = {
   argTypes: {
     idPrefix: {
       control: { type: "text" },
-      description: "Prefixed used for gerar IDs internos of the fields.",
+      description: "Prefix used to generate internal field IDs.",
       table: { type: { summary: "string" } },
     },
     onSearchChange: {
@@ -98,12 +98,12 @@ const meta = {
     },
     columns: {
       control: false,
-      description: "list total of columns available in the filter of visibility.",
+      description: "Full list of columns available in visibility filter.",
       table: { type: { summary: "string[]" } },
     },
     hiddenColumns: {
       control: false,
-      description: "list of columns atualmente hidden.",
+      description: "List of currently hidden columns.",
       table: { type: { summary: "string[]" } },
     },
     onHiddenColumnsChange: {
@@ -119,17 +119,17 @@ const meta = {
     },
     onExport: {
       control: false,
-      description: "Callback triggered in the click of the button Export.",
+      description: "Callback triggered when clicking Export button.",
       table: { type: { summary: "() => void" } },
     },
     isExportPending: {
       control: { type: "boolean" },
-      description: "Controla state pending/disabled of the export.",
+      description: "Controls pending/disabled export state.",
       table: { type: { summary: "boolean" } },
     },
     children: {
       control: false,
-      description: "area optional for filters extra (source, dates etc.).",
+      description: "Optional area for extra filters (source, dates, etc.).",
       table: { type: { summary: "ReactNode" } },
     },
   },
@@ -162,18 +162,18 @@ export const WithFilters: Story = {
   parameters: {
     docs: {
       description: {
-        story: "header complete with filters adicionais, search, columns and export.",
+        story: "Complete header with extra filters, search, columns, and export.",
       },
     },
   },
 };
 
-export const SomenteAcoesFixas: Story = {
+export const OnlyFixedActions: Story = {
   render: () => <InteractiveDemo withOptionalFilters={false} />,
   parameters: {
     docs: {
       description: {
-        story: "version minimum with only actions fixas: search, columns and export.",
+        story: "Minimal version with only fixed actions: search, columns, and export.",
       },
     },
   },

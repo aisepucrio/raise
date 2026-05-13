@@ -36,17 +36,17 @@ const meta = {
   argTypes: {
     id: {
       control: { type: "text" },
-      description: "ID of the field select.",
+      description: "ID of the select field.",
       table: { type: { summary: "string" } },
     },
     label: {
       control: { type: "text" },
-      description: "label shown above of the select.",
+      description: "Label shown above the select.",
       table: { type: { summary: "string" } },
     },
     value: {
       control: { type: "text" },
-      description: "value atualmente selected.",
+      description: "Currently selected value.",
       table: { type: { summary: "string" } },
     },
     onChange: {
@@ -61,22 +61,22 @@ const meta = {
     },
     allOptionLabel: {
       control: { type: "text" },
-      description: "text of the option neutra (entires).",
+      description: "Text of the neutral option (all items).",
       table: { type: { summary: "string" } },
     },
     isOptionsPending: {
       control: { type: "boolean" },
-      description: "Indica loading of options.",
+      description: "Indicates options loading state.",
       table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
     },
     wrapperClassName: {
       control: false,
-      description: "Classe CSS adicional of the wrapper of the field.",
+      description: "Additional CSS class for field wrapper.",
       table: { type: { summary: "string" } },
     },
     className: {
       control: false,
-      description: "Classe CSS adicional aplieach to select.",
+      description: "Additional CSS class applied to select.",
       table: { type: { summary: "string" } },
     },
   },
@@ -106,13 +106,13 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Demonstra selection of source with feedback of the value escolhido.",
+        story: "Demonstrates source selection with selected-value feedback.",
       },
     },
   },
 };
 
-export const CarregandoOpcoes: Story = {
+export const LoadingOptions: Story = {
   args: {
     id: "storybook-source-select-pending",
     label: "Project",
@@ -125,7 +125,7 @@ export const CarregandoOpcoes: Story = {
   parameters: {
     docs: {
       description: {
-        story: "state with list empty and loading in andamento.",
+        story: "State with empty list while loading is in progress.",
       },
     },
   },

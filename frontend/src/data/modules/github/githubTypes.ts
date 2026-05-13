@@ -7,7 +7,7 @@ export type GithubGraphParams = DateFilterRange & {
   repository_id?: string;
 };
 
-// response of the dashboard/overview (cards + list of repositories)
+// Dashboard/overview response (cards + repository list).
 export type GithubRepository = {
   id: number;
   repository: string;
@@ -26,7 +26,7 @@ export type GithubOverviewResponse = {
   time_mined?: string | null;
 };
 
-// response of the chart of the dashboard (series for label/tempo)
+// Dashboard chart response (series by label/time).
 export type GithubGraphResponse = {
   time_series?: {
     labels?: string[];
@@ -39,7 +39,7 @@ export type GithubGraphResponse = {
 export type GithubPreviewParams = {
   page: number;
   page_size: number;
-  // in the preview of the GitHub the filter usa `repository` (and not `repository_id`).
+  // In GitHub preview, the filter uses `repository` (not `repository_id`).
   repository?: string;
   search?: string;
   ordering?: string;

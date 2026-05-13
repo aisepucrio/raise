@@ -51,47 +51,47 @@ const meta = {
   argTypes: {
     idPrefix: {
       control: { type: "text" },
-      description: "Prefixed used for gerar IDs of the fields internos.",
+      description: "Prefix used to generate IDs for internal fields.",
       table: { type: { summary: "string" } },
     },
     sourceFilterLabel: {
       control: { type: "text" },
-      description: "Label shown in the filter of source.",
+      description: "Label shown in the source filter.",
       table: { type: { summary: "string" } },
     },
     allSourcesOptionLabel: {
       control: { type: "text" },
-      description: "text of the option neutra (entires the sources).",
+      description: "Text for the neutral option (all sources).",
       table: { type: { summary: "string" } },
     },
     sourceOptions: {
       control: false,
-      description: "list of options available in the filter of source.",
+      description: "List of options available in the source filter.",
       table: { type: { summary: "{ value: string; label: string }[]" } },
     },
     selectedSourceId: {
       control: { type: "text" },
-      description: "source selected in the filter.",
+      description: "Source selected in the filter.",
       table: { type: { summary: "string" } },
     },
     onSourceChange: {
       control: false,
-      description: "Callback triggered when the source is alterada.",
+      description: "Callback triggered when source changes.",
       table: { type: { summary: "(value: string) => void" } },
     },
     startDate: {
       control: { type: "text" },
-      description: "date initial in the format `YYYY-MM-DD`.",
+      description: "Start date in `YYYY-MM-DD` format.",
       table: { type: { summary: "string" } },
     },
     endDate: {
       control: { type: "text" },
-      description: "end date in the format `YYYY-MM-DD`.",
+      description: "End date in `YYYY-MM-DD` format.",
       table: { type: { summary: "string" } },
     },
     onStartDateChange: {
       control: false,
-      description: "Callback triggered to change date initial.",
+      description: "Callback triggered to change start date.",
       table: { type: { summary: "(value: string) => void" } },
     },
     onEndDateChange: {
@@ -101,12 +101,12 @@ const meta = {
     },
     isSourceListPending: {
       control: { type: "boolean" },
-      description: "Indica loading of the list of sources.",
+      description: "Indicates loading state of source list.",
       table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
     },
     dateRange: {
       control: false,
-      description: "limits optional of date minimum and maximum.",
+      description: "Optional min/max date bounds.",
       table: { type: { summary: "{ minDate?: string; maxDate?: string }" } },
     },
   },
@@ -148,7 +148,7 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "filter standard with selection of source and period in branco.",
+        story: "Default filter with source selection and empty date range.",
       },
     },
   },
@@ -166,7 +166,7 @@ export const WithSelectedSource: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Example with source and interval initial already definidos.",
+        story: "Example with source and initial date range already defined.",
       },
     },
   },

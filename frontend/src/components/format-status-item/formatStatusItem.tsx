@@ -1,12 +1,12 @@
 import { cn } from "@/lib/utils";
 
-// actions that the UI of the row pode habilitar with base in the status atual.
+// Actions that the row UI can enable based on current status.
 export type FormatStatusItemActions = {
   stopActionActive: boolean;
   restartActionActive: boolean;
 };
 
-// Estrutura single retornada for the screen use visual + rule without duplicar switch/ifs.
+// Single structure returned for visual usage + rules without duplicated switch/ifs.
 export type FormatStatusItemInfo = {
   rawStatus: string;
   label: string;
@@ -19,13 +19,13 @@ export type FormatStatusItemProps = {
   className?: string;
 };
 
-// normalizes the status of the API for compare without depender of caixa/spaces.
+// Normalizes API status for comparison without case/spacing dependence.
 function normalizeStatus(status?: string | null) {
   if (typeof status !== "string") return "";
   return status.trim().toUpperCase();
 }
 
-// Helper simple for keep the retorno standardized and deixar the blocos of status readable.
+// Simple helper to keep return values standardized and status blocks readable.
 function buildStatusInfo(
   rawStatus: string,
   label: string,
@@ -40,9 +40,9 @@ function buildStatusInfo(
   };
 }
 
-// source single of the verdade for label, color and actions habilitadas for status.
-// the JobsPage only envia the string; dhere for baixo the component decide the resto.
-// for retornar the status of the buttons (ativo/inativo), there is the mapeamento 1-the-1 for cobrir possible futuros cases
+// Single source of truth for status label, color, and enabled actions.
+// JobsPage sends only the status string; this component resolves the rest.
+// Button enabled/disabled states are mapped 1-to-1 to cover possible future cases.
 export function getFormatStatusItemInfo(
   status?: string | null,
 ): FormatStatusItemInfo {
@@ -121,8 +121,8 @@ export function getFormatStatusItemInfo(
     );
   }
 
-  // Fallback for status not mapeado: label curta and predictable.
-  // the value bruto ainda fica available in the title of the element for inspection.
+  // Fallback for unmapped status: short and predictable label.
+  // Raw value remains available in the element title for inspection.
   return buildStatusInfo(rawStatus, "Unknown", "--color-steel", {
     stopActionActive: false,
     restartActionActive: false,
@@ -130,7 +130,7 @@ export function getFormatStatusItemInfo(
 }
 
 export function FormatStatusItem({ status, className }: FormatStatusItemProps) {
-  // the component visual usa exatamente the same rule that the page usa for actions.
+  // Visual component uses the exact same rules the page uses for actions.
   const info = getFormatStatusItemInfo(status);
   const colorValue = `var(${info.colorVariableName})`;
 
@@ -143,13 +143,13 @@ export function FormatStatusItem({ status, className }: FormatStatusItemProps) {
       )}
       title={info.rawStatus || undefined}
     >
-      {/* indicator visual quick (dot) for reading of the table. */}
+      {/* Quick visual indicator (dot) for table scanning. */}
       <span
         aria-hidden="true"
         className="size-2 rounded-full"
         style={{ backgroundColor: colorValue }}
       />
-      {/* text already traduzido/normalizado for display in the UI. */}
+      {/* Text already translated/normalized for UI display. */}
       <span className="font-semibold" style={{ color: colorValue }}>
         {info.label}
       </span>

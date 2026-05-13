@@ -10,7 +10,7 @@ export type InfoBoxProps = {
 };
 
 const colorVariants: Record<InfoBoxColor, string> = {
-  // Aumenta levemente the opacidade for the zebra ficar mais perceptible without fugir of the theme.
+  // Slightly increases opacity so zebra contrast is clearer without leaving the theme style.
   primary: "bg-(--color-secondary-subtle) text-(--color-secondary)",
   secondary: "bg-(--color-secondary-muted) text-(--color-secondary-inverse)",
 };

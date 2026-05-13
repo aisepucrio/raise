@@ -1,4 +1,4 @@
-/* context for compartilhar/trocar the theme selected globalmente in the application. */
+/* Context to share/switch the globally selected application theme. */
 
 import {
   createContext,

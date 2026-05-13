@@ -33,14 +33,14 @@ export function PreviewHeader({
   return (
     <section className="shrink-0 px-1">
       <div className="grid gap-3 overflow-visible pb-1 md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-end xl:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
-        {/* area livre for filters optional of the item (source/date etc.) */}
+        {/* Free area for optional item filters (source/date etc.). */}
         {children ? (
           <div className="flex min-w-0 flex-wrap items-end gap-3 md:col-span-3 xl:col-span-1 xl:flex-nowrap">
             {children}
           </div>
         ) : null}
 
-        {/* actions always presentes in the preview (segunda row in the layout intermediate) */}
+        {/* Actions always present in preview (second row in intermediate layout). */}
         <div className="min-w-0 self-end md:col-start-1 xl:col-start-auto">
           <SearchBar
             id={`${idPrefix}-search`}

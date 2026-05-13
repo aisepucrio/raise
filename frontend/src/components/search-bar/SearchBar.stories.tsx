@@ -30,27 +30,27 @@ const meta = {
   argTypes: {
     id: {
       control: { type: "text" },
-      description: "ID of the field of search.",
+      description: "ID of the search field.",
       table: { type: { summary: "string" } },
     },
     onSearchChange: {
       control: false,
-      description: "Callback triggered after debounce of the termo digitado.",
+      description: "Callback triggered after debounce of the typed term.",
       table: { type: { summary: "(searchTerm: string) => void" } },
     },
     label: {
       control: { type: "text" },
-      description: "Label of the field of search.",
+      description: "Label of the search field.",
       table: { type: { summary: "string" }, defaultValue: { summary: "Search" } },
     },
     placeholder: {
       control: { type: "text" },
-      description: "Placeholder of the input of search.",
+      description: "Search input placeholder.",
       table: { type: { summary: "string" }, defaultValue: { summary: "Type..." } },
     },
     debounceMs: {
       control: { type: "number" },
-      description: "Tempo of debounce (ms) antes of trigger `onSearchChange`.",
+      description: "Debounce time (ms) before triggering `onSearchChange`.",
       table: { type: { summary: "number" }, defaultValue: { summary: "350" } },
     },
     disabled: {
@@ -60,7 +60,7 @@ const meta = {
     },
     expandable: {
       control: { type: "boolean" },
-      description: "Ativa expansion horizontal of the field to focar ou digitar.",
+      description: "Enables horizontal expansion while focusing/typing.",
       table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
     },
   },
@@ -69,7 +69,7 @@ const meta = {
     docs: {
       description: {
         component:
-          "bar de fetches com debounce interno e option de modo expandable.",
+          "Search bar with internal debounce and optional expandable mode.",
       },
     },
   },
@@ -90,18 +90,18 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "search standard with feedback of the termo aplicado after debounce.",
+        story: "Standard search with debounced applied-term feedback.",
       },
     },
   },
 };
 
-export const Expandivel: Story = {
+export const Expandable: Story = {
   render: () => <InteractiveDemo expandable />,
   parameters: {
     docs: {
       description: {
-        story: "search in mode expandable for save space in the layout.",
+        story: "Expandable search mode to save layout space.",
       },
     },
   },

@@ -15,12 +15,12 @@ const meta = {
     },
     pressed: {
       control: { type: "boolean" },
-      description: "state controlled of the button.",
+      description: "Controlled button state.",
       table: { type: { summary: "boolean" } },
     },
     defaultPressed: {
       control: { type: "boolean" },
-      description: "state initial for uncontrolled usage.",
+      description: "Initial state for uncontrolled usage.",
       table: { type: { summary: "boolean" }, defaultValue: { summary: "false" } },
     },
     onPressedChange: {
@@ -31,7 +31,7 @@ const meta = {
     size: {
       control: { type: "inline-radio" },
       options: ["default", "sm"],
-      description: "size visual of the button.",
+      description: "Visual button size.",
       table: { type: { summary: "\"default\" | \"sm\"" }, defaultValue: { summary: "default" } },
     },
     disabled: {
@@ -46,7 +46,7 @@ const meta = {
     },
     className: {
       control: false,
-      description: "Classe CSS adicional aplieach to button.",
+      description: "Additional CSS class applied to button.",
       table: { type: { summary: "string" } },
     },
   },
@@ -80,13 +80,13 @@ export const Default: Story = {
   parameters: {
     docs: {
       description: {
-        story: "button of selection standard in mode not controlled.",
+        story: "Default selection button in uncontrolled mode.",
       },
     },
   },
 };
 
-export const PressionadoPorPadrao: Story = {
+export const PressedByDefault: Story = {
   args: {
     text: "Commits",
     defaultPressed: true,
@@ -94,13 +94,13 @@ export const PressionadoPorPadrao: Story = {
   parameters: {
     docs: {
       description: {
-        story: "initializa with state pressionado ativo.",
+        story: "Initializes with active pressed state.",
       },
     },
   },
 };
 
-export const ControladoExternamente: Story = {
+export const ExternallyControlled: Story = {
   render: () => {
     const [pressed, setPressed] = useState(false);
 
@@ -126,13 +126,13 @@ export const ControladoExternamente: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Example with state controlled for the component external.",
+        story: "Example with state controlled from outside the component.",
       },
     },
   },
 };
 
-export const GrupoDeSelecao: Story = {
+export const SelectionGroup: Story = {
   render: () => (
     <div className="grid gap-2 sm:grid-cols-2">
       <SelectionButton text="Issues" />
@@ -144,7 +144,7 @@ export const GrupoDeSelecao: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Example with multiple buttons for selection for category.",
+        story: "Example with multiple buttons for category selection.",
       },
     },
   },

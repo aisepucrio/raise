@@ -14,13 +14,13 @@ const meta = {
   argTypes: {
     text: {
       control: { type: "text" },
-      description: "message shown inside of the caixa.",
+      description: "Message shown inside the box.",
       table: { type: { summary: "string" } },
     },
     variant: {
       control: { type: "inline-radio" },
       options: ["default", "success", "info", "warning", "error"],
-      description: "Variante semantic/visual of the caixa.",
+      description: "Semantic/visual variant of the box.",
       table: {
         type: {
           summary:
@@ -32,12 +32,12 @@ const meta = {
     width: {
       control: { type: "inline-radio" },
       options: ["full", "auto"],
-      description: "Define se the component occupies entire the width ou only content.",
+      description: "Defines whether component takes full width or only content width.",
       table: { type: { summary: "\"full\" | \"auto\"" }, defaultValue: { summary: "full" } },
     },
     className: {
       control: false,
-      description: "Classe CSS adicional aplieach to container.",
+      description: "Additional CSS class applied to container.",
       table: { type: { summary: "string" } },
     },
   },
@@ -66,7 +66,7 @@ export const Playground: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Playground for testar text, variante and width.",
+        story: "Playground to test text, variant, and width.",
       },
     },
   },
@@ -85,7 +85,7 @@ export const Variants: Story = {
   parameters: {
     docs: {
       description: {
-        story: "comparison of entires the variants visual available.",
+        story: "Comparison of all available visual variants.",
       },
     },
   },
@@ -98,7 +98,7 @@ export const AutoWidth: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Caixa adjusted to content with width automatic.",
+        story: "Box adjusted to content with automatic width.",
       },
     },
   },
