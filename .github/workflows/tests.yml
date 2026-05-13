@@ -1,0 +1,43 @@
+name: Tests and Coverage
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test: 
+    runs-on: ubuntu-latest
+
+    #env:
+      #DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SUPERUSER_PASSWORD }}
+      #STACK_ACCESS_TOKEN: ${{ secrets.STACK_API_KEY }}  
+      #IS_DEBUG: "False"
+
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+ 
+    - name: Build Docker image
+      run: docker-compose build 
+
+    - name: Start dependencies (db, redis)
+      run: docker-compose up -d db redis
+    - name: Wait for dependencies to be healthy
+      run: sleep 10
+
+    - name: Install test dependencies
+      run: docker-compose run --rm web pip install coverage pytest pytest-django 
+ 
+    - name: Run tests with coverage 
+      run: docker-compose run --rm web coverage run -m pytest
+    - name: Show coverage report
+      run: docker-compose run --rm web coverage report
+
+    - name: Enforce minimum coverage (50%)
+      run: docker-compose run --rm web coverage report --fail-under=50
+
+    - name: Tear down
+      if: always()
+      run: docker-compose down 
