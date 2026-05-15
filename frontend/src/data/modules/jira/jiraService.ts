@@ -9,6 +9,7 @@ import {
 import type {
   JiraCollectBody,
   JiraDateRangeParams,
+  JiraExportBody,
   JiraGraphParams,
   JiraOverviewParams,
   JiraOverviewResponse,

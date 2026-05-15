@@ -37,6 +37,8 @@ export type JiraPreviewProps = {
   itemsLabel: string;
   emptyStateMessage: string;
   loadErrorMessage: string;
+  exportTable: string;
+  exportDataType?: string;
   exportFileNamePrefix: string;
   exportSuccessMessage?: string;
   dateFilterField?: JiraPreviewDateFilterField;
@@ -76,6 +78,8 @@ export function JiraPreview({
   emptyStateMessage,
   loadErrorMessage,
   exportFileNamePrefix,
+  exportTable,
+  exportDataType,
   exportSuccessMessage = "Jira preview exported successfully.",
   dateFilterField,
   showDateFilters = true,
