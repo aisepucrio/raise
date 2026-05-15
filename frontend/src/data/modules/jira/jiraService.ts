@@ -1,3 +1,4 @@
+import { ExportFormat } from "@/components/preview/PreviewExportModal";
 import { api } from "../../api/apiClient";
 import { endpoints } from "../../api/endpoints";
 import type { JiraSection } from "../../api/endpoints";
@@ -54,8 +55,8 @@ export const jiraService = {
     }) as Promise<JiraPreviewResponse>,
 
   // Preview export: exports in the current standard format (json).
-  exportPreview: (options?: RequestOptions) =>
-    api.post(endpoints.export(SOURCE), { format: "json" }, {
+  exportPreview: (format: ExportFormat, options?: RequestOptions) =>
+    api.post(endpoints.export(SOURCE), { format }, {
       responseType: "blob",
       signal: options?.signal,
     }),

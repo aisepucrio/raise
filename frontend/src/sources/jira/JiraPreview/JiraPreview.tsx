@@ -27,6 +27,7 @@ import {
   togglePreviewSortState,
   type PreviewBuildParamsInput,
 } from "@/sources/shared/PreviewShared";
+import { ExportFormat, PreviewExportModal } from "@/components/preview/PreviewExportModal";
 
 export type JiraPreviewDateFilterField = "created" | "updated_at" | "sprint";
 
@@ -187,6 +188,8 @@ export function JiraPreview({
   const rows = previewQuery.data?.results ?? [];
   const totalItems = previewQuery.data?.count ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [selectedFormat, setSelectedFormat] = useState<ExportFormat>("json");
 
   // Prevents an invalid page when the total changes.
   useEffect(() => {
@@ -214,9 +217,19 @@ export function JiraPreview({
 
   // Prepares the export request for this preview.
   const requestExportPayload = useCallback(
-    () => previewExportMutation.mutateAsync(),
-    [previewExportMutation],
+    () => previewExportMutation.mutateAsync(selectedFormat),
+    [previewExportMutation, selectedFormat],
   );
+
+  async function handleConfirmExport() {
+  await runPreviewExportWithFeedback({
+    execute: requestExportPayload,
+    fileNamePrefix: exportFileNamePrefix,
+    successMessage: exportSuccessMessage,
+  });
+
+  setIsExportModalOpen(false);
+}
 
   async function handleExport() {
     await runPreviewExportWithFeedback({
@@ -249,7 +262,7 @@ export function JiraPreview({
         columns={columns}
         hiddenColumns={hiddenColumns}
         onHiddenColumnsChange={setHiddenColumns}
-        onExport={() => void handleExport()}
+        onExport={() => setIsExportModalOpen(true)}
         isExportPending={previewExportMutation.isPending}
       >
         {/* Jira-specific filters. */}
@@ -307,6 +320,18 @@ export function JiraPreview({
         onClose={() => setIsCellModalOpen(false)}
         value={selectedCellValue}
       />
+
+      {/* Export modal for selecting export format. */}
+      <PreviewExportModal
+        open={isExportModalOpen}
+        selectedFormat={selectedFormat}
+        onChangeFormat={setSelectedFormat}
+        onClose={() => setIsExportModalOpen(false)}
+        onConfirm={handleConfirmExport}
+        isPending={previewExportMutation.isPending}
+      />
     </PreviewWrapper>
+
+    
   );
 }

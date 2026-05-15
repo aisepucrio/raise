@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invalidateJobsQueries } from "../../query/invalidation";
 import { jiraService } from "./jiraService";
 import type { JiraCollectBody } from "./jiraTypes";
+import { ExportFormat } from "@/components/preview/PreviewExportModal";
 
 // Starts Jira collection and updates the global jobs list.
 export function useJiraCollectMutation() {
@@ -16,6 +17,6 @@ export function useJiraCollectMutation() {
 // Exports Jira preview data in the current standard format (json).
 export function useJiraExportMutation() {
   return useMutation({
-    mutationFn: () => jiraService.exportPreview(),
+    mutationFn: (format: ExportFormat) => jiraService.exportPreview(format),
   });
 }
