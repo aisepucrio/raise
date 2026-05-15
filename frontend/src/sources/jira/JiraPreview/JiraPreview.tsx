@@ -221,27 +221,27 @@ export function JiraPreview({
 
   // Prepares the export request for this preview.
   const requestExportPayload = useCallback(
-    () => previewExportMutation.mutateAsync(selectedFormat),
-    [previewExportMutation, selectedFormat],
-  );
+    (format: ExportFormat) => {
+
+      return previewExportMutation.mutateAsync({
+        format,
+        table: exportTable,
+      ...(exportDataType ? { date_type: exportDataType } : {}),
+
+    });
+}, [previewExportMutation, exportTable, selectedFormat, exportDataType]);
 
   async function handleConfirmExport() {
   await runPreviewExportWithFeedback({
-    execute: requestExportPayload,
+    execute: () => requestExportPayload(selectedFormat),
     fileNamePrefix: exportFileNamePrefix,
     successMessage: exportSuccessMessage,
+    extension: selectedFormat,
+    mimeType: selectedFormat === "csv" ? "text/csv" : "application/json",
   });
 
   setIsExportModalOpen(false);
 }
-
-  async function handleExport() {
-    await runPreviewExportWithFeedback({
-      execute: requestExportPayload,
-      fileNamePrefix: exportFileNamePrefix,
-      successMessage: exportSuccessMessage,
-    });
-  }
 
   // Toggles ascending/descending sort for the clicked column.
   function handleSort(field: string) {

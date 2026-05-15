@@ -14,9 +14,9 @@ export function useJiraCollectMutation() {
   });
 }
 
-// Exports Jira preview data in the current standard format (json).
+// Exports Jira preview data.
 export function useJiraExportMutation() {
   return useMutation({
-    mutationFn: (format: ExportFormat) => jiraService.exportPreview(format),
+    mutationFn: (body: JiraExportBody) => jiraService.exportPreview(body),
   });
 }

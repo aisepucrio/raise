@@ -32,6 +32,8 @@ export function PreviewExportModal({
           <label className="flex items-center gap-2">
             <input
               type="radio"
+              name="export-format"
+              value="json"
               checked={selectedFormat === "json"}
               onChange={() => onChangeFormat("json")}
             />
@@ -41,6 +43,8 @@ export function PreviewExportModal({
           <label className="flex items-center gap-2">
             <input
               type="radio"
+              name="export-format"
+              value="csv"
               checked={selectedFormat === "csv"}
               onChange={() => onChangeFormat("csv")}
             />
@@ -66,5 +70,5 @@ export function PreviewExportModal({
         </div>
       </div>
     </div>
-  );
+  )
 }

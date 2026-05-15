@@ -2,6 +2,7 @@ import json
 import csv
 import logging
 from io import StringIO
+from urllib import request
 
 from django.http import HttpResponse
 from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiResponse
@@ -43,7 +44,6 @@ class ExportDataView(APIView):
     def post(self, request):
         serializer = ExportDataSerializer(data=request.data)
         if not serializer.is_valid():
-            print("Erro no serializer")
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         validated = serializer.validated_data
@@ -60,7 +60,6 @@ class ExportDataView(APIView):
         }
 
         if table not in model_mapping:
-            print("Tabela não encontrada no mapeamento")
             return Response({"error": f"Table '{table}' not found"}, status=status.HTTP_404_NOT_FOUND)
 
         model = model_mapping[table]

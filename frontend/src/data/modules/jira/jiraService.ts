@@ -56,8 +56,8 @@ export const jiraService = {
     }) as Promise<JiraPreviewResponse>,
 
   // Preview export: exports in the current standard format (json).
-  exportPreview: (format: ExportFormat, options?: RequestOptions) =>
-    api.post(endpoints.export(SOURCE), { format }, {
+  exportPreview: (body: JiraExportBody, options?: RequestOptions) =>
+    api.post(endpoints.export(SOURCE), body, {
       responseType: "blob",
       signal: options?.signal,
     }),
