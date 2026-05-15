@@ -28,6 +28,8 @@ import {
   type PreviewBuildParamsInput,
 } from "@/sources/shared/PreviewShared";
 
+import { ExportFormat, PreviewExportModal } from "@/components/preview/PreviewExportModal";
+
 export type GithubPreviewDateFilterField = "created_at" | "date";
 
 export type GithubPreviewProps = {
@@ -93,6 +95,9 @@ export function GithubPreview({
 
   // Hidden columns.
   const [hiddenColumns, setHiddenColumns] = useState<string[]>([]);
+
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [selectedFormat, setSelectedFormat] = useState<ExportFormat>("json");
 
   const { data: overviewData, isPending: isRepositoryListPending } =
     useGithubOverviewQuery();
@@ -213,23 +218,27 @@ export function GithubPreview({
     showPreviewErrorToast(previewQuery.error, loadErrorMessage);
   }, [previewQuery.isError, previewQuery.error, loadErrorMessage]);
 
-  // Builds the GitHub export payload with table and data-type options.
   const requestExportPayload = useCallback(
-    () =>
+    (format: ExportFormat) =>
       previewExportMutation.mutateAsync({
-        format: "json",
+        format,
         table: exportTable,
         ...(exportDataType ? { date_type: exportDataType } : {}),
       }),
     [previewExportMutation, exportTable, exportDataType],
   );
 
-  async function handleExport() {
+  // AJUSTADO: Função que gerencia o fluxo de confirmação e repassa extensão/mimeType
+  async function handleConfirmExport() {
     await runPreviewExportWithFeedback({
-      execute: requestExportPayload,
+      execute: () => requestExportPayload(selectedFormat),
       fileNamePrefix: exportFileNamePrefix,
       successMessage: exportSuccessMessage,
+      extension: selectedFormat,
+      mimeType: selectedFormat === "csv" ? "text/csv" : "application/json",
     });
+
+    setIsExportModalOpen(false);
   }
 
   // Toggles ascending/descending sort for the clicked column.
@@ -255,7 +264,7 @@ export function GithubPreview({
         columns={columns}
         hiddenColumns={hiddenColumns}
         onHiddenColumnsChange={setHiddenColumns}
-        onExport={() => void handleExport()}
+        onExport={() => setIsExportModalOpen(true)} // AJUSTADO: Abre o modal de formato
         isExportPending={previewExportMutation.isPending}
       >
         {/* GitHub-specific filters. */}
@@ -312,6 +321,16 @@ export function GithubPreview({
         open={isCellModalOpen}
         onClose={() => setIsCellModalOpen(false)}
         value={selectedCellValue}
+      />
+
+      {/* NOVO: Inclusão do modal de escolha de formato para o GitHub */}
+      <PreviewExportModal
+        open={isExportModalOpen}
+        selectedFormat={selectedFormat}
+        onChangeFormat={setSelectedFormat}
+        onClose={() => setIsExportModalOpen(false)}
+        onConfirm={handleConfirmExport}
+        isPending={previewExportMutation.isPending}
       />
     </PreviewWrapper>
   );
