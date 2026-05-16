@@ -157,7 +157,8 @@ export function resolvePreviewOrdering(sortState: PreviewSortStateLike) {
     : `-${sortState.field}`;
 }
 
-// Toggles sort state for a column.
+// Cycles sort state: none → asc → desc → none (3 states).
+// Previously only toggled between asc and desc, making it impossible to clear sorting.
 export function togglePreviewSortState(
   currentSortState: PreviewSortStateLike,
   field: string,
@@ -166,10 +167,11 @@ export function togglePreviewSortState(
     return { field, direction: "asc" };
   }
 
-  return {
-    field,
-    direction: currentSortState.direction === "asc" ? "desc" : "asc",
-  };
+  if (currentSortState.direction === "desc") {
+    return null;
+  }
+
+  return { field, direction: "desc" };
 }
 
 // Resolves available columns from the current payload.
