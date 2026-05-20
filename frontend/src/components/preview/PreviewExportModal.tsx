@@ -1,4 +1,5 @@
 import { Button } from "@/components/button";
+import { ModalShell } from "../modal-shell/modalShell";
 
 export type ExportFormat = "json" | "csv";
 
@@ -22,37 +23,37 @@ export function PreviewExportModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
-        <h2 className="mb-4 text-lg font-semibold">
-          Export format
-        </h2>
-
+    <ModalShell open={open} onClose={onClose} title="Export format">
+      <div className="space-y-4">
+        {/* Opções de Formato */}
         <div className="space-y-3">
-          <label className="flex items-center gap-2">
+          <label className="flex items-center gap-2 text-sm text-(--color-secondary) cursor-pointer">
             <input
               type="radio"
               name="export-format"
               value="json"
               checked={selectedFormat === "json"}
               onChange={() => onChangeFormat("json")}
+              className="accent-(--color-secondary)"
             />
             JSON
           </label>
 
-          <label className="flex items-center gap-2">
+          <label className="flex items-center gap-2 text-sm text-(--color-secondary) cursor-pointer">
             <input
               type="radio"
               name="export-format"
               value="csv"
               checked={selectedFormat === "csv"}
               onChange={() => onChangeFormat("csv")}
+              className="accent-(--color-secondary)"
             />
             CSV
           </label>
         </div>
 
-        <div className="flex flex-wrap justify-end gap-2 pt-1">
+        {/* Ações / Botões do Rodapé */}
+        <div className="flex flex-wrap justify-end gap-2 pt-2">
           <Button
             text="Cancel"
             onClick={onClose}
@@ -69,6 +70,6 @@ export function PreviewExportModal({
           />
         </div>
       </div>
-    </div>
-  )
+    </ModalShell>
+  );
 }
