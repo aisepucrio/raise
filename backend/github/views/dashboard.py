@@ -1,7 +1,7 @@
 import logging
 
 from django.db.models import Count, Min, Max
-from django.db.models.functions import TruncDay, TruncMonth, TruncYear
+from django.db.models.functions import TruncDay, TruncMonth, TruncWeek, TruncYear
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, OpenApiResponse
 from rest_framework import status
@@ -44,28 +44,10 @@ logger = logging.getLogger(__name__)
         200: {
             "type": "object",
             "properties": {
-                "repository_id": {"type": "integer", "nullable": True},
-                "repository_name": {"type": "string", "nullable": True},
-                "issues_count": {"type": "integer"},
-                "pull_requests_count": {"type": "integer"},
-                "commits_count": {"type": "integer"},
-                "forks_count": {"type": "integer", "nullable": True},
-                "stars_count": {"type": "integer", "nullable": True},
-                "watchers_count": {"type": "integer", "nullable": True},
+                "selectedEntity": {"type": "object", "nullable": True},
+                "entities": {"type": "array", "items": {"type": "object"}},
+                "cards": {"type": "object"},
                 "time_mined": {"type": "string", "format": "date-time", "nullable": True},
-                "repositories_count": {"type": "integer", "nullable": True},
-                "repositories": {
-                    "type": "array", 
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "id": {"type": "integer"},
-                            "repository": {"type": "string"}
-                        }
-                    },
-                    "nullable": True
-                },
-                "users_count": {"type": "integer", "description": "Number of unique commit users"}
             }
         },
         400: {
@@ -85,55 +67,36 @@ logger = logging.getLogger(__name__)
     },
     examples=[
         OpenApiExample(
-            "Repository Example",
+            "Repository dashboard",
             value={
-                "repository_id": 1,
-                "repository_name": "owner/repo",
-                "issues_count": 120,
-                "pull_requests_count": 45,
-                "commits_count": 500,
-                "forks_count": 25,
-                "stars_count": 100,
-                "watchers_count": 30,
+                "selectedEntity": {"id": "1", "name": "owner/repo"},
+                "entities": [],
+                "cards": {
+                    "issues": 120,
+                    "pull_requests": 45,
+                    "commits": 500,
+                    "users": 10,
+                    "forks": 25,
+                    "stars": 100,
+                    "watchers": 30,
+                },
                 "time_mined": "2024-01-01T12:00:00Z",
-                "users_count": 10
             },
             summary="Example with repository_id"
         ),
         OpenApiExample(
-            "All Repositories Example with Date Filters",
+            "All repositories dashboard",
             value={
-                "issues_count": 500,
-                "pull_requests_count": 200,
-                "commits_count": 2000,
-                "repositories_count": 5,
-                "repositories": [
-                    {"id": 1, "repository": "owner/repo1"},
-                    {"id": 2, "repository": "owner/repo2"},
-                    {"id": 3, "repository": "owner/repo3"},
-                    {"id": 4, "repository": "owner/repo4"},
-                    {"id": 5, "repository": "owner/repo5"}
+                "selectedEntity": None,
+                "entities": [
+                    {"id": "1", "name": "owner/repo1"},
+                    {"id": "2", "name": "owner/repo2"}
                 ],
-                "users_count": 25
+                "cards": {"repositories": 2, "issues": 500, "pull_requests": 200, "commits": 2000, "users": 25},
+                "time_mined": "2024-01-01T12:00:00Z",
             },
             summary="Example without repository_id showing multiple repositories"
         ),
-        OpenApiExample(
-            "Repository Example with No Activity",
-            value={
-                "repository_id": 3,
-                "repository_name": "owner/inactive-repo",
-                "issues_count": 0,
-                "pull_requests_count": 0,
-                "commits_count": 0,
-                "forks_count": 0,
-                "stars_count": 0,
-                "watchers_count": 0,
-                "time_mined": "2024-01-01T12:00:00Z",
-                "users_count": 0
-            },
-            summary="Example of repository with no activity"
-        )
     ]
 )
 class DashboardView(APIView):
@@ -192,16 +155,18 @@ class DashboardView(APIView):
                 commits_query = commits_query.filter(repository=metadata)
                 
                 response_data = {
-                    "repository_id": repository_id,
-                    "repository_name": repository_name,
-                    "issues_count": issues_query.count(),
-                    "pull_requests_count": prs_query.count(),
-                    "commits_count": commits_query.count(),
-                    "forks_count": metadata.forks_count,
-                    "stars_count": metadata.stars_count,
-                    "watchers_count": metadata.watchers_count,
+                    "selectedEntity": {"id": str(repository_id), "name": repository_name},
+                    "entities": [],
+                    "cards": {
+                        "issues": issues_query.count(),
+                        "pull_requests": prs_query.count(),
+                        "commits": commits_query.count(),
+                        "users": commits_query.values('author').distinct().count(),
+                        "forks": metadata.forks_count,
+                        "stars": metadata.stars_count,
+                        "watchers": metadata.watchers_count,
+                    },
                     "time_mined": DateTimeHandler.format_date(metadata.time_mined),
-                    "users_count": commits_query.values('author').distinct().count(),
                 }
             except GitHubMetadata.DoesNotExist:
                 return Response(
@@ -212,12 +177,21 @@ class DashboardView(APIView):
             repositories = GitHubMetadata.objects.values('id', 'repository')
             
             response_data = {
-                "issues_count": issues_query.count(),
-                "pull_requests_count": prs_query.count(),
-                "commits_count": commits_query.count(),
-                "repositories_count": repositories.count(),
-                "repositories": list(repositories),
-                "users_count": commits_query.values('author').distinct().count(),
+                "selectedEntity": None,
+                "entities": [
+                    {"id": str(repository["id"]), "name": repository["repository"]}
+                    for repository in repositories
+                ],
+                "cards": {
+                    "repositories": repositories.count(),
+                    "issues": issues_query.count(),
+                    "pull_requests": prs_query.count(),
+                    "commits": commits_query.count(),
+                    "users": commits_query.values('author').distinct().count(),
+                },
+                "time_mined": DateTimeHandler.format_date(
+                    GitHubMetadata.objects.aggregate(value=Max("time_mined"))["value"]
+                ),
             }
         
         return Response(response_data)
@@ -249,9 +223,10 @@ class DashboardView(APIView):
         ),
         OpenApiParameter(
             name="interval",
-            description="Time interval for grouping data (day, week, month). Default is 'day'.",
+            description="Time interval for grouping data (day, week, month, year). Default is 'day'.",
             required=False,
             type=str,
+            enum=["day", "week", "month", "year"],
             default="day"
         ),
     ],
@@ -259,15 +234,13 @@ class DashboardView(APIView):
         200: {
             "type": "object",
             "properties": {
-                "repository_id": {"type": "integer", "nullable": True},
-                "repository_name": {"type": "string", "nullable": True},
+                "selectedEntity": {"type": "object", "nullable": True},
+                "interval": {"type": "string"},
                 "time_series": {
                     "type": "object",
                     "properties": {
                         "labels": {"type": "array", "items": {"type": "string"}},
-                        "issues": {"type": "array", "items": {"type": "integer"}},
-                        "pull_requests": {"type": "array", "items": {"type": "integer"}},
-                        "commits": {"type": "array", "items": {"type": "integer"}}
+                        "datasets": {"type": "object"},
                     }
                 }
             }
@@ -284,13 +257,15 @@ class DashboardView(APIView):
         OpenApiExample(
             "Single Repository Example",
             value={
-                "repository_id": 1,
-                "repository_name": "owner/repo",
+                "selectedEntity": {"id": "1", "name": "owner/repo"},
+                "interval": "day",
                 "time_series": {
                     "labels": ["2024-01-01", "2024-01-02", "2024-01-03"],
-                    "issues": [5, 8, 15],
-                    "pull_requests": [2, 6, 7],
-                    "commits": [10, 18, 30]
+                    "datasets": {
+                        "issues": [5, 8, 15],
+                        "pull_requests": [2, 6, 7],
+                        "commits": [10, 18, 30],
+                    },
                 }
             },
             description="Example response for a specific repository showing cumulative counts"
@@ -298,11 +273,15 @@ class DashboardView(APIView):
         OpenApiExample(
             "All Repositories Example",
             value={
+                "selectedEntity": None,
+                "interval": "day",
                 "time_series": {
                     "labels": ["2024-01-01", "2024-01-02", "2024-01-03"],
-                    "issues": [15, 27, 47],
-                    "pull_requests": [8, 18, 23],
-                    "commits": [25, 55, 83]
+                    "datasets": {
+                        "issues": [15, 27, 47],
+                        "pull_requests": [8, 18, 23],
+                        "commits": [25, 55, 83],
+                    },
                 }
             },
             description="Example response for all repositories showing cumulative counts"
@@ -310,13 +289,15 @@ class DashboardView(APIView):
         OpenApiExample(
             "Monthly Interval Example",
             value={
-                "repository_id": 1,
-                "repository_name": "owner/repo",
+                "selectedEntity": {"id": "1", "name": "owner/repo"},
+                "interval": "month",
                 "time_series": {
                     "labels": ["2024-01", "2024-02", "2024-03"],
-                    "issues": [50, 95, 155],
-                    "pull_requests": [20, 45, 63],
-                    "commits": [100, 195, 305]
+                    "datasets": {
+                        "issues": [50, 95, 155],
+                        "pull_requests": [20, 45, 63],
+                        "commits": [100, 195, 305],
+                    },
                 }
             },
             description="Example response with monthly interval showing cumulative counts"
@@ -340,6 +321,9 @@ class GraphDashboardView(APIView):
         # Set up date truncation based on interval
         if interval == 'day':
             trunc_func = TruncDay
+            date_format = '%Y-%m-%d'
+        elif interval == 'week':
+            trunc_func = TruncWeek
             date_format = '%Y-%m-%d'
         elif interval == 'month':
             trunc_func = TruncMonth
@@ -437,18 +421,18 @@ class GraphDashboardView(APIView):
         
         # Prepare response
         response_data = {
+            "selectedEntity": {"id": str(repository_id), "name": repository_name} if repository_id else None,
+            "interval": interval,
             "time_series": {
                 "labels": date_range,
-                "issues": issues_data,
-                "pull_requests": prs_data,
-                "commits": commits_data
+                "datasets": {
+                    "issues": issues_data,
+                    "pull_requests": prs_data,
+                    "commits": commits_data,
+                },
             }
         }
-        
-        if repository_id:
-            response_data["repository_id"] = repository_id
-            response_data["repository_name"] = repository_name
-        
+
         return Response(response_data) 
 
 
@@ -465,14 +449,13 @@ class GraphDashboardView(APIView):
         ),
     ],
     responses={
-        200: OpenApiResponse(response={"type": "object", "properties": {"repository_id": {"type": "integer"}, "min_date": {"type": "string", "format": "date-time", "nullable": True}, "max_date": {"type": "string", "format": "date-time", "nullable": True}}}),
+        200: OpenApiResponse(response={"type": "object", "properties": {"selectedEntity": {"type": "object"}, "date_range": {"type": "object"}}}),
         400: OpenApiResponse(response={"type": "object", "properties": {"error": {"type": "string"}}}),
         404: OpenApiResponse(response={"type": "object", "properties": {"error": {"type": "string"}}})
     }
 )
 class RepositoryDateRangeView(APIView):
     def get(self, request):
-        # Accept repository_id via query parameter only
         repository_id = request.query_params.get('repository_id')
 
         if repository_id is None:
@@ -499,9 +482,11 @@ class RepositoryDateRangeView(APIView):
         max_date = commit_dates.get('max_date')
 
         response = {
-            "repository_id": repository_id,
-            "min_date": DateTimeHandler.format_date(min_date) if min_date else None,
-            "max_date": DateTimeHandler.format_date(max_date) if max_date else None,
+            "selectedEntity": {"id": str(repository_id), "name": metadata.repository},
+            "date_range": {
+                "min_date": DateTimeHandler.format_date(min_date) if min_date else None,
+                "max_date": DateTimeHandler.format_date(max_date) if max_date else None,
+            },
         }
 
         return Response(response)

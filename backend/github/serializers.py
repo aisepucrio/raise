@@ -117,7 +117,7 @@ class GraphDashboardSerializer(serializers.Serializer):
     start_date = serializers.DateTimeField(required=False)
     end_date = serializers.DateTimeField(required=False)
     interval = serializers.ChoiceField(
-        choices=['day', 'week', 'month'],
+        choices=['day', 'week', 'month', 'year'],
         default='day',
         required=False
     )

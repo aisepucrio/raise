@@ -3,10 +3,9 @@ import type { JiraSection } from "../../api/endpoints";
 import { queryKeys } from "../../query/keys";
 import { jiraService } from "./jiraService";
 import { toDateBounds } from "../shared";
-import type { HookQueryOptions } from "../shared";
+import type { DashboardGraphParams, HookQueryOptions } from "../shared";
 import type {
   JiraDateRangeParams,
-  JiraGraphParams,
   JiraOverviewParams,
   JiraPreviewParams,
 } from "./jiraTypes";
@@ -59,7 +58,7 @@ export function useJiraDateRangeByProjectQuery(
 
 // Fetches Jira dashboard time series.
 export function useJiraGraphQuery(
-  params: JiraGraphParams,
+  params: DashboardGraphParams<{ project_id?: string }>,
   options?: HookQueryOptions,
 ) {
   return useQuery({

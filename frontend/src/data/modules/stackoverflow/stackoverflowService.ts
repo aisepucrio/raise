@@ -3,15 +3,16 @@ import { endpoints } from "../../api/endpoints";
 import type { StackOverflowSection } from "../../api/endpoints";
 import {
   type ApiDateRangeResponse,
+  type DashboardGraphParams,
+  type DashboardGraphResponse,
+  type DashboardOverviewResponse,
   type RequestOptions,
 } from "../shared";
 import type {
   StackOverflowAdvancedCollectBody,
   StackOverflowCollectBody,
   StackOverflowDateRangeParams,
-  StackOverflowGraphParams,
   StackOverflowOverviewParams,
-  StackOverflowOverviewResponse,
   StackOverflowPreviewParams,
   StackOverflowPreviewResponse,
 } from "./stackoverflowTypes";
@@ -23,11 +24,11 @@ export const stackoverflowService = {
   getOverview: (
     params?: StackOverflowOverviewParams,
     options?: RequestOptions,
-  ): Promise<StackOverflowOverviewResponse> =>
-    api.get<StackOverflowOverviewResponse>(endpoints.dashboard(SOURCE), {
+  ): Promise<DashboardOverviewResponse> =>
+    api.get<DashboardOverviewResponse>(endpoints.dashboard(SOURCE), {
       params,
       signal: options?.signal,
-    }) as Promise<StackOverflowOverviewResponse>,
+    }) as Promise<DashboardOverviewResponse>,
 
   // Overview and Preview: date range used to limit question filters.
   getDateRange: (
@@ -40,11 +41,14 @@ export const stackoverflowService = {
     }) as Promise<ApiDateRangeResponse>,
 
   // ChartLine (Overview): series cumulative for interval (without question_id).
-  getGraph: (params: StackOverflowGraphParams, options?: RequestOptions) =>
-    api.get(endpoints.dashboardGraph(SOURCE), {
+  getGraph: (
+    params: DashboardGraphParams<{ tag?: string }>,
+    options?: RequestOptions,
+  ): Promise<DashboardGraphResponse> =>
+    api.get<DashboardGraphResponse>(endpoints.dashboardGraph(SOURCE), {
       params,
       signal: options?.signal,
-    }),
+    }) as Promise<DashboardGraphResponse>,
 
   // Preview: paginated questions table with filters and sorting.
   getPreview: (
@@ -52,17 +56,24 @@ export const stackoverflowService = {
     params: StackOverflowPreviewParams,
     options?: RequestOptions,
   ): Promise<StackOverflowPreviewResponse> =>
-    api.get<StackOverflowPreviewResponse>(endpoints.previewList(SOURCE, section), {
-      params,
-      signal: options?.signal,
-    }) as Promise<StackOverflowPreviewResponse>,
+    api.get<StackOverflowPreviewResponse>(
+      endpoints.previewList(SOURCE, section),
+      {
+        params,
+        signal: options?.signal,
+      },
+    ) as Promise<StackOverflowPreviewResponse>,
 
   // Preview export: exports in the current standard format (json).
   exportPreview: (options?: RequestOptions) =>
-    api.post(endpoints.export(SOURCE), { format: "json" }, {
-      responseType: "blob",
-      signal: options?.signal,
-    }),
+    api.post(
+      endpoints.export(SOURCE),
+      { format: "json" },
+      {
+        responseType: "blob",
+        signal: options?.signal,
+      },
+    ),
 
   // Collect: starts Stack Overflow collection via standardized endpoint.
   collect: (body: StackOverflowCollectBody, options?: RequestOptions) =>

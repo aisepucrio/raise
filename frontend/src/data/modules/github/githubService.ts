@@ -3,16 +3,16 @@ import { endpoints } from "../../api/endpoints";
 import type { GithubSection } from "../../api/endpoints";
 import {
   type ApiDateRangeResponse,
+  type DashboardGraphParams,
+  type DashboardGraphResponse,
+  type DashboardOverviewResponse,
   type RequestOptions,
 } from "../shared";
 import type {
   GithubCollectBody,
   GithubDateRangeParams,
   GithubExportBody,
-  GithubGraphParams,
-  GithubGraphResponse,
   GithubOverviewParams,
-  GithubOverviewResponse,
   GithubPreviewParams,
   GithubPreviewResponse,
 } from "./githubTypes";
@@ -24,11 +24,11 @@ export const githubService = {
   getOverview: (
     params?: GithubOverviewParams,
     options?: RequestOptions,
-  ): Promise<GithubOverviewResponse> =>
-    api.get<GithubOverviewResponse>(endpoints.dashboard(SOURCE), {
+  ): Promise<DashboardOverviewResponse> =>
+    api.get<DashboardOverviewResponse>(endpoints.dashboard(SOURCE), {
       params,
       signal: options?.signal,
-    }) as Promise<GithubOverviewResponse>,
+    }) as Promise<DashboardOverviewResponse>,
 
   // Overview and Preview: date range used to limit repository filters.
   getDateRange: (
@@ -42,13 +42,13 @@ export const githubService = {
 
   // ChartLine (Overview): series cumulative for interval.
   getGraph: (
-    params: GithubGraphParams,
+    params: DashboardGraphParams<{ repository_id?: string }>,
     options?: RequestOptions,
-  ): Promise<GithubGraphResponse> =>
-    api.get<GithubGraphResponse>(endpoints.dashboardGraph(SOURCE), {
+  ): Promise<DashboardGraphResponse> =>
+    api.get<DashboardGraphResponse>(endpoints.dashboardGraph(SOURCE), {
       params,
       signal: options?.signal,
-    }) as Promise<GithubGraphResponse>,
+    }) as Promise<DashboardGraphResponse>,
 
   // Preview: paginated table for section with filters and sorting.
   getPreview: (

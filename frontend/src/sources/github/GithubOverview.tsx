@@ -10,9 +10,8 @@ import {
   useGithubDateRangeByRepositoryQuery,
   useGithubGraphQuery,
   useGithubOverviewQuery,
-  type GithubGraphParams,
+  type DashboardOverviewResponse,
   type GithubOverviewParams,
-  type GithubOverviewResponse,
 } from "@/data";
 import {
   buildOverviewEndpointParams,
@@ -26,24 +25,24 @@ import { buildSelectOptions } from "@/sources/shared/AllShared";
 
 // Cards shown when in repository is selected.
 // Order here matches sidebar visual order in "All repositories" mode.
-const ALL_REPOSITORIES_CARD_CONFIG: readonly OverviewMetricCardConfig<GithubOverviewResponse>[] =
+const ALL_REPOSITORIES_CARD_CONFIG: readonly OverviewMetricCardConfig<DashboardOverviewResponse>[] =
   [
-    { title: "Repositories", getValue: (data) => data?.repositories_count },
-    { title: "Issues", getValue: (data) => data?.issues_count },
-    { title: "Pull Requests", getValue: (data) => data?.pull_requests_count },
-    { title: "Commits", getValue: (data) => data?.commits_count },
-    { title: "Users", getValue: (data) => data?.users_count },
+    { title: "Repositories", getValue: (data) => data?.cards?.repositories },
+    { title: "Issues", getValue: (data) => data?.cards?.issues },
+    { title: "Pull Requests", getValue: (data) => data?.cards?.pull_requests },
+    { title: "Commits", getValue: (data) => data?.cards?.commits },
+    { title: "Users", getValue: (data) => data?.cards?.users },
   ];
 
 // Cards shown for the specific repository.
-const REPOSITORY_CARD_CONFIG: readonly OverviewMetricCardConfig<GithubOverviewResponse>[] =
+const REPOSITORY_CARD_CONFIG: readonly OverviewMetricCardConfig<DashboardOverviewResponse>[] =
   [
-    { title: "Commits", getValue: (data) => data?.commits_count },
-    { title: "Issues", getValue: (data) => data?.issues_count },
-    { title: "Pull Requests", getValue: (data) => data?.pull_requests_count },
-    { title: "Users", getValue: (data) => data?.users_count },
-    { title: "Forks", getValue: (data) => data?.forks_count },
-    { title: "Stars", getValue: (data) => data?.stars_count },
+    { title: "Commits", getValue: (data) => data?.cards?.commits },
+    { title: "Issues", getValue: (data) => data?.cards?.issues },
+    { title: "Pull Requests", getValue: (data) => data?.cards?.pull_requests },
+    { title: "Users", getValue: (data) => data?.cards?.users },
+    { title: "Forks", getValue: (data) => data?.cards?.forks },
+    { title: "Stars", getValue: (data) => data?.cards?.stars },
   ];
 
 export default function GithubOverview() {
@@ -57,12 +56,8 @@ export default function GithubOverview() {
 
   // Adapts API payload to the standard UI option format.
   const repositoryOptions = useMemo(
-    () =>
-      buildSelectOptions(repositoryCatalogQuery.data?.repositories, {
-        getValue: (repository) => repository.id,
-        getLabel: (repository) => repository.repository,
-      }),
-    [repositoryCatalogQuery.data?.repositories],
+    () => buildSelectOptions(repositoryCatalogQuery.data?.entities),
+    [repositoryCatalogQuery.data?.entities],
   );
 
   // Query parameters for overview cards.
@@ -83,7 +78,7 @@ export default function GithubOverview() {
   // Time series uses the same filters plus range-derived interval.
   const graphParams = useMemo(
     () =>
-      buildOverviewGraphEndpointParams<GithubGraphParams>(
+      buildOverviewGraphEndpointParams(
         {
           selectedSourceId: selectedRepositoryId,
           startDate,

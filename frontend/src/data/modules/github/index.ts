@@ -8,12 +8,8 @@ export type {
   GithubCollectType,
   GithubDateRangeParams,
   GithubExportBody,
-  GithubGraphParams,
-  GithubGraphResponse,
   GithubOverviewParams,
-  GithubOverviewResponse,
   GithubPreviewParams,
   GithubPreviewResponse,
   GithubPreviewRow,
-  GithubRepository,
 } from "./githubTypes";

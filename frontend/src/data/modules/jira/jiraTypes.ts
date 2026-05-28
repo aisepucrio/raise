@@ -2,26 +2,6 @@ import type { DateFilterRange } from "../shared";
 
 export type JiraOverviewParams = DateFilterRange & { project_id?: string };
 export type JiraDateRangeParams = { project_id: string };
-export type JiraGraphParams = DateFilterRange & {
-  interval: "day" | "month" | "year";
-  project_id?: string;
-};
-
-// Dashboard/overview response (cards + project list).
-export type JiraOverviewProject = {
-  id: string;
-  name: string;
-};
-
-export type JiraOverviewResponse = {
-  users_count?: number;
-  issues_count?: number;
-  comments_count?: number;
-  sprints_count?: number;
-  projects_count?: number;
-  projects?: JiraOverviewProject[];
-  time_mined?: string | null;
-};
 
 export type JiraPreviewParams = {
   page: number;

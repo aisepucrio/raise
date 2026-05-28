@@ -10,26 +10,29 @@ export * from "./modules/stackoverflow/stackoverflowMutations";
 
 // Re-exports module types from the same shared entry point.
 export type {
+  ApiDateRangeResponse,
+  DashboardEntity,
+  DashboardGraphInterval,
+  DashboardGraphParams,
+  DashboardGraphResponse,
+  DashboardOverviewResponse,
+  DateFilterRange,
+  HookQueryOptions,
+} from "./modules/shared";
+export type {
   GithubCollectBody,
   GithubCollectType,
   GithubDateRangeParams,
   GithubExportBody,
-  GithubGraphParams,
-  GithubGraphResponse,
   GithubOverviewParams,
-  GithubOverviewResponse,
   GithubPreviewParams,
   GithubPreviewResponse,
   GithubPreviewRow,
-  GithubRepository,
 } from "./modules/github";
 export type {
   JiraCollectBody,
   JiraDateRangeParams,
-  JiraGraphParams,
   JiraOverviewParams,
-  JiraOverviewProject,
-  JiraOverviewResponse,
   JiraPreviewParams,
   JiraPreviewResponse,
   JiraPreviewRow,
@@ -41,10 +44,7 @@ export type {
   StackOverflowAdvancedCollectFilters,
   StackOverflowCollectBody,
   StackOverflowDateRangeParams,
-  StackOverflowGraphParams,
   StackOverflowOverviewParams,
-  StackOverflowOverviewQuestion,
-  StackOverflowOverviewResponse,
   StackOverflowPreviewParams,
   StackOverflowPreviewResponse,
   StackOverflowPreviewRow,

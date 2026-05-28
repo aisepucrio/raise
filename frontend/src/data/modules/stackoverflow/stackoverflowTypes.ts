@@ -10,30 +10,8 @@ export type StackOverflowPreviewParams = {
   creation_date__lte?: string;
 };
 
-// Dashboard/overview response (cards + question list).
-export type StackOverflowOverviewQuestion = {
-  id?: string | number;
-  question_id?: string | number;
-  title?: string;
-  question_title?: string;
-  question?: string;
-  display?: string;
-};
-
-export type StackOverflowOverviewResponse = {
-  questions_count?: number;
-  answers_count?: number;
-  comments_count?: number;
-  tags_count?: number;
-  questions?: StackOverflowOverviewQuestion[];
-  time_mined?: string | null;
-};
-
-export type StackOverflowOverviewParams = DateFilterRange & { question_id?: string };
-export type StackOverflowDateRangeParams = { question_id: string };
-export type StackOverflowGraphParams = DateFilterRange & {
-  interval: "day" | "month" | "year";
-};
+export type StackOverflowOverviewParams = DateFilterRange & { tag?: string };
+export type StackOverflowDateRangeParams = { tag?: string };
 
 export type StackOverflowCollectBody = {
   options: ["collect_questions"];
