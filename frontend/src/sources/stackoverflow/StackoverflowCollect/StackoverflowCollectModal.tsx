@@ -69,7 +69,7 @@ export default function StackoverflowCollectModal({
           setTagInput(event.target.value);
           if (addTagError) setAddTagError(null);
         }}
-        placeholder="reactjs or paste a Stack Overflow tag URL"
+        placeholder="Stack Overflow tag URL or the tag name"
         error={addTagError ?? undefined}
       />
     </CollectFormModal>
