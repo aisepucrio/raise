@@ -53,20 +53,14 @@ export function PreviewExportModal({
         </div>
 
         {/* Ações / Botões do Rodapé */}
-        <div className="flex flex-wrap justify-end gap-2 pt-2">
-          <Button
-            text="Cancel"
-            onClick={onClose}
-            className="min-w-40 px-4"
-            fullWidth={false}
-          />
+        <div className="flex  justify-between gap-2 pt-2">
+          <Button text="Cancel" onClick={onClose} className="w-[48%]  px-4" />
 
           <Button
             text={isPending ? "Exporting..." : "Confirm"}
             onClick={onConfirm}
             disabled={isPending}
-            className="min-w-40 px-4"
-            fullWidth={false}
+            className="w-[48%] px-4"
           />
         </div>
       </div>
