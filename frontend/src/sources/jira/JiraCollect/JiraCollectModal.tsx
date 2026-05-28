@@ -4,6 +4,7 @@ import { CollectFormModal } from "@/components/collect";
 import { FormInput } from "@/components/form";
 import type { JiraProject } from "@/data";
 import { containsItemIgnoreCase } from "@/sources/shared/CollectShared";
+import { parseJiraUrl } from "@/sources/shared/parseCollectUrl";
 
 export type JiraCollectModalProps = {
   open: boolean;
@@ -12,20 +13,6 @@ export type JiraCollectModalProps = {
   onAddProject: (project: JiraProject) => void;
 };
 
-// Normalizes user domain input, removing protocol and trailing slash.
-function normalizeJiraDomainInput(value: string) {
-  return value
-    .trim()
-    .replace(/^https?:\/\//i, "")
-    .replace(/\/+$/, "");
-}
-
-// Normalizes the project key by removing extra spaces.
-function normalizeJiraProjectKeyInput(value: string) {
-  return value.trim();
-}
-
-// Builds the unique key used to compare duplicate projects.
 function buildProjectIdentifier(jiraDomain: string, projectKey: string) {
   return `${jiraDomain}/${projectKey}`;
 }
@@ -36,49 +23,40 @@ export default function JiraCollectModal({
   onClose,
   onAddProject,
 }: JiraCollectModalProps) {
-  // Local state for both fields and the shared error.
-  const jiraDomainInputRef = useRef<HTMLInputElement | null>(null);
-  const [jiraDomainInput, setJiraDomainInput] = useState("");
-  const [jiraProjectKeyInput, setJiraProjectKeyInput] = useState("");
+  const jiraUrlInputRef = useRef<HTMLInputElement | null>(null);
+  const [jiraUrlInput, setJiraUrlInput] = useState("");
   const [addProjectError, setAddProjectError] = useState<string | null>(null);
 
-  // Resets fields when the modal closes.
   useEffect(() => {
     if (open) return;
-
-    setJiraDomainInput("");
-    setJiraProjectKeyInput("");
+    setJiraUrlInput("");
     setAddProjectError(null);
   }, [open]);
 
-  // validates domain/key and adds the project.
   function handleConfirmAddProject() {
-    const normalizedJiraDomain = normalizeJiraDomainInput(jiraDomainInput);
-    const normalizedProjectKey =
-      normalizeJiraProjectKeyInput(jiraProjectKeyInput);
+    const parsed = parseJiraUrl(jiraUrlInput);
 
-    if (!normalizedJiraDomain || !normalizedProjectKey) {
-      setAddProjectError("Fill in both domain and project key.");
+    if (!parsed) {
+      setAddProjectError(
+        "Paste a valid Jira URL (e.g. https://your-domain.atlassian.net/browse/PROJ-123)",
+      );
       return;
     }
 
     const projectIdentifier = buildProjectIdentifier(
-      normalizedJiraDomain,
-      normalizedProjectKey,
+      parsed.jira_domain,
+      parsed.project_key,
     );
-    const existingProjectIdentifiers = projects.map((project) =>
-      buildProjectIdentifier(project.jira_domain, project.project_key),
+    const existingIdentifiers = projects.map((p) =>
+      buildProjectIdentifier(p.jira_domain, p.project_key),
     );
 
-    if (containsItemIgnoreCase(existingProjectIdentifiers, projectIdentifier)) {
+    if (containsItemIgnoreCase(existingIdentifiers, projectIdentifier)) {
       setAddProjectError("Project already added.");
       return;
     }
 
-    onAddProject({
-      jira_domain: normalizedJiraDomain,
-      project_key: normalizedProjectKey,
-    });
+    onAddProject(parsed);
     setAddProjectError(null);
     onClose();
   }
@@ -88,36 +66,22 @@ export default function JiraCollectModal({
       open={open}
       onClose={onClose}
       title="Add project"
-      subtitle="Provide the Jira domain and project key."
-      initialFocusRef={jiraDomainInputRef}
+      subtitle="Paste any Jira URL — board, backlog, or issue."
+      initialFocusRef={jiraUrlInputRef}
       onConfirm={handleConfirmAddProject}
     >
-      {/* Block with the two Jira-required fields. */}
-      <div className="space-y-3">
-        <FormInput
-          id="jira-collect-domain-input"
-          ref={jiraDomainInputRef}
-          label="Jira domain"
-          value={jiraDomainInput}
-          onChange={(event) => {
-            setJiraDomainInput(event.target.value);
-            if (addProjectError) setAddProjectError(null);
-          }}
-          placeholder="your-domain.atlassian.net"
-          error={addProjectError ?? undefined}
-        />
-
-        <FormInput
-          id="jira-collect-project-key-input"
-          label="Project key"
-          value={jiraProjectKeyInput}
-          onChange={(event) => {
-            setJiraProjectKeyInput(event.target.value);
-            if (addProjectError) setAddProjectError(null);
-          }}
-          placeholder="RAISE"
-        />
-      </div>
+      <FormInput
+        id="jira-collect-url-input"
+        ref={jiraUrlInputRef}
+        label="Jira URL"
+        value={jiraUrlInput}
+        onChange={(event) => {
+          setJiraUrlInput(event.target.value);
+          if (addProjectError) setAddProjectError(null);
+        }}
+        placeholder="https://your-domain.atlassian.net/browse/PROJ-123"
+        error={addProjectError ?? undefined}
+      />
     </CollectFormModal>
   );
 }
