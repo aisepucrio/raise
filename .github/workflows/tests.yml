@@ -10,34 +10,36 @@ jobs:
   test: 
     runs-on: ubuntu-latest
 
-    #env:
-      #DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SUPERUSER_PASSWORD }}
-      #STACK_ACCESS_TOKEN: ${{ secrets.STACK_API_KEY }}  
-      #IS_DEBUG: "False"
+    env:
+      IS_DEBUG: "False"
+      POSTGRES_DB: raise
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      VITE_API_URL: "http://localhost:8000"
 
-  steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
  
-    - name: Build Docker image
-      run: docker-compose build 
+      - name: Build Docker image
+        run: docker-compose -f docker-compose.yaml build
 
-    - name: Start dependencies (db, redis)
-      run: docker-compose up -d db redis
-    - name: Wait for dependencies to be healthy
-      run: sleep 10
+      - name: Start dependencies (db, redis)
+        run: docker-compose -f docker-compose.yaml up -d db_raise redis
+      - name: Wait for dependencies to be healthy
+        run: sleep 15
 
-    - name: Install test dependencies
-      run: docker-compose run --rm web pip install coverage pytest pytest-django 
- 
-    - name: Run tests with coverage 
-      run: docker-compose run --rm web coverage run -m pytest
-    - name: Show coverage report
-      run: docker-compose run --rm web coverage report
+      - name: Install test dependencies
+       run: docker-compose -f docker-compose.yaml run --rm raiseapi pip install coverage pytest pytest-django
+       
+      - name: Run tests with coverage 
+        run: docker-compose -f docker-compose.yaml run --rm raiseapi python -m coverage run -m pytest
+      - name: Show coverage report
+        run: docker-compose -f docker-compose.yaml run --rm raiseapi python -m coverage report
 
-    - name: Enforce minimum coverage (50%)
-      run: docker-compose run --rm web coverage report --fail-under=50
+      - name: Enforce minimum coverage (50%)
+        run: docker-compose run --rm web coverage report --fail-under=50
 
-    - name: Tear down
-      if: always()
-      run: docker-compose down 
+      - name: Tear down
+        if: always()
+        run: docker-compose -f docker-compose.yaml down
