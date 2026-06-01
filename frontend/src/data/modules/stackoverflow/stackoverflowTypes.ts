@@ -10,6 +10,11 @@ export type StackOverflowPreviewParams = {
   creation_date__lte?: string;
 };
 
+export type StackOverflowProject = {
+  id: string;
+  name: string;
+};
+
 // Dashboard/overview response (cards + question list).
 export type StackOverflowOverviewQuestion = {
   id?: string | number;
@@ -26,6 +31,7 @@ export type StackOverflowOverviewResponse = {
   comments_count?: number;
   tags_count?: number;
   questions?: StackOverflowOverviewQuestion[];
+  projects?: StackOverflowProject[];
   time_mined?: string | null;
 };
 
