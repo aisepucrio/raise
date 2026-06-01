@@ -86,7 +86,7 @@ services:
     env_file:
       - .env
     environment:
-      GITHUB_TOKENS: ${GITHUB_TOKEN}
+      GITHUB_TOKENS: ${GITHUB_TOKENS}
     depends_on:
       redis:
         condition: service_healthy
