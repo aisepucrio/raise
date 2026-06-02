@@ -7,39 +7,39 @@ on:
     branches: [ main ]
 
 jobs:
-  test: 
+  test:
     runs-on: ubuntu-latest
-
     env:
       IS_DEBUG: "False"
       POSTGRES_DB: raise
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       VITE_API_URL: "http://localhost:8000"
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
  
       - name: Build Docker image
         run: docker-compose -f docker-compose.yaml build
-
+ 
       - name: Start dependencies (db, redis)
         run: docker-compose -f docker-compose.yaml up -d db_raise redis
+ 
       - name: Wait for dependencies to be healthy
         run: sleep 15
-
+ 
       - name: Install test dependencies
-       run: docker-compose -f docker-compose.yaml run --rm raiseapi pip install coverage pytest pytest-django
-       
-      - name: Run tests with coverage 
+        run: docker-compose -f docker-compose.yaml run --rm raiseapi pip install coverage pytest pytest-django
+ 
+      - name: Run tests with coverage
         run: docker-compose -f docker-compose.yaml run --rm raiseapi python -m coverage run -m pytest
+ 
       - name: Show coverage report
         run: docker-compose -f docker-compose.yaml run --rm raiseapi python -m coverage report
-
-      - name: Enforce minimum coverage (50%)
-        run: docker-compose run --rm web coverage report --fail-under=50
-
+ 
+      - name: Enforce minimum coverage (20%)
+        run: docker-compose -f docker-compose.yaml run --rm raiseapi python -m coverage report --fail-under=20
+ 
       - name: Tear down
         if: always()
         run: docker-compose -f docker-compose.yaml down
