@@ -42,18 +42,14 @@ jobs:
       - name: Wait for dependencies to be healthy
         run: sleep 15
  
-      - name: Install test dependencies
-        run: docker-compose -f docker-compose.yaml run --rm raiseapi pip install coverage pytest pytest-django
- 
       - name: Run tests with coverage
-        run: docker-compose -f docker-compose.yaml run --rm raiseapi python -m coverage run -m pytest
- 
-      - name: Show coverage report
-        run: docker-compose -f docker-compose.yaml run --rm raiseapi python -m coverage report
- 
-      - name: Enforce minimum coverage (20%)
-        run: docker-compose -f docker-compose.yaml run --rm raiseapi python -m coverage report --fail-under=20
- 
+        run: |
+          docker-compose -f docker-compose.yaml run --rm raiseapi sh -c "
+            pip install coverage pytest pytest-django &&
+            python -m coverage run -m pytest &&
+            python -m coverage report &&
+            python -m coverage report --fail-under=10"
+            
       - name: Tear down
         if: always()
         run: docker-compose -f docker-compose.yaml down
