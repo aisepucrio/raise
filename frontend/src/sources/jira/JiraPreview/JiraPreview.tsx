@@ -27,6 +27,7 @@ import {
   togglePreviewSortState,
   type PreviewBuildParamsInput,
 } from "@/sources/shared/PreviewShared";
+import { ExportFormat, PreviewExportModal } from "@/components/preview/PreviewExportModal";
 
 export type JiraPreviewDateFilterField = "created" | "updated_at" | "sprint";
 
@@ -36,6 +37,8 @@ export type JiraPreviewProps = {
   itemsLabel: string;
   emptyStateMessage: string;
   loadErrorMessage: string;
+  exportTable: string;
+  exportDataType?: string;
   exportFileNamePrefix: string;
   exportSuccessMessage?: string;
   dateFilterField?: JiraPreviewDateFilterField;
@@ -75,6 +78,8 @@ export function JiraPreview({
   emptyStateMessage,
   loadErrorMessage,
   exportFileNamePrefix,
+  exportTable,
+  exportDataType,
   exportSuccessMessage = "Jira preview exported successfully.",
   dateFilterField,
   showDateFilters = true,
@@ -105,7 +110,7 @@ export function JiraPreview({
   const projectOptions = useMemo(
     () =>
       buildSelectOptions(overviewData?.projects, {
-        getValue: (project) => project.name,
+        getValue: (project) => project.id,
         getLabel: (project) => project.name,
       }),
     [overviewData?.projects],
@@ -187,6 +192,8 @@ export function JiraPreview({
   const rows = previewQuery.data?.results ?? [];
   const totalItems = previewQuery.data?.count ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [selectedFormat, setSelectedFormat] = useState<ExportFormat>("json");
 
   // Prevents an invalid page when the total changes.
   useEffect(() => {
@@ -214,17 +221,27 @@ export function JiraPreview({
 
   // Prepares the export request for this preview.
   const requestExportPayload = useCallback(
-    () => previewExportMutation.mutateAsync(),
-    [previewExportMutation],
-  );
+    (format: ExportFormat) => {
 
-  async function handleExport() {
-    await runPreviewExportWithFeedback({
-      execute: requestExportPayload,
-      fileNamePrefix: exportFileNamePrefix,
-      successMessage: exportSuccessMessage,
+      return previewExportMutation.mutateAsync({
+        format,
+        table: exportTable,
+      ...(exportDataType ? { date_type: exportDataType } : {}),
+
     });
-  }
+}, [previewExportMutation, exportTable, selectedFormat, exportDataType]);
+
+  async function handleConfirmExport() {
+  await runPreviewExportWithFeedback({
+    execute: () => requestExportPayload(selectedFormat),
+    fileNamePrefix: exportFileNamePrefix,
+    successMessage: exportSuccessMessage,
+    extension: selectedFormat,
+    mimeType: selectedFormat === "csv" ? "text/csv" : "application/json",
+  });
+
+  setIsExportModalOpen(false);
+}
 
   // Toggles ascending/descending sort for the clicked column.
   function handleSort(field: string) {
@@ -249,7 +266,7 @@ export function JiraPreview({
         columns={columns}
         hiddenColumns={hiddenColumns}
         onHiddenColumnsChange={setHiddenColumns}
-        onExport={() => void handleExport()}
+        onExport={() => setIsExportModalOpen(true)}
         isExportPending={previewExportMutation.isPending}
       >
         {/* Jira-specific filters. */}
@@ -307,6 +324,18 @@ export function JiraPreview({
         onClose={() => setIsCellModalOpen(false)}
         value={selectedCellValue}
       />
+
+      {/* Export modal for selecting export format. */}
+      <PreviewExportModal
+        open={isExportModalOpen}
+        selectedFormat={selectedFormat}
+        onChangeFormat={setSelectedFormat}
+        onClose={() => setIsExportModalOpen(false)}
+        onConfirm={handleConfirmExport}
+        isPending={previewExportMutation.isPending}
+      />
     </PreviewWrapper>
+
+    
   );
 }

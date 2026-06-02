@@ -9,6 +9,7 @@ export default function JiraPreviewSprints() {
       emptyStateMessage="No sprints found for the selected filters."
       loadErrorMessage="Failed to load Jira sprints."
       exportFileNamePrefix="jira-sprints-preview"
+      exportTable="jirasprint"
       dateFilterField="sprint"
     />
   );

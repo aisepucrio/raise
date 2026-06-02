@@ -74,7 +74,7 @@ export type GithubCollectBody = {
 };
 
 export type GithubExportBody = {
-  format: "json";
+  format: "json" | "csv";
   table: string;
   date_type?: string;
 };

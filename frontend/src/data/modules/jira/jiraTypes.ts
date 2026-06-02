@@ -54,3 +54,9 @@ export type JiraCollectBody = {
   start_date?: string;
   end_date?: string;
 };
+
+export type JiraExportBody = {
+  format: "json" | "csv";
+  table: string;
+  date_type?: string;
+};
