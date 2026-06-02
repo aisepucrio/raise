@@ -2,6 +2,7 @@ import json
 import csv
 import logging
 from io import StringIO
+from urllib import request
 
 from django.http import HttpResponse
 from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiResponse
@@ -9,7 +10,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from jira.models import JiraIssue
+from jira.models import JiraComment, JiraIssue, JiraProject, JiraSprint, JiraUser
 from .serializers import ExportDataSerializer
 
 logger = logging.getLogger(__name__)
@@ -52,7 +53,10 @@ class ExportDataView(APIView):
         issue_type = validated.get('issue_type')
 
         model_mapping = {
+            'jirauser': JiraUser,
             'jiraissue': JiraIssue,
+            'jiracomment': JiraComment,
+            'jirasprint': JiraSprint,
         }
 
         if table not in model_mapping:

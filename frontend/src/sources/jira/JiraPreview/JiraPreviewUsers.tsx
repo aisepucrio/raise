@@ -9,6 +9,7 @@ export default function JiraPreviewUsers() {
       emptyStateMessage="No users found for the selected filters."
       loadErrorMessage="Failed to load Jira users."
       exportFileNamePrefix="jira-users-preview"
+      exportTable="jirauser"
       showDateFilters={false}
     />
   );

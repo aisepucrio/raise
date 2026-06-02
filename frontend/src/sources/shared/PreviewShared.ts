@@ -40,6 +40,8 @@ type RunPreviewExportWithFeedbackOptions = {
   fileNamePrefix: string;
   successMessage: string;
   errorFallbackMessage?: string;
+  extension?: string;
+  mimeType?: string;
 };
 
 // Detects ISO date strings to improve table display.
@@ -73,7 +75,7 @@ export function toPreviewString(value: unknown) {
 // Generates a consistent filename for preview exports.
 export function buildPreviewExportFileName(
   fileNamePrefix: string,
-  extension = "json",
+  extension: string,
 ) {
   const timestamp = new Date()
     .toISOString()
@@ -132,12 +134,16 @@ export async function runPreviewExportWithFeedback({
   fileNamePrefix,
   successMessage,
   errorFallbackMessage = "Failed to export preview.",
+  extension,
+  mimeType,
 }: RunPreviewExportWithFeedbackOptions): Promise<void> {
   try {
     const exportPayload = await execute();
     downloadPreviewExportFile({
       exportPayload,
       fileNamePrefix,
+      extension,
+      mimeType,
     });
 
     toast.success(undefined, {

@@ -9,7 +9,9 @@ import {
 } from "@/components/preview";
 import { StartEndDateFilter } from "@/components/start-end-datefilter";
 import {
+  useStackOverflowDateRangeByQuestionQuery,
   useStackOverflowExportMutation,
+  useStackOverflowOverviewQuery,
   useStackOverflowPreviewQuery,
   type StackOverflowPreviewParams,
   type StackOverflowSection,
@@ -23,6 +25,8 @@ import {
   togglePreviewSortState,
   type PreviewBuildParamsInput,
 } from "@/sources/shared/PreviewShared";
+import { SourceSelectFilter } from "@/components/source-select-filter/SourceSelectFilter";
+import { buildSelectOptions } from "@/sources/shared/AllShared";
 
 export type StackoverflowPreviewProps = {
   idPrefix: string;
@@ -131,6 +135,8 @@ export function StackoverflowPreview({
   const rows = previewQuery.data?.results ?? [];
   const totalItems = previewQuery.data?.count ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [selectedSourceId, setSelectedSourceId] = useState("");
 
   // Prevents an invalid page when the total changes.
   useEffect(() => {
@@ -143,7 +149,23 @@ export function StackoverflowPreview({
     () => resolvePreviewTableState(rows, hiddenColumns),
     [rows, hiddenColumns],
   );
+  const { data: overviewData, isPending: isProjectListPending } =
+      useStackOverflowOverviewQuery();
 
+  const projectOptions = useMemo(
+      () =>
+        buildSelectOptions(overviewData?.projects, {
+          getValue: (project) => project.name,
+          getLabel: (project) => project.name,
+        }),
+      [overviewData?.projects],
+    );
+    const dateRangeQuery = useStackOverflowDateRangeByQuestionQuery(
+        selectedSourceId || undefined,
+        {
+          enabled: showDateFilters,
+        },
+      );
   // Clears sorting when the sorted column disappears or becomes hidden.
   useEffect(() => {
     if (!isPreviewSortInvalid(sortState, columns, hiddenColumns)) return;
@@ -188,28 +210,42 @@ export function StackoverflowPreview({
     <PreviewWrapper>
       {/* Fixed header with global actions and optional period filter. */}
       <PreviewHeader
-        idPrefix={idPrefix}
-        onSearchChange={setSearch}
-        columns={columns}
-        hiddenColumns={hiddenColumns}
-        onHiddenColumnsChange={setHiddenColumns}
-        onExport={() => void handleExport()}
-        isExportPending={previewExportMutation.isPending}
-      >
-        {/* Optional period filter. */}
-        {showDateFilters ? (
-          <div className="shrink-0">
-            <StartEndDateFilter
               idPrefix={idPrefix}
-              startDate={startDate}
-              endDate={endDate}
-              onStartDateChange={setStartDate}
-              onEndDateChange={setEndDate}
-              width="compact"
-            />
-          </div>
-        ) : null}
-      </PreviewHeader>
+              onSearchChange={setSearch}
+              columns={columns}
+              hiddenColumns={hiddenColumns}
+              onHiddenColumnsChange={setHiddenColumns}
+              onExport={() => setIsExportModalOpen(true)}
+              isExportPending={previewExportMutation.isPending}
+            >
+              {/* Jira-specific filters. */}
+              <SourceSelectFilter
+                id={`${idPrefix}-source`}
+                label="Project"
+                value={selectedSourceId}
+                onChange={setSelectedSourceId}
+                options={projectOptions}
+                allOptionLabel="All projects"
+                isOptionsPending={isProjectListPending}
+                wrapperClassName="min-w-0 flex-1 xl:min-w-44"
+                className="font-semibold"
+              />
+      
+              {showDateFilters ? (
+                <div className="shrink-0">
+                  <StartEndDateFilter
+                    idPrefix={idPrefix}
+                    startDate={startDate}
+                    endDate={endDate}
+                    onStartDateChange={setStartDate}
+                    onEndDateChange={setEndDate}
+                    width="compact"
+                    dateRange={dateRangeQuery.data}
+                  />
+                </div>
+              ) : null}
+            </PreviewHeader>
+      
 
       {/* Main table with sorting, pagination, and cell previews. */}
       <PreviewTable
