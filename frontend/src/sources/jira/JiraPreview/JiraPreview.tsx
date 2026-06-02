@@ -110,7 +110,7 @@ export function JiraPreview({
   const projectOptions = useMemo(
     () =>
       buildSelectOptions(overviewData?.projects, {
-        getValue: (project) => project.name,
+        getValue: (project) => project.id,
         getLabel: (project) => project.name,
       }),
     [overviewData?.projects],

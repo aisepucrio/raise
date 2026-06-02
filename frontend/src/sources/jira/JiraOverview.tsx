@@ -55,7 +55,7 @@ export default function JiraOverview() {
   const projectOptions = useMemo(
     () =>
       buildSelectOptions(projectCatalogQuery.data?.projects, {
-        getValue: (project) => project.name,
+        getValue: (project) => project.id,
         getLabel: (project) => project.name,
       }),
     [projectCatalogQuery.data?.projects],
