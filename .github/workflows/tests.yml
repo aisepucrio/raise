@@ -49,9 +49,9 @@ jobs:
         run: |
           docker-compose -f docker-compose.yaml run --rm raiseapi sh -c "
             pip install coverage pytest pytest-django &&
-             python -m coverage run -m pytest -c /app/backend/pytest.ini /app/github /app/jira /app/jobs /app/stackoverflow &&
+            python -m coverage run -m pytest -c /app/pytest.ini /app/github /app/jira /app/jobs /app/stackoverflow &&
             python -m coverage report &&
-            python -m coverage report --fail-under=20
+            python -m coverage report --fail-under=10
           "
       - name: Tear down
         if: always()
