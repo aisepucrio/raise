@@ -41,6 +41,10 @@ jobs:
  
       - name: Wait for dependencies to be healthy
         run: sleep 15
+
+      - name: Check container structure
+        run: docker-compose -f docker-compose.yaml run --rm raiseapi sh -c "find /app -name 'tests.py' | head -20"
+
  
       - name: Run tests with coverage
         run: |
