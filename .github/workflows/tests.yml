@@ -44,7 +44,15 @@ jobs:
 
       - name: Check container structure
         run: docker-compose -f docker-compose.yaml run --rm raiseapi sh -c "find /app -name 'tests.py' | head -20"
-            
+
+      - name: Run tests with coverage
+        run: |
+          docker-compose -f docker-compose.yaml run --rm raiseapi sh -c "
+            pip install coverage pytest pytest-django &&
+            python -m coverage run -m pytest /app/github /app/jira /app/jobs /app/stackoverflow &&
+            python -m coverage report &&
+            python -m coverage report --fail-under=20
+          "
       - name: Tear down
         if: always()
         run: docker-compose -f docker-compose.yaml down
