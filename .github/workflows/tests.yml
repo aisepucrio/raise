@@ -42,8 +42,14 @@ jobs:
       - name: Wait for dependencies to be healthy
         run: sleep 15
 
-      - name: Check /app contents
-        run: docker-compose -f docker-compose.yaml run --rm raiseapi ls -la /app
+      - name: Run tests with coverage
+        run: |
+          docker-compose -f docker-compose.yaml run --rm raiseapi sh -c "
+            pip install coverage pytest pytest-django &&
+            python -m coverage run -m pytest /app/github /app/jira /app/jobs /app/stackoverflow --override-ini='python_files=tests.py' --override-ini='DJANGO_SETTINGS_MODULE=dataminer_api.settings' &&
+            python -m coverage report &&
+            python -m coverage report --fail-under=10
+          "
      
       - name: Tear down
         if: always()
