@@ -2,45 +2,39 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 
 import { CollectTagsSection } from "./CollectTagsSection";
 
-const TAGS = [
-  {
-    id: "acme/api",
-    label: "acme/api",
-    onRemove: () => undefined,
-  },
-  {
-    id: "acme/web",
-    label: "acme/web",
-    onRemove: () => undefined,
-  },
-];
+const ITEMS = ["acme/api", "acme/web"];
 
 const meta = {
   title: "Components/Collect/CollectTagsSection",
   component: CollectTagsSection,
   tags: ["autodocs"],
   argTypes: {
-    tagsHeading: {
+    title: {
       control: { type: "text" },
       description: "Title of the tags section.",
       table: { type: { summary: "string" } },
     },
-    tags: {
+    items: {
       control: false,
-      description: "List of removable tags (`id`, `label`, `onRemove`).",
-      table: { type: { summary: "readonly { id: string; label: string; onRemove: () => void }[]" } },
+      description: "List of collect targets to render as removable tags.",
+      table: { type: { summary: "readonly string[]" } },
     },
-    emptyTagsMessage: {
+    emptyMessage: {
       control: { type: "text" },
-      description: "message shown when the list of tags is empty.",
+      description: "Message shown when the list is empty.",
       table: { type: { summary: "string" } },
+    },
+    onRemoveItem: {
+      action: "removeItem",
+      description: "Callback triggered when an item is removed.",
+      table: { type: { summary: "(item: string) => void" } },
     },
   },
   args: {
-    tagsHeading: "Repositories (2)",
-    emptyTagsMessage:
+    title: "Repositories",
+    emptyMessage:
       'No repositories added yet. Click the "Add repository" button above to get started.',
-    tags: TAGS,
+    items: ITEMS,
   },
   parameters: {
     wrapperSize: "medium",
@@ -75,8 +69,7 @@ export const WithItems: Story = {
 
 export const Empty: Story = {
   args: {
-    tagsHeading: "Repositories (0)",
-    tags: [],
+    items: [],
   },
   parameters: {
     docs: {

@@ -2,20 +2,15 @@ import { useEffect, useRef, useState } from "react";
 
 import { CollectFormModal } from "@/components/collect";
 import { FormInput } from "@/components/form";
-import type { JiraProject } from "@/data";
 import { containsItemIgnoreCase } from "@/sources/shared/CollectShared";
 import { parseJiraUrl } from "@/sources/shared/parseCollectUrl";
 
 export type JiraCollectModalProps = {
   open: boolean;
-  projects: readonly JiraProject[];
+  projects: readonly string[];
   onClose: () => void;
-  onAddProject: (project: JiraProject) => void;
+  onAddProject: (project: string) => void;
 };
-
-function buildProjectIdentifier(jiraDomain: string, projectKey: string) {
-  return `${jiraDomain}/${projectKey}`;
-}
 
 export default function JiraCollectModal({
   open,
@@ -43,15 +38,7 @@ export default function JiraCollectModal({
       return;
     }
 
-    const projectIdentifier = buildProjectIdentifier(
-      parsed.jira_domain,
-      parsed.project_key,
-    );
-    const existingIdentifiers = projects.map((p) =>
-      buildProjectIdentifier(p.jira_domain, p.project_key),
-    );
-
-    if (containsItemIgnoreCase(existingIdentifiers, projectIdentifier)) {
+    if (containsItemIgnoreCase(projects, parsed)) {
       setAddProjectError("Project already added.");
       return;
     }

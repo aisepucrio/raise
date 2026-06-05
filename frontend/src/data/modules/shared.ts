@@ -9,6 +9,19 @@ export type DateFilterRange = {
   end_date?: string;
 };
 
+export type StandardCollectBody<
+  CollectType extends string,
+  Filters extends object = Record<string, never>,
+  Options extends object = Record<string, never>,
+> = {
+  targets: string[];
+  collect_types: CollectType[];
+  start_date: string | null;
+  end_date: string | null;
+  filters: Filters;
+  options: Options;
+};
+
 export type ApiDateRangeResponse = {
   min_date?: string | null;
   max_date?: string | null;

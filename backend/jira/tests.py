@@ -81,11 +81,16 @@ class JiraAPITests(APITestCase):
         """
         [Scenario]: Successful collection request.
         [What it tests]: Ensures that a valid and complete JSON payload triggers a Celery task.
-        [How it tests]: Sends a POST request to 'collect-jira-issues' with a valid 'projects' structure.
+        [How it tests]: Sends a POST request to 'collect-jira-issues' with a valid standardized collect payload.
         [Expected result]: The API should return 202 Accepted.
         """
         url = reverse('collect-jira-issues')
-        data = {'projects': [{'jira_domain': 'test.atlassian.net', 'project_key': 'PROJ'}]}
+        data = {
+            'targets': ['test.atlassian.net/PROJ'],
+            'collect_types': ['issues'],
+            'filters': {},
+            'options': {},
+        }
         mock_task.delay.return_value = MagicMock(id=str(uuid.uuid4()))
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
@@ -151,35 +156,35 @@ class JiraApiValidationTests(APITestCase):
     """
     def setUp(self):
         self.url = reverse('collect-jira-issues')
-        self.base_project = {'jira_domain': 'test.atlassian.net', 'project_key': 'PROJ'}
+        self.base_target = 'test.atlassian.net/PROJ'
 
-    def test_fails_with_missing_projects_key(self):
-        """[Validation]: Fails if 'projects' key is missing."""
-        data = {'issuetypes': ['Bug']}
+    def test_fails_with_missing_targets_key(self):
+        """[Validation]: Fails if 'targets' key is missing."""
+        data = {'collect_types': ['issues'], 'filters': {'types': ['Bug']}}
         response = self.client.post(self.url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_fails_with_empty_projects_list(self):
-        """[Validation]: Fails if 'projects' list is empty."""
-        data = {'projects': []}
+    def test_fails_with_empty_targets_list(self):
+        """[Validation]: Fails if 'targets' list is empty."""
+        data = {'targets': [], 'collect_types': ['issues']}
         response = self.client.post(self.url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_fails_with_invalid_projects_type(self):
-        """[Validation]: Fails if 'projects' is a string instead of a list."""
-        data = {'projects': "this is not a list"}
+    def test_fails_with_invalid_targets_type(self):
+        """[Validation]: Fails if 'targets' is a string instead of a list."""
+        data = {'targets': "this is not a list", 'collect_types': ['issues']}
         response = self.client.post(self.url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_fails_with_missing_keys_in_project_object(self):
-        """[Validation]: Fails if a project object does not contain 'project_key'."""
-        data = {'projects': [{'jira_domain': 'test.atlassian.net'}]}
+    def test_fails_with_invalid_target_format(self):
+        """[Validation]: Fails if a target does not use jira_domain/project_key format."""
+        data = {'targets': ['test.atlassian.net'], 'collect_types': ['issues']}
         response = self.client.post(self.url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_fails_with_invalid_issuetypes_type(self):
-        """[Validation]: Fails if 'issuetypes' is a string instead of a list."""
-        data = {'projects': [self.base_project], 'issuetypes': 'Bug'}
+    def test_fails_with_invalid_filter_types_type(self):
+        """[Validation]: Fails if 'filters.types' is a string instead of a list."""
+        data = {'targets': [self.base_target], 'collect_types': ['issues'], 'filters': {'types': 'Bug'}}
         response = self.client.post(self.url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 

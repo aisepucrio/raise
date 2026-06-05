@@ -1,12 +1,12 @@
 import logging
 
 from django.conf import settings
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiExample
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from jobs.models import Task
+from jira.serializers import JiraCollectSerializer
 from jira.tasks import collect_jira_issues_task
 
 
@@ -16,34 +16,7 @@ logger = logging.getLogger(__name__)
 @extend_schema(
     tags=['Jira'],
     summary="Collect Jira Issues",
-    description="Initiates a task to collect issues from one or more Jira projects.",
-    request={
-        'application/json': {
-            'type': 'object',
-            'properties': {
-                'projects': {
-                    'type': 'array',
-                    'items': {
-                        'type': 'object',
-                        'properties': {
-                            'jira_domain': {'type': 'string', 'description': 'Jira instance domain'},
-                            'project_key': {'type': 'string', 'description': 'Jira project key'}
-                        },
-                        'required': ['jira_domain', 'project_key']
-                    },
-                    'description': 'List of Jira projects to collect issues from'
-                },
-                'issuetypes': {
-                    'type': 'array',
-                    'items': {'type': 'string'},
-                    'description': 'List of issue types to collect'
-                },
-                'start_date': {'type': 'string', 'format': 'date-time', 'nullable': True},
-                'end_date': {'type': 'string', 'format': 'date-time', 'nullable': True}
-            },
-            'required': ['projects']
-        }
-    },
+    request=JiraCollectSerializer,
     responses={
         202: {
             'type': 'object',
@@ -63,7 +36,33 @@ logger = logging.getLogger(__name__)
         },
         400: {'description': 'Missing or invalid required fields'},
         500: {'description': 'Internal server error'}
-    }
+    },
+    examples=[
+        OpenApiExample(
+            "Collect issues from one project",
+            value={
+                "targets": ["company.atlassian.net/PROJ"],
+                "collect_types": ["issues"],
+                "start_date": "2025-01-01",
+                "end_date": "2025-01-31",
+                "filters": {"types": ["Bug", "Task"]},
+                "options": {},
+            },
+            request_only=True,
+        ),
+        OpenApiExample(
+            "Collect issues from multiple projects",
+            value={
+                "targets": ["company.atlassian.net/PROJ", "company.atlassian.net/OPS"],
+                "collect_types": ["issues"],
+                "start_date": None,
+                "end_date": None,
+                "filters": {"types": []},
+                "options": {},
+            },
+            request_only=True,
+        ),
+    ],
 )
 class JiraIssueCollectView(APIView):
     """
@@ -72,44 +71,21 @@ class JiraIssueCollectView(APIView):
 
     def post(self, request, *args, **kwargs):
         try:
-            data = request.data
-            projects = data.get('projects', [])
+            serializer = JiraCollectSerializer(data=request.data)
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-            # 1. Validate that 'projects' is a list
-            if not isinstance(projects, list):
-                return Response(
-                    {"error": "'projects' must be a list of objects"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+            data = serializer.validated_data
+            targets = data["targets"]
+            issue_types = (data.get("filters") or {}).get("types", [])
+            start_date = data.get("start_date") or None
+            end_date = data.get("end_date") or None
 
-            if not projects:
-                return Response({"error": "No project provided."}, status=status.HTTP_400_BAD_REQUEST)
-
-            # 2. Validate that each item in 'projects' is a dict with required keys
-            for project_info in projects:
-                if not isinstance(project_info, dict) or "jira_domain" not in project_info or "project_key" not in project_info:
-                    return Response(
-                        {"error": "Each project must be an object containing 'jira_domain' and 'project_key'."},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-
-            # 3. Validate the type of 'issuetypes'
-            issuetypes = data.get('issuetypes', [])
-            if issuetypes is not None and not isinstance(issuetypes, list):
-                return Response(
-                    {"error": "'issuetypes' must be a list"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            start_date = data.get('start_date', None)
-            end_date = data.get('end_date', None)
-
-            # 4. Load Jira credentials from environment variables
             jira_email = settings.JIRA_EMAIL
             jira_api_token = settings.JIRA_API_TOKEN
 
             logger.info(f"JIRA Email: {jira_email}")
-            logger.info(f"JIRA API Token: {jira_api_token[:5]}*****")
+            logger.info(f"JIRA API Token: {jira_api_token[:5]}*****" if jira_api_token else "JIRA API Token: missing")
 
             # Validate credentials
             if not jira_email or not jira_api_token:
@@ -118,16 +94,14 @@ class JiraIssueCollectView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            # 5. Trigger Celery tasks
             tasks = []
-            for project_info in projects:
-                jira_domain = project_info['jira_domain']
-                project_key = project_info['project_key']
+            for target in targets:
+                jira_domain, project_key = target.split("/", 1)
 
                 task = collect_jira_issues_task.delay(
                     jira_domain,
                     project_key,
-                    issuetypes if issuetypes else [],
+                    issue_types,
                     start_date,
                     end_date
                 )

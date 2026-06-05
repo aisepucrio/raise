@@ -9,10 +9,7 @@ import {
   CollectWrapper,
 } from "@/components/collect";
 import { useGithubCollectMutation, type GithubCollectBody } from "@/data";
-import {
-  mapItemsToCollectTags,
-  runCollectWithFeedback,
-} from "@/sources/shared/CollectShared";
+import { runCollectWithFeedback } from "@/sources/shared/CollectShared";
 import GithubCollectModal from "./GithubCollectModal";
 import {
   GithubCollectTypesSection,
@@ -68,28 +65,20 @@ export default function GithubCollect() {
   async function handleCollect() {
     // `metadata` is always included; extra types follow the user's selection.
     const payload: GithubCollectBody = {
-      repositories,
-      depth: "basic",
+      targets: repositories,
       collect_types: ["metadata", ...selectedOptionalTypes],
-      ...(startDate ? { start_date: formatDateGitHub(startDate) } : {}),
-      ...(endDate ? { end_date: formatDateGitHub(endDate) } : {}),
+      start_date: startDate ? formatDateGitHub(startDate) ?? null : null,
+      end_date: endDate ? formatDateGitHub(endDate) ?? null : null,
+      filters: {},
+      options: { depth: "basic" },
     };
 
     await runCollectWithFeedback({
       execute: () => collectMutation.mutateAsync(payload),
-      successDescription: "GitHub collection started successfully.",
-      errorFallbackMessage: "Failed to start GitHub collection.",
       source: "github",
       navigate,
     });
   }
-
-  // Adapts the repository list to removable tag format.
-  const repositoryTags = mapItemsToCollectTags(
-    repositories,
-    (repository) => repository,
-    handleRemoveRepository,
-  );
 
   return (
     <>
@@ -105,9 +94,10 @@ export default function GithubCollect() {
 
         {/* List of added items (repositories/projects/tags). */}
         <CollectTagsSection
-          tagsHeading={`Repositories (${repositories.length})`}
-          tags={repositoryTags}
-          emptyTagsMessage='No repositories added yet. Click the "Add repository" button above to get started.'
+          title="Repositories"
+          items={repositories}
+          onRemoveItem={handleRemoveRepository}
+          emptyMessage='No repositories added yet. Click the "Add repository" button above to get started.'
         />
 
         {/* Shared date filter and contextual warning. */}
@@ -125,8 +115,6 @@ export default function GithubCollect() {
 
         {/* Final action that starts collection. */}
         <CollectActions
-          collectButtonText="Collect"
-          collectPendingButtonText="Collecting..."
           onCollect={() => void handleCollect()}
           isCollectPending={collectMutation.isPending}
           isCollectDisabled={collectMutation.isPending || repositories.length === 0}
