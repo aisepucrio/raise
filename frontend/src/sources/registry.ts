@@ -8,6 +8,15 @@ import {
   GithubPreviewPullRequests,
   GithubPreviewUsers,
 } from "./github/GithubPreview/index";
+import GitlabCollect from "./gitlab/GitlabCollect";
+import GitlabOverview from "./gitlab/GitlabOverview";
+import {
+  GitlabPreviewBranches,
+  GitlabPreviewCommits,
+  GitlabPreviewIssues,
+  GitlabPreviewMergeRequests,
+  GitlabPreviewMetadata,
+} from "./gitlab/GitlabPreview/index";
 import JiraCollect from "./jira/JiraCollect";
 import JiraOverview from "./jira/JiraOverview";
 import {
@@ -31,6 +40,10 @@ export const sourceUiModules: Record<SourceId, SourceUiModuleSet> = {
     collect: GithubCollect,
     overview: GithubOverview,
   },
+  gitlab: {
+    collect: GitlabCollect,
+    overview: GitlabOverview,
+  },
   jira: {
     collect: JiraCollect,
     overview: JiraOverview,
@@ -52,6 +65,13 @@ export const sourceSectionPreviewUiModules: SourcePreviewUiModuleSet = {
     "pull-requests": GithubPreviewPullRequests,
     commits: GithubPreviewCommits,
     users: GithubPreviewUsers,
+  },
+  gitlab: {
+    metadata: GitlabPreviewMetadata,
+    issues: GitlabPreviewIssues,
+    "merge-requests": GitlabPreviewMergeRequests,
+    commits: GitlabPreviewCommits,
+    branches: GitlabPreviewBranches,
   },
   jira: {
     users: JiraPreviewUsers,

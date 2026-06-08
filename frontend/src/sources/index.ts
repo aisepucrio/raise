@@ -1,9 +1,10 @@
 // Sources available in the application.
-export const sourceIds = ["github", "jira", "stackoverflow"] as const;
+export const sourceIds = ["github", "gitlab", "jira", "stackoverflow"] as const;
 
 // Sections of preview available for each source.
 export const sectionPreviewIdsBySource = {
   github: ["issues", "pull-requests", "commits", "users"],
+  gitlab: ["metadata", "issues", "merge-requests", "commits", "branches"],
   jira: ["users", "issues", "comments", "sprints"],
   stackoverflow: ["questions"],
 } as const satisfies Record<SourceId, readonly string[]>;
@@ -19,6 +20,7 @@ export type SectionPreviewIdBySource = {
 // Labels for each source, used in the UI.
 export const sourceLabels: Record<SourceId, string> = {
   github: "GitHub",
+  gitlab: "GitLab",
   jira: "Jira",
   stackoverflow: "Stack Overflow",
 };
@@ -32,6 +34,13 @@ export const sectionPreviewLabelsBySource: {
     "pull-requests": "Pull requests",
     commits: "Commits",
     users: "Users",
+  },
+  gitlab: {
+    metadata: "Metadata",
+    issues: "Issues",
+    "merge-requests": "Merge Requests",
+    commits: "Commits",
+    branches: "Branches",
   },
   jira: {
     users: "Users",
@@ -52,6 +61,7 @@ export const defaultSectionPreviewIdBySource: {
   [S in SourceId]: SectionPreviewIdBySource[S];
 } = {
   github: sectionPreviewIdsBySource.github[0],
+  gitlab: sectionPreviewIdsBySource.gitlab[0],
   jira: sectionPreviewIdsBySource.jira[0],
   stackoverflow: sectionPreviewIdsBySource.stackoverflow[0],
 };
@@ -67,6 +77,10 @@ export const sectionPreviewOptionsBySource = {
   github: sectionPreviewIdsBySource.github.map((id) => ({
     id,
     label: sectionPreviewLabelsBySource.github[id],
+  })),
+  gitlab: sectionPreviewIdsBySource.gitlab.map((id) => ({
+    id,
+    label: sectionPreviewLabelsBySource.gitlab[id],
   })),
   jira: sectionPreviewIdsBySource.jira.map((id) => ({
     id,

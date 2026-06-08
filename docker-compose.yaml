@@ -3,10 +3,6 @@ name: raise
 services:
   raiseapi:
     build: ./backend/
-    volumes:
-      - ./backend/:/app
-      - ./backend/static:/static
-      - static_volume_raise:/app/static
     ports:
       - "8000:8000"
     depends_on:
@@ -87,9 +83,6 @@ services:
   worker:
     build: ./backend/
     command: uv run celery -A dataminer_api worker --loglevel=info
-    volumes:
-      - ./backend:/app
-      - ./exports:/app/exports
     env_file:
       - .env
     environment:

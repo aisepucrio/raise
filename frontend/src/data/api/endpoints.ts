@@ -3,6 +3,7 @@ import type { SectionPreviewIdBySource, SourceId } from "@/sources";
 export type Source = SourceId;
 export type SectionBySource = SectionPreviewIdBySource;
 export type GithubSection = SectionBySource["github"];
+export type GitlabSection = SectionBySource["gitlab"];
 export type JiraSection = SectionBySource["jira"];
 export type StackOverflowSection = SectionBySource["stackoverflow"];
 

@@ -25,6 +25,40 @@ export function parseGithubUrl(input: string): string | null {
 }
 
 /**
+ * Extracts "group/project" or "group/subgroup/project" from a GitLab URL.
+ * Supports gitlab.com and self-hosted GitLab project URLs.
+ * Returns null if the input is not a parseable HTTP(S) URL with at least two path segments.
+ */
+export function parseGitlabUrl(input: string): string | null {
+  const trimmed = input.trim();
+  if (!/^https?:\/\//i.test(trimmed)) return null;
+
+  try {
+    const url = new URL(trimmed);
+    const parts = url.pathname
+      .split("/")
+      .filter(Boolean)
+      .map((part) => decodeURIComponent(part));
+
+    if (parts.length < 2) return null;
+
+    const routeMarkerIndex = parts.findIndex((part) =>
+      ["-", "issues", "merge_requests", "commits", "tree", "blob", "raw"].includes(
+        part,
+      ),
+    );
+    const projectParts =
+      routeMarkerIndex >= 0 ? parts.slice(0, routeMarkerIndex) : parts;
+
+    if (projectParts.length < 2) return null;
+
+    return projectParts.join("/").replace(/\.git$/i, "");
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Extracts { jira_domain, project_key } from a Jira URL.
  * Supports project/board URLs (.../projects/KEY/...) and
  * browse/issue URLs (.../browse/KEY-123).

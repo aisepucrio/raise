@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   parseGithubUrl,
+  parseGitlabUrl,
   parseJiraUrl,
   parseStackOverflowUrl,
 } from "./parseCollectUrl";
@@ -138,6 +139,37 @@ describe("parseJiraUrl", () => {
         "  https://stone-puc.atlassian.net/browse/APIMINER-701  ",
       ),
     ).toEqual({ jira_domain: "stone-puc.atlassian.net", project_key: "APIMINER" });
+  });
+});
+
+describe("parseGitlabUrl", () => {
+  it("extracts a simple group/project path", () => {
+    expect(parseGitlabUrl("https://gitlab.com/gitlab-org/gitlab")).toBe(
+      "gitlab-org/gitlab",
+    );
+  });
+  it("extracts a subgroup path", () => {
+    expect(
+      parseGitlabUrl(
+        "https://gitlab.com/group/subgroup/project/-/merge_requests/1",
+      ),
+    ).toBe("group/subgroup/project");
+  });
+  it("strips the .git suffix", () => {
+    expect(parseGitlabUrl("https://gitlab.com/group/project.git")).toBe(
+      "group/project",
+    );
+  });
+  it("supports self-hosted GitLab URLs", () => {
+    expect(
+      parseGitlabUrl("https://gitlab.company.com/platform/api/project"),
+    ).toBe("platform/api/project");
+  });
+  it("returns null for plain project text", () => {
+    expect(parseGitlabUrl("group/project")).toBeNull();
+  });
+  it("returns null for URLs without a project path", () => {
+    expect(parseGitlabUrl("https://gitlab.com/group")).toBeNull();
   });
 });
 

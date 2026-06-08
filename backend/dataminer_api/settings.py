@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_spectacular',
     'dataminer_api',
+    'dataminer_api.gitlab',
     'github',
     'jira',
     'jobs',
@@ -230,7 +231,7 @@ CELERY_WORKER_LOG_FORMAT = "[%(levelname)s] %(message)s"
 CELERY_WORKER_TASK_LOG_FORMAT = "%(message)s"
 
 # Adicione esta linha para dizer ao Celery para procurar tarefas em outros apps
-CELERY_IMPORTS = ('jobs.tasks', 'stackoverflow.tasks')
+CELERY_IMPORTS = ('jobs.tasks', 'stackoverflow.tasks', 'dataminer_api.gitlab.tasks')
 
 STACK_API_KEY = os.getenv("STACK_API_KEY")
 STACK_ACCESS_TOKEN = os.getenv("STACK_ACCESS_TOKEN")

@@ -1,6 +1,8 @@
 // Re-exports hooks and mutations for direct usage via "@/data".
 export * from "./modules/github/githubQueries";
 export * from "./modules/github/githubMutations";
+export * from "./modules/gitlab/gitlabQueries";
+export * from "./modules/gitlab/gitlabMutations";
 export * from "./modules/jira/jiraQueries";
 export * from "./modules/jira/jiraMutations";
 export * from "./modules/jobs/jobsQueries";
@@ -23,6 +25,20 @@ export type {
   GithubPreviewRow,
   GithubRepository,
 } from "./modules/github";
+export type {
+  GitlabCollectBody,
+  GitlabCollectType,
+  GitlabDateRangeParams,
+  GitlabExportBody,
+  GitlabGraphParams,
+  GitlabGraphResponse,
+  GitlabOverviewParams,
+  GitlabOverviewResponse,
+  GitlabPreviewParams,
+  GitlabPreviewResponse,
+  GitlabPreviewRow,
+  GitlabRepository,
+} from "./modules/gitlab";
 export type {
   JiraCollectBody,
   JiraDateRangeParams,
@@ -49,7 +65,12 @@ export type {
   StackOverflowPreviewResponse,
   StackOverflowPreviewRow,
 } from "./modules/stackoverflow";
-export type { GithubSection, JiraSection, StackOverflowSection } from "./api/endpoints";
+export type {
+  GithubSection,
+  GitlabSection,
+  JiraSection,
+  StackOverflowSection,
+} from "./api/endpoints";
 
 // Error helper used by components/screens.
 export { getQueryErrorMessage } from "./query/errors";
