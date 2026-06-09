@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { CollectFormModal } from "@/components/collect";
 import { FormInput } from "@/components/form";
 import { containsItemIgnoreCase } from "@/sources/shared/CollectShared";
+import { parseStackOverflowUrl } from "@/sources/shared/parseCollectUrl";
 
 export type StackoverflowCollectModalProps = {
   open: boolean;
@@ -11,8 +12,9 @@ export type StackoverflowCollectModalProps = {
   onAddTag: (tag: string) => void;
 };
 
-function normalizeTagInput(value: string) {
-  return value.trim();
+// Extracts a tag from a Stack Overflow tag URL, or trims plain text as-is.
+function normalizeTagInput(value: string): string {
+  return parseStackOverflowUrl(value) ?? value.trim();
 }
 
 export default function StackoverflowCollectModal({
@@ -21,25 +23,21 @@ export default function StackoverflowCollectModal({
   onClose,
   onAddTag,
 }: StackoverflowCollectModalProps) {
-  // Local state for tag input and error message.
   const tagInputRef = useRef<HTMLInputElement | null>(null);
   const [tagInput, setTagInput] = useState("");
   const [addTagError, setAddTagError] = useState<string | null>(null);
 
-  // Clears form state when the modal closes.
   useEffect(() => {
     if (open) return;
-
     setTagInput("");
     setAddTagError(null);
   }, [open]);
 
-  // Validates duplicates and confirms tag addition.
   function handleConfirmAddTag() {
     const normalizedTag = normalizeTagInput(tagInput);
 
     if (!normalizedTag) {
-      setAddTagError("Type a tag before adding.");
+      setAddTagError("Type a tag or paste a Stack Overflow tag URL.");
       return;
     }
 
@@ -62,7 +60,6 @@ export default function StackoverflowCollectModal({
       initialFocusRef={tagInputRef}
       onConfirm={handleConfirmAddTag}
     >
-      {/* Tag input field. */}
       <FormInput
         id="stackoverflow-collect-tag-input"
         ref={tagInputRef}
@@ -72,7 +69,7 @@ export default function StackoverflowCollectModal({
           setTagInput(event.target.value);
           if (addTagError) setAddTagError(null);
         }}
-        placeholder="reactjs"
+        placeholder="Stack Overflow tag URL or the tag name"
         error={addTagError ?? undefined}
       />
     </CollectFormModal>
