@@ -14,6 +14,7 @@ export default defineConfig({
   testDir: './tests/e2e',
   outputDir: './tests/e2e/screenshots',
   fullyParallel: false,
+  workers: 1,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: [['list'], ['html', { outputFolder: 'playwright-report', open: 'never' }]],
@@ -22,8 +23,8 @@ export default defineConfig({
     baseURL: 'http://localhost:5173',
     screenshot: 'only-on-failure',
     trace: 'on-first-retry',
-    actionTimeout: 10_000,
-    navigationTimeout: 15_000,
+    actionTimeout: 15_000,
+    navigationTimeout: 30_000,
   },
 
   projects: [

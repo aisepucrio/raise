@@ -45,13 +45,17 @@ test.describe('E2E-GH-011 — Preview: Export @fullstack', () => {
     await expect(commitsPreview.rows.first()).toBeVisible();
 
     await page.route('**/api/github/export/**', async (route) => {
-      await page.waitForTimeout(300);
+      await new Promise((r) => setTimeout(r, 300));
       await route.continue();
     });
 
-    const clickPromise = commitsPreview.exportButton.click();
-    await expect(commitsPreview.exportButton).toBeDisabled();
-    await clickPromise;
+    try {
+      const clickPromise = commitsPreview.exportButton.click();
+      await expect(commitsPreview.exportButton).toBeDisabled();
+      await clickPromise;
+    } finally {
+      await page.unrouteAll({ behavior: 'ignoreErrors' });
+    }
   });
 
   test('step 8: success toast appears after export', async ({ page, commitsPreview }) => {
