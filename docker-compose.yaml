@@ -94,9 +94,6 @@ services:
       - ./exports:/app/exports
     env_file:
       - .env
-    environment:
-      # Backend reads GITHUB_TOKENS (plural) for multi-token rotation support.
-      GITHUB_TOKENS: ${GITHUB_TOKEN}
     depends_on:
       redis:
         condition: service_healthy
