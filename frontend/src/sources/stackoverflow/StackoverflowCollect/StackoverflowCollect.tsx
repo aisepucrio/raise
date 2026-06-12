@@ -9,15 +9,10 @@ import {
   CollectWrapper,
 } from "@/components/collect";
 import {
-  useStackOverflowCollectAdvancedMutation,
   useStackOverflowCollectMutation,
-  type StackOverflowAdvancedCollectBody,
   type StackOverflowCollectBody,
 } from "@/data";
-import {
-  mapItemsToCollectTags,
-  runCollectWithFeedback,
-} from "@/sources/shared/CollectShared";
+import { runCollectWithFeedback } from "@/sources/shared/CollectShared";
 import {
   StackoverflowAdvancedFiltersSection,
   type StackoverflowAdvancedFiltersSectionState,
@@ -29,8 +24,6 @@ export default function StackoverflowCollect() {
   const navigate = useNavigate();
   // Standard collection (without advanced endpoint).
   const collectMutation = useStackOverflowCollectMutation();
-  // Advanced collection (endpoint /collect/advanced/ + optional filters).
-  const collectAdvancedMutation = useStackOverflowCollectAdvancedMutation();
 
   // Optional tags used to narrow collection.
   const [tags, setTags] = useState<string[]>([]);
@@ -41,14 +34,10 @@ export default function StackoverflowCollect() {
   const [advancedFiltersState, setAdvancedFiltersState] =
     useState<StackoverflowAdvancedFiltersSectionState>({
       enabled: false,
-      filters: undefined,
+      filters: {},
     });
   // Opens/closes the tag-add modal.
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-
-  // The UI uses one loading state combining both collection paths.
-  const isCollectPending =
-    collectMutation.isPending || collectAdvancedMutation.isPending;
 
   // Adds a new tag to local state.
   function handleAddTag(tag: string) {
@@ -60,46 +49,25 @@ export default function StackoverflowCollect() {
     setTags((currentTags) => currentTags.filter((tag) => tag !== tagToRemove));
   }
 
-  // Builds payload and chooses between default and advanced flow.
+  // Builds the standardized collect payload.
   async function handleCollect() {
-    // Common base payload for default and advanced modes.
-    const basePayload: StackOverflowCollectBody = {
-      options: ["collect_questions"],
+    const payload: StackOverflowCollectBody = {
+      targets: tags,
+      collect_types: ["questions"],
       start_date: startDate,
       end_date: endDate,
-      ...(tags.length > 0 ? { tags: tags.join(";") } : {}),
+      filters: advancedFiltersState.filters,
+      options: {
+        mode: advancedFiltersState.enabled ? "advanced" : "default",
+      },
     };
 
     await runCollectWithFeedback({
-      execute: async () => {
-        // Starts collection on standard or advanced endpoint, based on selected mode.
-        if (advancedFiltersState.enabled) {
-          // TEMPORARY HARDCODE: when advanced mode is on, SO calls /COLLECT/ADVANCED.
-          // REASON: compatibility with legacy implementation.
-          // FUTURE: merge everything into /COLLECT using payload only.
-          const advancedPayload: StackOverflowAdvancedCollectBody = {
-            ...basePayload,
-            mode: "advanced",
-            ...(advancedFiltersState.filters
-              ? { filters: advancedFiltersState.filters }
-              : {}),
-          };
-
-          await collectAdvancedMutation.mutateAsync(advancedPayload);
-          return;
-        }
-
-        await collectMutation.mutateAsync(basePayload);
-      },
-      successDescription: "Stack Overflow collection started successfully.",
-      errorFallbackMessage: "Failed to start Stack Overflow collection.",
+      execute: () => collectMutation.mutateAsync(payload),
       source: "stackoverflow",
       navigate,
     });
   }
-
-  // Adapts tags to the removable-item format consumed by the tags block.
-  const tagItems = mapItemsToCollectTags(tags, (tag) => tag, handleRemoveTag);
 
   return (
     <>
@@ -115,9 +83,10 @@ export default function StackoverflowCollect() {
 
         {/* List of added items (repositories/projects/tags). */}
         <CollectTagsSection
-          tagsHeading={`Tags (${tags.length})`}
-          tags={tagItems}
-          emptyTagsMessage='No tags added yet. You can collect without tags or click "Add tag" to target specific tags.'
+          title="Tags"
+          items={tags}
+          onRemoveItem={handleRemoveTag}
+          emptyMessage='No tags added yet. You can collect without tags or click "Add tag" to target specific tags.'
         />
 
         {/* Shared date filter and contextual warning. */}
@@ -135,11 +104,9 @@ export default function StackoverflowCollect() {
 
         {/* Final action that starts collection. */}
         <CollectActions
-          collectButtonText="Collect"
-          collectPendingButtonText="Collecting..."
           onCollect={() => void handleCollect()}
-          isCollectPending={isCollectPending}
-          isCollectDisabled={isCollectPending || !startDate || !endDate}
+          isCollectPending={collectMutation.isPending}
+          isCollectDisabled={collectMutation.isPending || !startDate || !endDate}
         />
       </CollectWrapper>
 

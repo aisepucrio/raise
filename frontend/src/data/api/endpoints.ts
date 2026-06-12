@@ -19,10 +19,6 @@ export const endpoints = {
   // ==> COLLECT
   collect: (source: Source) => `/api/${source}/collect/`,
 
-  // TEMPORARY HARDCODE: Stack Overflow still uses /COLLECT/ADVANCED for legacy compatibility.
-  // FUTURE: merge into /COLLECT using payload only.
-  collectAdvanced: (source: Source) => `/api/${source}/collect/advanced/`,
-
   // ==> PREVIEW
   previewList: <S extends Source>(source: S, section: SectionBySource[S]) =>
     `/api/${source}/${section}/`,

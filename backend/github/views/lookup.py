@@ -124,6 +124,7 @@ class IssuePullRequestDetailView(generics.RetrieveAPIView):
     lookup_field = 'record_id'
 
 
+@extend_schema(tags=["GitHub"], summary="List all GitHub users")
 class UserListView(generics.ListAPIView):
     queryset = GitHubAuthor.objects.all()
     serializer_class = GitHubAuthorSerializer

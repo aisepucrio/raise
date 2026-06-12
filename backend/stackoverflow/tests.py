@@ -33,10 +33,12 @@ class StackOverflowAPITests(APITestCase):
         # Arrange
         url = reverse("stackoverflow-collect-list")
         data = {
-            "options": ["collect_questions"],
+            "targets": ["python"],
+            "collect_types": ["questions"],
             "start_date": "2025-01-01",
             "end_date": "2025-01-02",
-            "tags": "python",
+            "filters": {},
+            "options": {"mode": "default"},
         }
         mock_chain_result = MagicMock()
         mock_chain_result.id = str(uuid.uuid4())
@@ -50,8 +52,8 @@ class StackOverflowAPITests(APITestCase):
         self.assertEqual(response.data["task_id"], mock_chain_result.id)
         mock_celery_chain.return_value.apply_async.assert_called_once()
 
-    def test_start_collection_job_missing_options(self):
-        """Should return 400 when 'options' is missing."""
+    def test_start_collection_job_missing_collect_types(self):
+        """Should return 400 when 'collect_types' is missing."""
         # Arrange
         url = reverse("stackoverflow-collect-list")
         data = {"start_date": "2025-01-01"}
@@ -62,11 +64,15 @@ class StackOverflowAPITests(APITestCase):
         # Assert
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_start_collection_job_invalid_type(self):
-        """Should return 400 when 'options' is not a list."""
+    def test_start_collection_job_invalid_collect_types_type(self):
+        """Should return 400 when 'collect_types' is not a list."""
         # Arrange
         url = reverse("stackoverflow-collect-list")
-        data = {"options": "not a list", "start_date": "2025-01-01"}
+        data = {
+            "collect_types": "not a list",
+            "start_date": "2025-01-01",
+            "end_date": "2025-01-02",
+        }
 
         # Act
         response = self.client.post(url, data, format="json")
@@ -76,17 +82,24 @@ class StackOverflowAPITests(APITestCase):
 
     @patch("stackoverflow.views.collect.chain")
     def test_start_collection_job_celery_failure(self, mock_celery_chain):
-        """Should handle Celery failure gracefully with 400 response."""
+        """Should handle Celery failure gracefully."""
         # Arrange
         url = reverse("stackoverflow-collect-list")
-        data = {"options": ["collect_questions"], "tags": "django"}
+        data = {
+            "targets": ["django"],
+            "collect_types": ["questions"],
+            "start_date": "2025-01-01",
+            "end_date": "2025-01-02",
+            "filters": {},
+            "options": {"mode": "default"},
+        }
         mock_celery_chain.return_value.apply_async.side_effect = Exception("Celery error")
 
         # Act
         response = self.client.post(url, data, format="json")
 
         # Assert
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def test_lookup_questions_list_and_content(self):
         """Should return the list of questions with valid data."""

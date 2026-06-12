@@ -25,14 +25,12 @@ export function parseGithubUrl(input: string): string | null {
 }
 
 /**
- * Extracts { jira_domain, project_key } from a Jira URL.
+ * Extracts "jira-domain/project-key" from a Jira URL.
  * Supports project/board URLs (.../projects/KEY/...) and
  * browse/issue URLs (.../browse/KEY-123).
  * Returns null if the input is not a parseable Jira URL.
  */
-export function parseJiraUrl(
-  input: string,
-): { jira_domain: string; project_key: string } | null {
+export function parseJiraUrl(input: string): string | null {
   const trimmed = input.trim();
   if (!/^https?:\/\//i.test(trimmed)) return null;
 
@@ -45,7 +43,7 @@ export function parseJiraUrl(
       /\/projects\/([A-Z][A-Z0-9_]*)(?:\/|$)/i,
     );
     if (projectsMatch) {
-      return { jira_domain: domain, project_key: projectsMatch[1].toUpperCase() };
+      return `${domain}/${projectsMatch[1].toUpperCase()}`;
     }
 
     // /browse/KEY-123 or /browse/KEY
@@ -53,7 +51,7 @@ export function parseJiraUrl(
       /\/browse\/([A-Z][A-Z0-9_]*)(?:-\d+)?(?:\/|$)/i,
     );
     if (browseMatch) {
-      return { jira_domain: domain, project_key: browseMatch[1].toUpperCase() };
+      return `${domain}/${browseMatch[1].toUpperCase()}`;
     }
 
     return null;

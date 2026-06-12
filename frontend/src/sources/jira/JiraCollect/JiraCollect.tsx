@@ -11,22 +11,18 @@ import {
 import {
   useJiraCollectMutation,
   type JiraCollectBody,
-  type JiraProject,
 } from "@/data";
-import {
-  mapItemsToCollectTags,
-  runCollectWithFeedback,
-} from "@/sources/shared/CollectShared";
+import { runCollectWithFeedback } from "@/sources/shared/CollectShared";
 import JiraCollectModal from "./JiraCollectModal";
 
 export default function JiraCollect() {
   // Redirects to jobs with source=jira after starting collection.
   const navigate = useNavigate();
-  // Mutation responsible for sending the project payload to the Jira endpoint.
+  // Mutation responsible for sending the collect payload to the Jira endpoint.
   const collectMutation = useJiraCollectMutation();
 
-  // Selected projects in the { jira_domain, project_key } format.
-  const [projects, setProjects] = useState<JiraProject[]>([]);
+  // Selected projects in the same target format used by the collect endpoint.
+  const [projects, setProjects] = useState<string[]>([]);
   // Optional date-range filter sent to the backend.
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -34,20 +30,14 @@ export default function JiraCollect() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   // Adds a project already validated by the modal.
-  function handleAddProject(project: JiraProject) {
+  function handleAddProject(project: string) {
     setProjects((currentProjects) => [...currentProjects, project]);
   }
 
-  // Removes the exact project by matching domain + project key.
-  function handleRemoveProject(projectToRemove: JiraProject) {
+  // Removes the exact project target.
+  function handleRemoveProject(projectToRemove: string) {
     setProjects((currentProjects) =>
-      currentProjects.filter(
-        (project) =>
-          !(
-            project.jira_domain === projectToRemove.jira_domain &&
-            project.project_key === projectToRemove.project_key
-          ),
-      ),
+      currentProjects.filter((project) => project !== projectToRemove),
     );
   }
 
@@ -55,26 +45,20 @@ export default function JiraCollect() {
   async function handleCollect() {
     // If dates are empty, collection runs over the full available period.
     const payload: JiraCollectBody = {
-      projects,
-      ...(startDate ? { start_date: startDate } : {}),
-      ...(endDate ? { end_date: endDate } : {}),
+      targets: projects,
+      collect_types: ["issues"],
+      start_date: startDate || null,
+      end_date: endDate || null,
+      filters: {},
+      options: {},
     };
 
     await runCollectWithFeedback({
       execute: () => collectMutation.mutateAsync(payload),
-      successDescription: "Jira collection started successfully.",
-      errorFallbackMessage: "Failed to start Jira collection.",
       source: "jira",
       navigate,
     });
   }
-
-  // Converts projects to the tag format used in the tags section.
-  const projectTags = mapItemsToCollectTags(
-    projects,
-    (project) => `${project.jira_domain}/${project.project_key}`,
-    handleRemoveProject,
-  );
 
   return (
     <>
@@ -90,9 +74,10 @@ export default function JiraCollect() {
 
         {/* List of added items (repositories/projects/tags). */}
         <CollectTagsSection
-          tagsHeading={`Projects (${projects.length})`}
-          tags={projectTags}
-          emptyTagsMessage='No projects added yet. Click the "Add project" button above to get started.'
+          title="Projects"
+          items={projects}
+          onRemoveItem={handleRemoveProject}
+          emptyMessage='No projects added yet. Click the "Add project" button above to get started.'
         />
 
         {/* Shared date filter and contextual warning. */}
@@ -107,8 +92,6 @@ export default function JiraCollect() {
 
         {/* Final action that starts collection. */}
         <CollectActions
-          collectButtonText="Collect"
-          collectPendingButtonText="Collecting..."
           onCollect={() => void handleCollect()}
           isCollectPending={collectMutation.isPending}
           isCollectDisabled={collectMutation.isPending || projects.length === 0}

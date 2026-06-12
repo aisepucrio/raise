@@ -4,18 +4,18 @@ import { toast } from "@/components/toast";
 import { getQueryErrorMessage } from "@/data";
 import type { SourceId } from "@/sources";
 
-export type CollectTagItem = {
-  id: string;
-  label: string;
-  onRemove: () => void;
-};
-
 export type RunCollectWithFeedbackParams = {
   execute: () => Promise<unknown>;
-  successDescription: string;
-  errorFallbackMessage: string;
+  successDescription?: string;
+  errorFallbackMessage?: string;
   source: SourceId;
   navigate: NavigateFunction;
+};
+
+const COLLECT_SOURCE_LABELS: Record<SourceId, string> = {
+  github: "GitHub",
+  jira: "Jira",
+  stackoverflow: "Stack Overflow",
 };
 
 // Checks whether a string exists in the list, ignoring case, to avoid visual duplicates.
@@ -36,23 +36,6 @@ export function containsItemIgnoreCase(
   return false;
 }
 
-// Adapts the list to the removable-tag format used in collect screens.
-export function mapItemsToCollectTags<T>(
-  items: readonly T[],
-  getId: (item: T) => string,
-  onRemove: (item: T) => void,
-): CollectTagItem[] {
-  return items.map((item) => {
-    const id = getId(item);
-
-    return {
-      id,
-      label: id,
-      onRemove: () => onRemove(item),
-    };
-  });
-}
-
 // Executes collection with default success/error feedback.
 export async function runCollectWithFeedback({
   execute,
@@ -61,15 +44,21 @@ export async function runCollectWithFeedback({
   source,
   navigate,
 }: RunCollectWithFeedbackParams): Promise<void> {
+  const sourceLabel = COLLECT_SOURCE_LABELS[source];
+
   try {
     await execute();
 
     toast.success(undefined, {
-      description: successDescription,
+      description:
+        successDescription ?? `${sourceLabel} collection started successfully.`,
     });
     navigate(`/jobs?source=${source}`);
   } catch (error) {
-    const message = getQueryErrorMessage(error, errorFallbackMessage);
+    const message = getQueryErrorMessage(
+      error,
+      errorFallbackMessage ?? `Failed to start ${sourceLabel} collection.`,
+    );
     toast.error(undefined, { description: message });
   }
 }
