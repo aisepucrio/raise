@@ -2,11 +2,32 @@ import base64
 import requests
 from typing import List, Dict, Any, Optional
 from bs4 import BeautifulSoup
+from django.db import IntegrityError
 from django.utils import timezone
+from django.utils import timezone as django_timezone
 
 from .base import BaseMiner
 from ..models import GitHubBranch, GitHubMetadata
 
+
+def get_or_create_repository_metadata(repo_name: str) -> GitHubMetadata:
+    """
+    Returns repository metadata object, creating it if it doesn't exist. 
+    """
+    owner = repo_name.split('/')[0]
+    current_timestamp = timezone.now()
+
+    metadata_obj, _ = GitHubMetadata.objects.get_or_create(
+        repository=repo_name,
+        owner=owner,
+        defaults={
+            'html_url': f'https://github.com/{repo_name}',
+            'github_created_at': current_timestamp,
+            'github_updated_at': current_timestamp,
+        }
+    )
+
+    return metadata_obj
 
 class MetadataMiner(BaseMiner):
     """Specialized miner for GitHub repository metadata and branches"""
@@ -32,15 +53,7 @@ class MetadataMiner(BaseMiner):
             response.raise_for_status()
             branches = response.json()
 
-            metadata_obj, _ = GitHubMetadata.objects.get_or_create(
-                repository=repo_name,
-                defaults={
-                    'owner': repo_name.split('/')[0],
-                    'html_url': f'https://github.com/{repo_name}',
-                    'github_created_at': timezone.now(),
-                    'github_updated_at': timezone.now(),
-                }
-            )
+            metadata_obj = get_or_create_repository_metadata(repo_name)
             
             for branch in branches:
                 current_timestamp = timezone.now()

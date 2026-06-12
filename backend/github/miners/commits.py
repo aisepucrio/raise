@@ -6,9 +6,10 @@ from pydriller import Repository
 from django.utils import timezone as django_timezone
 
 from .base import BaseMiner
+from .metadata import get_or_create_repository_metadata
 from .utils import convert_to_iso8601, update_task_progress_date
 from ..models import (
-    GitHubCommit, GitHubAuthor, GitHubModifiedFile, GitHubMethod, GitHubMetadata
+    GitHubCommit, GitHubAuthor, GitHubModifiedFile, GitHubMethod
 )
 
 
@@ -170,18 +171,7 @@ class CommitsMiner(BaseMiner):
             else:
                 total_commits = 1
 
-            # BUG-005: previously returned [] silently when GitHubMetadata was absent,
-            # so the repo never appeared in the selector and zero rows were stored.
-            # get_or_create ensures a stub row exists so commits are always linked.
-            metadata_obj, _ = GitHubMetadata.objects.get_or_create(
-                repository=repo_name,
-                defaults={
-                    'owner': repo_name.split('/')[0],
-                    'html_url': f'https://github.com/{repo_name}',
-                    'github_created_at': django_timezone.now(),
-                    'github_updated_at': django_timezone.now(),
-                }
-            )
+            metadata_obj = get_or_create_repository_metadata(repo_name)
 
             for commit in repo:
                 processed_count += 1
