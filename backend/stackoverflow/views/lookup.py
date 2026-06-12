@@ -2,6 +2,7 @@ from rest_framework import viewsets
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.pagination import PageNumberPagination
+from drf_spectacular.utils import extend_schema
 
 from ..models import StackQuestion
 from ..serializers import StackQuestionSerializer
@@ -14,6 +15,7 @@ class StandardPagination(PageNumberPagination):
     max_page_size = 1000
 
 
+@extend_schema(tags=["StackOverflow"])
 class QuestionViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API endpoint that allows questions to be viewed

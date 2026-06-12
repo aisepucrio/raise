@@ -64,10 +64,14 @@ POST http://localhost:8000/api/stackoverflow/collect/
 - **Body**
 ```json
 {
-  "options": ["collect_questions", "repopulate_users"],
+  "targets": ["python", "django"],
+  "collect_types": ["questions"],
   "start_date": "YYYY-MM-DD",
   "end_date": "YYYY-MM-DD",
-  "tags": ["python", "django"]
+  "filters": {},
+  "options": {
+    "mode": "default"
+  }
 }
 ```
 
@@ -77,31 +81,29 @@ This endpoint performs basic mining using the Stack Exchange `/questions` API.
 
 #### Advanced Mining Job with Filters (POST)
 
-This endpoint uses the Stack Exchange `/search/advanced` API and must be used when advanced filters are required.
-
-- **URL**
-```
-POST http://localhost:8000/api/stackoverflow/collect/advanced/
-```
+Use the same endpoint with `options.mode` set to `advanced`.
 
 - **Body**
 ```json
 {
-  "options": ["collect_questions"],
+  "targets": ["python", "django"],
+  "collect_types": ["questions"],
   "start_date": "2024-01-01",
   "end_date": "2024-01-10",
-  "tags": ["python", "django"],
   "filters": {
     "intitle": "celery",
     "accepted": true,
     "answers": 1,
     "views": 100,
-    "nottagged": ["flask"]
+    "nottagged": "flask"
+  },
+  "options": {
+    "mode": "advanced"
   }
 }
 ```
 
-This endpoint shares the same payload structure as `/collect/`, but enables advanced filtering.
+This payload enables advanced filtering through the Stack Exchange `/search/advanced` API.
 
 ---
 
@@ -110,8 +112,7 @@ This endpoint shares the same payload structure as `/collect/`, but enables adva
 Filters are optional and provided inside the `filters` object.
 
 **Important**
-Most filters below are only supported by the advanced endpoint (`/collect/advanced/`).
-If sent to `/collect/`, unsupported filters are ignored with a warning.
+Most filters below are intended for `options.mode: "advanced"`.
 
 | Filter | Type | Description |
 |------|------|-------------|
@@ -141,9 +142,9 @@ Examples:
 | Use Case | Endpoint |
 |--------|----------|
 | Basic tag + date mining | `/api/stackoverflow/collect/` |
-| Title search | `/api/stackoverflow/collect/advanced/` |
-| Accepted / views / answers filters | `/api/stackoverflow/collect/advanced/` |
-| Excluding tags | `/api/stackoverflow/collect/advanced/` |
+| Title search | `/api/stackoverflow/collect/` with `options.mode: "advanced"` |
+| Accepted / views / answers filters | `/api/stackoverflow/collect/` with `options.mode: "advanced"` |
+| Excluding tags | `/api/stackoverflow/collect/` with `options.mode: "advanced"` |
 
 ---
 

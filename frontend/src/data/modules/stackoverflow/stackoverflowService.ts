@@ -6,7 +6,6 @@ import {
   type RequestOptions,
 } from "../shared";
 import type {
-  StackOverflowAdvancedCollectBody,
   StackOverflowCollectBody,
   StackOverflowDateRangeParams,
   StackOverflowGraphParams,
@@ -67,14 +66,4 @@ export const stackoverflowService = {
   // Collect: starts Stack Overflow collection via standardized endpoint.
   collect: (body: StackOverflowCollectBody, options?: RequestOptions) =>
     api.post(endpoints.collect(SOURCE), body, { signal: options?.signal }),
-
-  // TEMPORARY HARDCODE: SO still uses /COLLECT/ADVANCED for legacy compatibility.
-  // FUTURE: merge into /COLLECT using payload only.
-  collectAdvanced: (
-    body: StackOverflowAdvancedCollectBody,
-    options?: RequestOptions,
-  ) =>
-    api.post(endpoints.collectAdvanced(SOURCE), body, {
-      signal: options?.signal,
-    }),
 };

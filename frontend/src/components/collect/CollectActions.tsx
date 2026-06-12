@@ -3,16 +3,16 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/button";
 
 export type CollectActionsProps = {
-  collectButtonText: string;
-  collectPendingButtonText: string;
+  collectButtonText?: string;
+  collectPendingButtonText?: string;
   onCollect: () => void;
   isCollectPending: boolean;
   isCollectDisabled: boolean;
 };
 
 export function CollectActions({
-  collectButtonText,
-  collectPendingButtonText,
+  collectButtonText = "Collect",
+  collectPendingButtonText = "Collecting...",
   onCollect,
   isCollectPending,
   isCollectDisabled,

@@ -62,14 +62,44 @@ class JiraHistoryItemSerializer(serializers.ModelSerializer):
         model = JiraHistoryItem
         fields = '__all__'
 
-class JiraIssueCollectSerializer(serializers.Serializer):
-    jira_domain = serializers.CharField()
-    project_key = serializers.CharField()
-    issuetypes = serializers.ListField(
-        child=serializers.CharField(), required=False, allow_empty=True
+JIRA_COLLECT_TYPES = ("issues",)
+
+
+class JiraCollectFiltersSerializer(serializers.Serializer):
+    types = serializers.ListField(child=serializers.CharField(), required=False, default=list)
+
+
+class JiraCollectSerializer(serializers.Serializer):
+    targets = serializers.ListField(child=serializers.CharField(), required=True)
+    collect_types = serializers.ListField(
+        child=serializers.ChoiceField(choices=JIRA_COLLECT_TYPES),
+        required=True,
     )
-    start_date = serializers.CharField(required=False, allow_null=True)
-    end_date = serializers.CharField(required=False, allow_null=True)
+    start_date = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    end_date = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    filters = JiraCollectFiltersSerializer(required=False, default=dict)
+    options = serializers.DictField(required=False, default=dict)
+
+    def validate_targets(self, value):
+        if not value:
+            raise serializers.ValidationError("At least one target must be provided.")
+
+        for target in value:
+            if "/" not in target:
+                raise serializers.ValidationError("Each target must use jira_domain/project_key format.")
+
+            jira_domain, project_key = target.split("/", 1)
+            if not jira_domain or not project_key:
+                raise serializers.ValidationError("Each target must use jira_domain/project_key format.")
+
+        return value
+
+    def validate_collect_types(self, value):
+        if not value:
+            raise serializers.ValidationError("At least one collect type must be selected.")
+        if value != ["issues"]:
+            raise serializers.ValidationError("Jira only supports collect_types ['issues'].")
+        return value
 
 class ExportDataSerializer(serializers.Serializer):
     table = serializers.CharField()

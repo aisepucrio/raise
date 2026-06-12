@@ -1,4 +1,4 @@
-import type { DateFilterRange } from "../shared";
+import type { DateFilterRange, StandardCollectBody } from "../shared";
 
 export type GithubOverviewParams = DateFilterRange & { repository_id?: string };
 export type GithubDateRangeParams = { repository_id: string };
@@ -59,19 +59,26 @@ export type GithubPreviewResponse = {
 };
 
 export type GithubCollectType =
+  | "all"
   | "metadata"
   | "issues"
-  | "comments"
   | "pull_requests"
+  | "branches"
   | "commits";
 
-export type GithubCollectBody = {
-  repositories: string[];
-  depth: "basic";
-  collect_types: GithubCollectType[];
-  start_date?: string;
-  end_date?: string;
+export type GithubCollectFilters = {
+  sha?: string;
 };
+
+export type GithubCollectOptions = {
+  depth?: "basic" | "complex";
+};
+
+export type GithubCollectBody = StandardCollectBody<
+  GithubCollectType,
+  GithubCollectFilters,
+  GithubCollectOptions
+>;
 
 export type GithubExportBody = {
   format: "json";
