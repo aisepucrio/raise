@@ -70,34 +70,32 @@ describe("parseGithubUrl", () => {
   });
 });
 
-// ── parseJiraUrl ──────────────────────────────────────────────────────────────
-
 describe("parseJiraUrl", () => {
-  it("extracts domain and key from a board URL", () => {
+  it("extracts target from a board URL", () => {
     expect(
       parseJiraUrl(
         "https://stone-puc.atlassian.net/jira/software/c/projects/APIMINER/boards/3",
       ),
-    ).toEqual({ jira_domain: "stone-puc.atlassian.net", project_key: "APIMINER" });
+    ).toBe("stone-puc.atlassian.net/APIMINER");
   });
-  it("extracts domain and key from a board URL with query params", () => {
+  it("extracts target from a board URL with query params", () => {
     expect(
       parseJiraUrl(
         "https://stone-puc.atlassian.net/jira/software/c/projects/APIMINER/boards/3?assignee=abc&selectedIssue=APIMINER-701",
       ),
-    ).toEqual({ jira_domain: "stone-puc.atlassian.net", project_key: "APIMINER" });
+    ).toBe("stone-puc.atlassian.net/APIMINER");
   });
-  it("extracts domain and key from a browse/issue URL", () => {
+  it("extracts target from a browse/issue URL", () => {
     expect(
       parseJiraUrl("https://stone-puc.atlassian.net/browse/APIMINER-701"),
-    ).toEqual({ jira_domain: "stone-puc.atlassian.net", project_key: "APIMINER" });
+    ).toBe("stone-puc.atlassian.net/APIMINER");
   });
-  it("extracts domain and key from a backlog URL", () => {
+  it("extracts target from a backlog URL", () => {
     expect(
       parseJiraUrl(
         "https://stone-puc.atlassian.net/jira/software/projects/APIMINER/backlogs",
       ),
-    ).toEqual({ jira_domain: "stone-puc.atlassian.net", project_key: "APIMINER" });
+    ).toBe("stone-puc.atlassian.net/APIMINER");
   });
   it("returns null for a protocol-less domain string", () => {
     expect(parseJiraUrl("stone-puc.atlassian.net")).toBeNull();
@@ -113,31 +111,31 @@ describe("parseJiraUrl", () => {
   it("extracts from a self-hosted (non-Atlassian) Jira URL", () => {
     expect(
       parseJiraUrl("https://jira.company.com/browse/PROJ-123"),
-    ).toEqual({ jira_domain: "jira.company.com", project_key: "PROJ" });
+    ).toBe("jira.company.com/PROJ");
   });
   it("extracts from a browse URL with no issue number", () => {
     expect(
       parseJiraUrl("https://stone-puc.atlassian.net/browse/APIMINER"),
-    ).toEqual({ jira_domain: "stone-puc.atlassian.net", project_key: "APIMINER" });
+    ).toBe("stone-puc.atlassian.net/APIMINER");
   });
   it("extracts from a roadmap URL", () => {
     expect(
       parseJiraUrl(
         "https://stone-puc.atlassian.net/jira/software/projects/APIMINER/roadmap",
       ),
-    ).toEqual({ jira_domain: "stone-puc.atlassian.net", project_key: "APIMINER" });
+    ).toBe("stone-puc.atlassian.net/APIMINER");
   });
   it("uppercases a lowercase project key", () => {
     expect(
       parseJiraUrl("https://stone-puc.atlassian.net/browse/apiminer-42"),
-    ).toEqual({ jira_domain: "stone-puc.atlassian.net", project_key: "APIMINER" });
+    ).toBe("stone-puc.atlassian.net/APIMINER");
   });
   it("trims surrounding whitespace", () => {
     expect(
       parseJiraUrl(
         "  https://stone-puc.atlassian.net/browse/APIMINER-701  ",
       ),
-    ).toEqual({ jira_domain: "stone-puc.atlassian.net", project_key: "APIMINER" });
+    ).toBe("stone-puc.atlassian.net/APIMINER");
   });
 });
 

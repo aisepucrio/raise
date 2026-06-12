@@ -5,8 +5,9 @@ from typing import List, Dict, Any, Optional
 from django.utils import timezone
 
 from .base import BaseMiner
+from .metadata import get_or_create_repository_metadata
 from .utils import APIMetrics, split_date_range, update_task_progress_date
-from ..models import GitHubIssuePullRequest, GitHubMetadata
+from ..models import GitHubIssuePullRequest
 
 
 class PullRequestsMiner(BaseMiner):
@@ -233,17 +234,7 @@ class PullRequestsMiner(BaseMiner):
                             'commits_data': []  
                         }
 
-                        # BUG-005: previously returned [] silently when GitHubMetadata was absent.
-                        # get_or_create ensures a stub row exists so pull requests are always linked.
-                        metadata_obj, _ = GitHubMetadata.objects.get_or_create(
-                            repository=repo_name,
-                            defaults={
-                                'owner': repo_name.split('/')[0],
-                                'html_url': f'https://github.com/{repo_name}',
-                                'github_created_at': timezone.now(),
-                                'github_updated_at': timezone.now(),
-                            }
-                        )
+                        metadata_obj = get_or_create_repository_metadata(repo_name)
 
                         GitHubIssuePullRequest.objects.update_or_create(
                             record_id=processed_pr['id'],
@@ -276,7 +267,7 @@ class PullRequestsMiner(BaseMiner):
 
                         all_prs.append(processed_pr)
 
-                    if len(data['items']) < 100:
+                    if prs_in_page < 100:
                         has_more_pages = False
                     else:
                         page += 1

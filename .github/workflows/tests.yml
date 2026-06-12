@@ -1,0 +1,56 @@
+name: Tests and Coverage
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      IS_DEBUG: "False"
+      POSTGRES_DB: raise
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      VITE_API_URL: "http://localhost:8000"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install docker-compose
+        run: |
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose version
+
+      - name: Create .env file
+        run: |
+          cat > .env << EOF
+          POSTGRES_DB=raise
+          POSTGRES_USER=postgres
+          POSTGRES_PASSWORD=password
+          EOF
+ 
+      - name: Build Docker image
+        run: docker-compose -f docker-compose.yaml build --no-cache
+ 
+      - name: Start dependencies (db, redis)
+        run: docker-compose -f docker-compose.yaml up -d db_raise redis
+ 
+      - name: Wait for dependencies to be healthy
+        run: sleep 15
+
+      - name: Run tests with coverage
+        run: |
+          docker-compose -f docker-compose.yaml run --rm raiseapi sh -c "
+            uv add coverage pytest pytest-django &&
+            uv run coverage run -m pytest /app/github /app/jira /app/jobs /app/stackoverflow --override-ini='python_files=tests.py' --override-ini='DJANGO_SETTINGS_MODULE=dataminer_api.settings' -k 'not test_start_jira_collection_success' &&
+            uv run coverage report &&
+            uv run coverage report --fail-under=10
+          "
+     
+      - name: Tear down
+        if: always()
+        run: docker-compose -f docker-compose.yaml down

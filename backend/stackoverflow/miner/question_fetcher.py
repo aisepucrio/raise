@@ -369,7 +369,7 @@ def fetch_questions(
                         if unsupported_keys:
                             log_progress(
                                 f"Ignoring unsupported filters on default endpoint: {unsupported_keys}. "
-                                f"Use /collect/advanced/ for these.",
+                                f'Use options.mode: "advanced" for these.',
                                 "warning",
                                 task_obj=task_obj
                             )

@@ -4,7 +4,7 @@ import { Check } from "lucide-react";
 import { Button } from "@/components/button";
 import { FormInput } from "@/components/form";
 import { SelectionButton } from "@/components/selection-button";
-import type { StackOverflowAdvancedCollectFilters } from "@/data";
+import type { StackOverflowCollectFilters } from "@/data";
 
 type StackoverflowAdvancedFiltersFormState = {
   min: string;
@@ -34,7 +34,7 @@ const INITIAL_ADVANCED_FILTERS_STATE: StackoverflowAdvancedFiltersFormState = {
 
 export type StackoverflowAdvancedFiltersSectionState = {
   enabled: boolean;
-  filters: StackOverflowAdvancedCollectFilters | undefined;
+  filters: StackOverflowCollectFilters;
 };
 
 export type StackoverflowAdvancedFiltersSectionProps = {
@@ -51,11 +51,11 @@ function parseOptionalNumber(value: string): number | undefined {
   return numberValue;
 }
 
-// Converts local UI state into the advanced-endpoint payload.
+// Converts local UI state into the collect filters payload.
 function buildAdvancedFiltersPayload(
   filters: StackoverflowAdvancedFiltersFormState,
-): StackOverflowAdvancedCollectFilters | undefined {
-  const payload: StackOverflowAdvancedCollectFilters = {};
+): StackOverflowCollectFilters {
+  const payload: StackOverflowCollectFilters = {};
 
   const min = parseOptionalNumber(filters.min);
   const max = parseOptionalNumber(filters.max);
@@ -79,7 +79,7 @@ function buildAdvancedFiltersPayload(
   if (filters.closed) payload.closed = true;
   if (filters.migrated) payload.migrated = true;
 
-  return Object.keys(payload).length > 0 ? payload : undefined;
+  return payload;
 }
 
 export function StackoverflowAdvancedFiltersSection({
@@ -100,7 +100,7 @@ export function StackoverflowAdvancedFiltersSection({
   ) {
     onChange({
       enabled: nextEnabled,
-      filters: nextEnabled ? buildAdvancedFiltersPayload(nextFilters) : undefined,
+      filters: nextEnabled ? buildAdvancedFiltersPayload(nextFilters) : {},
     });
   }
 

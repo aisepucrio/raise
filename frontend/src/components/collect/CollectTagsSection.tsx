@@ -1,42 +1,38 @@
 import { RemovableTag } from "@/components/removable-tag";
 
-export type CollectTag = {
-  id: string;
-  label: string;
-  onRemove: () => void;
-};
-
 export type CollectTagsSectionProps = {
-  tagsHeading: string;
-  tags: readonly CollectTag[];
-  emptyTagsMessage: string;
+  title: string;
+  items: readonly string[];
+  emptyMessage: string;
+  onRemoveItem: (item: string) => void;
 };
 
 export function CollectTagsSection({
-  tagsHeading,
-  tags,
-  emptyTagsMessage,
+  title,
+  items,
+  emptyMessage,
+  onRemoveItem,
 }: CollectTagsSectionProps) {
   return (
     <section className="space-y-2">
       <div className="flex items-center gap-2">
         <h3 className="text-sm font-semibold text-(--color-secondary)">
-          {tagsHeading}
+          {title} ({items.length})
         </h3>
       </div>
 
       <div className="min-h-28 rounded-lg border border-(--color-secondary-soft) bg-(--color-primary) p-3">
-        {tags.length === 0 ? (
+        {items.length === 0 ? (
           <div className="grid min-h-24 place-items-center rounded-md border border-dashed border-(--color-secondary-subtle) text-center text-sm text-(--color-secondary-muted)">
-            {emptyTagsMessage}
+            {emptyMessage}
           </div>
         ) : (
           <div className="flex flex-wrap gap-2">
-            {tags.map((tag) => (
+            {items.map((item) => (
               <RemovableTag
-                key={tag.id}
-                label={tag.label}
-                onRemove={tag.onRemove}
+                key={item}
+                label={item}
+                onRemove={() => onRemoveItem(item)}
               />
             ))}
           </div>

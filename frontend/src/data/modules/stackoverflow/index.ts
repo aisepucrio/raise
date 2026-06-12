@@ -4,9 +4,8 @@ import * as mutations from "./stackoverflowMutations";
 export { mutations, queries };
 
 export type {
-  StackOverflowAdvancedCollectBody,
-  StackOverflowAdvancedCollectFilters,
   StackOverflowCollectBody,
+  StackOverflowCollectFilters,
   StackOverflowDateRangeParams,
   StackOverflowGraphParams,
   StackOverflowOverviewParams,
