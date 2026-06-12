@@ -6,12 +6,14 @@ from django.http import HttpResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from drf_spectacular.utils import extend_schema
 
 from stackoverflow.models import StackQuestion
 from .serializers import ExportStackoverflowDataSerializer
 
 
 class ExportStackoverflowCSVView(APIView):
+    @extend_schema(tags=["StackOverflow"])
     def post(self, request):
         serializer = ExportStackoverflowDataSerializer(data=request.data)
         if not serializer.is_valid():

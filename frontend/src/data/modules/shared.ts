@@ -37,6 +37,18 @@ export type DashboardGraphResponse = {
     labels?: string[];
     datasets?: Record<string, number[]>;
   };
+  
+export type StandardCollectBody<
+  CollectType extends string,
+  Filters extends object = Record<string, never>,
+  Options extends object = Record<string, never>,
+> = {
+  targets: string[];
+  collect_types: CollectType[];
+  start_date: string | null;
+  end_date: string | null;
+  filters: Filters;
+  options: Options;
 };
 
 export type ApiDateRangeResponse = {

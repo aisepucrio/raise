@@ -130,31 +130,60 @@ class GraphDashboardSerializer(serializers.Serializer):
             DateTimeHandler.validate_date_range(data['start_date'], data['end_date'])
         return data
 
-class GitHubCollectAllSerializer(serializers.Serializer):
-    repositories = serializers.ListField(
+GITHUB_EXPANDED_COLLECT_TYPES = (
+    'commits',
+    'issues',
+    'pull_requests',
+    'branches',
+    'metadata',
+)
+GITHUB_COLLECT_TYPES = ('all', *GITHUB_EXPANDED_COLLECT_TYPES)
+GITHUB_DEPTH_CHOICES = ('basic', 'complex')
+
+
+class GitHubCollectOptionsSerializer(serializers.Serializer):
+    depth = serializers.ChoiceField(choices=GITHUB_DEPTH_CHOICES, default='basic', required=False)
+
+
+class GitHubCollectFiltersSerializer(serializers.Serializer):
+    sha = serializers.CharField(required=False, allow_blank=False)
+
+
+class GitHubCollectSerializer(serializers.Serializer):
+    targets = serializers.ListField(
         child=serializers.CharField(help_text="Repository name in format owner/repo"),
-        help_text="List of repositories to mine"
+        help_text="List of repositories to mine",
+    )
+    collect_types = serializers.ListField(
+        child=serializers.ChoiceField(choices=GITHUB_COLLECT_TYPES),
+        help_text="List of data types to mine",
     )
     start_date = serializers.DateTimeField(required=False, allow_null=True, help_text="Start date for mining (optional)")
     end_date = serializers.DateTimeField(required=False, allow_null=True, help_text="End date for mining (optional)")
-    depth = serializers.ChoiceField(choices=['basic', 'complex'], default='basic', help_text="Mining depth (basic or complex)")
-    collect_types = serializers.ListField(
-        child=serializers.ChoiceField(choices=['commits', 'issues', 'pull_requests', 'branches', 'metadata', 'comments']),
-        help_text="List of data types to mine (commits, issues, pull_requests, branches, metadata, comments)"
-    )
+    filters = GitHubCollectFiltersSerializer(required=False, default=dict)
+    options = GitHubCollectOptionsSerializer(required=False, default=dict)
 
     def validate_collect_types(self, value):
         if not value:
             raise serializers.ValidationError("At least one data type must be selected for mining")
+        if 'all' in value:
+            return list(GITHUB_EXPANDED_COLLECT_TYPES)
         return value
 
-    def validate_repositories(self, value):
+    def validate_targets(self, value):
         if not value:
             raise serializers.ValidationError("At least one repository must be provided for mining")
         
         unique_repos = []
         seen = set()
         for repo in value:
+            if "/" not in repo:
+                raise serializers.ValidationError("Each target must use owner/repo format.")
+
+            owner, name = repo.split("/", 1)
+            if not owner or not name:
+                raise serializers.ValidationError("Each target must use owner/repo format.")
+
             if repo not in seen:
                 unique_repos.append(repo)
                 seen.add(repo)
@@ -164,8 +193,12 @@ class GitHubCollectAllSerializer(serializers.Serializer):
     def validate(self, data):
         if 'start_date' in data and 'end_date' in data:
             DateTimeHandler.validate_date_range(data['start_date'], data['end_date'])
-        if 'comments' in data.get('collect_types', []):
-            data['depth'] = 'complex'
+
+        filters = data.get('filters') or {}
+        if filters.get('sha') and data.get('collect_types') != ['commits']:
+            raise serializers.ValidationError({
+                "filters": "sha can only be used when collect_types is exactly ['commits']."
+            })
         return data
 
 class ExportDataSerializer(serializers.Serializer):

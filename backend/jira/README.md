@@ -52,25 +52,33 @@ automatically rotates tokens to prevent rate limiting.
 
 1) Collect Issues
 
-POST /api/jira/issues/collect/
+POST /api/jira/collect/
 
 Starts an asynchronous mining job to collect issues from one or more
 Jira projects.
 
 Body (JSON):
 
-{ “projects”: [ { “jira_domain”: “ecosystem.atlassian.net”,
-“project_key”: “AO” } ], “issuetypes”: [“Bug”, “Documentation”],
-“start_date”: “2011-11-15”, “end_date”: “2013-12-27” }
+```json
+{
+  "targets": ["ecosystem.atlassian.net/AO"],
+  "collect_types": ["issues"],
+  "start_date": "2011-11-15",
+  "end_date": "2013-12-27",
+  "filters": {
+    "types": ["Bug", "Documentation"]
+  },
+  "options": {}
+}
+```
 
 Parameters:
 
--   projects (required) List of project objects:
+-   targets (required) List of Jira projects in `jira_domain/project_key` format.
 
-    -   jira_domain (string)
-    -   project_key (string)
+-   collect_types (required) Must be `["issues"]`.
 
--   issuetypes (optional) List of issue types (e.g., [“Bug”, “Task”]) If
+-   filters.types (optional) List of issue types (e.g., ["Bug", "Task"]). If
     omitted, all issue types are collected.
 
 -   start_date / end_date (optional) Date range in format:

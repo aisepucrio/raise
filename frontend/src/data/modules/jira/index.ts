@@ -10,5 +10,4 @@ export type {
   JiraPreviewParams,
   JiraPreviewResponse,
   JiraPreviewRow,
-  JiraProject,
 } from "./jiraTypes";

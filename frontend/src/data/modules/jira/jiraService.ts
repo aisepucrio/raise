@@ -1,3 +1,4 @@
+import { ExportFormat } from "@/components/preview/PreviewExportModal";
 import { api } from "../../api/apiClient";
 import { endpoints } from "../../api/endpoints";
 import type { JiraSection } from "../../api/endpoints";
@@ -11,6 +12,8 @@ import {
 import type {
   JiraCollectBody,
   JiraDateRangeParams,
+  JiraExportBody,
+  JiraGraphParams,
   JiraOverviewParams,
   JiraPreviewParams,
   JiraPreviewResponse,

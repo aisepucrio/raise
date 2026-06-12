@@ -23,6 +23,7 @@ import {
   togglePreviewSortState,
   type PreviewBuildParamsInput,
 } from "@/sources/shared/PreviewShared";
+import { ExportFormat, PreviewExportModal } from "@/components/preview/PreviewExportModal";
 
 export type StackoverflowPreviewProps = {
   idPrefix: string;
@@ -61,6 +62,9 @@ export function StackoverflowPreview({
 
   // Hidden columns.
   const [hiddenColumns, setHiddenColumns] = useState<string[]>([]);
+
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [selectedFormat, setSelectedFormat] = useState<ExportFormat>("json");
 
   const previewExportMutation = useStackOverflowExportMutation();
 
@@ -156,18 +160,21 @@ export function StackoverflowPreview({
     showPreviewErrorToast(previewQuery.error, loadErrorMessage);
   }, [previewQuery.isError, previewQuery.error, loadErrorMessage]);
 
-  // Prepares the export request for this preview.
   const requestExportPayload = useCallback(
-    () => previewExportMutation.mutateAsync(),
+    (format: ExportFormat) => previewExportMutation.mutateAsync({ format } as any),
     [previewExportMutation],
   );
 
-  async function handleExport() {
+  async function handleConfirmExport() {
     await runPreviewExportWithFeedback({
-      execute: requestExportPayload,
+      execute: () => requestExportPayload(selectedFormat),
       fileNamePrefix: exportFileNamePrefix,
       successMessage: exportSuccessMessage,
+      extension: selectedFormat,
+      mimeType: selectedFormat === "csv" ? "text/csv" : "application/json",
     });
+
+    setIsExportModalOpen(false);
   }
 
   // Toggles ascending/descending sort for the clicked column.
@@ -193,7 +200,7 @@ export function StackoverflowPreview({
         columns={columns}
         hiddenColumns={hiddenColumns}
         onHiddenColumnsChange={setHiddenColumns}
-        onExport={() => void handleExport()}
+        onExport={() => setIsExportModalOpen(true)}
         isExportPending={previewExportMutation.isPending}
       >
         {/* Optional period filter. */}
@@ -237,6 +244,14 @@ export function StackoverflowPreview({
         open={isCellModalOpen}
         onClose={() => setIsCellModalOpen(false)}
         value={selectedCellValue}
+      />
+      <PreviewExportModal
+        open={isExportModalOpen}
+        selectedFormat={selectedFormat}
+        onChangeFormat={setSelectedFormat}
+        onClose={() => setIsExportModalOpen(false)}
+        onConfirm={handleConfirmExport}
+        isPending={previewExportMutation.isPending}
       />
     </PreviewWrapper>
   );

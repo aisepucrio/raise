@@ -1,4 +1,4 @@
-import type { DateFilterRange } from "../shared";
+import type { DateFilterRange, StandardCollectBody } from "../shared";
 
 export type JiraOverviewParams = DateFilterRange & { project_id?: string };
 export type JiraDateRangeParams = { project_id: string };
@@ -29,8 +29,15 @@ export type JiraPreviewResponse = {
 };
 
 export type JiraProject = { jira_domain: string; project_key: string };
+
 export type JiraCollectBody = {
   projects: JiraProject[];
   start_date?: string;
   end_date?: string;
+};
+
+export type JiraExportBody = {
+  format: "json" | "csv";
+  table: string;
+  date_type?: string;
 };

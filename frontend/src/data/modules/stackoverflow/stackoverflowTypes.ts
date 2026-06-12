@@ -1,4 +1,4 @@
-import type { DateFilterRange } from "../shared";
+import type { DateFilterRange, StandardCollectBody } from "../shared";
 
 export type StackOverflowPreviewParams = {
   page: number;
@@ -13,14 +13,7 @@ export type StackOverflowPreviewParams = {
 export type StackOverflowOverviewParams = DateFilterRange & { tag?: string };
 export type StackOverflowDateRangeParams = { tag?: string };
 
-export type StackOverflowCollectBody = {
-  options: ["collect_questions"];
-  start_date: string;
-  end_date: string;
-  tags?: string;
-};
-
-export type StackOverflowAdvancedCollectFilters = {
+export type StackOverflowCollectFilters = {
   min?: number;
   max?: number;
   accepted?: boolean;
@@ -33,10 +26,15 @@ export type StackOverflowAdvancedCollectFilters = {
   user?: string;
 };
 
-export type StackOverflowAdvancedCollectBody = StackOverflowCollectBody & {
-  mode: "advanced";
-  filters?: StackOverflowAdvancedCollectFilters;
+export type StackOverflowCollectOptions = {
+  mode?: "default" | "advanced";
 };
+
+export type StackOverflowCollectBody = StandardCollectBody<
+  "questions",
+  StackOverflowCollectFilters,
+  StackOverflowCollectOptions
+>;
 
 export type StackOverflowPreviewRow = Record<string, unknown>;
 

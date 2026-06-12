@@ -9,6 +9,7 @@ export default function JiraPreviewComments() {
       emptyStateMessage="No comments found for the selected filters."
       loadErrorMessage="Failed to load Jira comments."
       exportFileNamePrefix="jira-comments-preview"
+      exportTable="jiracomment"
       dateFilterField="created"
     />
   );
