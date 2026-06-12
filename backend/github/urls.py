@@ -7,7 +7,6 @@ from .views.lookup import (
     PullRequestListView, PullRequestDetailView,
     BranchListView, BranchDetailView,
     MetadataListView,
-    IssuePullRequestListView, IssuePullRequestDetailView,
     UserListView,
 )
 from .views.dashboard import DashboardView, GraphDashboardView, RepositoryDateRangeView
@@ -16,18 +15,7 @@ from .views.export import ExportDataView
 app_name = 'github'
 
 router = DefaultRouter()
-router.register(r'commits/collect', views.GitHubCommitViewSet, basename='commit-collect')
-router.register(r'commits/collect-by-sha', views.GitHubCommitByShaViewSet, basename='commit-collect-by-sha')
-router.register(r'issues/collect', views.GitHubIssueViewSet, basename='issue-collect')
-router.register(r'pull-requests/collect', views.GitHubPullRequestViewSet, basename='pullrequest-collect')
-router.register(r'branches/collect', views.GitHubBranchViewSet, basename='branch-collect')
-router.register(r'metadata/collect', views.GitHubMetadataViewSet, basename='metadata-collect')
-# /collect/ is the canonical bulk-collection endpoint matching the frontend contract
-# POST /api/<source>/collect/. /collect-all/ is kept as a backwards-compatible alias.
-# BUG-001: frontend posts to /api/github/collect/ — this registration must exist.
-# collect-all is kept as a backwards-compatible alias.
-router.register(r'collect', views.GitHubCollectAllViewSet, basename='collect')
-router.register(r'collect-all', views.GitHubCollectAllViewSet, basename='collect-all')
+router.register(r'collect', views.GitHubCollectViewSet, basename='collect')
 
 urlpatterns = [
     # PRIORITIZE the export route before the router

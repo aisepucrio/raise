@@ -4,8 +4,6 @@ services:
   raiseapi:
     build: ./backend/
     volumes:
-      - ./backend/:/app
-      - ./backend/static:/static
       - static_volume_raise:/app/static
     ports:
       - "8000:8000"
@@ -37,8 +35,6 @@ services:
     ports:
       - "5173:5173"
     volumes:
-      - ./frontend:/app
-      - /app/node_modules
       - frontend_dist:/app/dist
     depends_on:
       - raiseapi
@@ -56,7 +52,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - pg_raise:/var/lib/postgresql/data
+      - pg_raise:/var/lib/postgresql/
     restart: unless-stopped
 
   nginx:
@@ -87,14 +83,10 @@ services:
   worker:
     build: ./backend/
     command: uv run celery -A dataminer_api worker --loglevel=info
-    volumes:
-      - ./backend:/app
-      - ./exports:/app/exports
     env_file:
       - .env
     environment:
-      # Backend reads GITHUB_TOKENS (plural) for multi-token rotation support.
-      GITHUB_TOKENS: ${GITHUB_TOKEN}
+      GITHUB_TOKENS: ${GITHUB_TOKENS}
     depends_on:
       redis:
         condition: service_healthy

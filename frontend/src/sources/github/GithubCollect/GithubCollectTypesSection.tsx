@@ -4,15 +4,15 @@ import { SelectionButton } from "@/components/selection-button";
 import type { GithubCollectType } from "@/data";
 
 // Optional GitHub types; metadata is always fixed in the final payload.
-export type GithubOptionalCollectType = Exclude<GithubCollectType, "metadata">;
+export type GithubOptionalCollectType = Exclude<GithubCollectType, "metadata" | "all">;
 
 const OPTIONAL_COLLECT_OPTIONS: ReadonlyArray<{
   collectType: GithubOptionalCollectType;
   label: string;
 }> = [
   { collectType: "issues", label: "Issues" },
-  { collectType: "comments", label: "Comments" },
   { collectType: "pull_requests", label: "Pull requests" },
+  { collectType: "branches", label: "Branches" },
   { collectType: "commits", label: "Commits" },
 ];
 
@@ -57,7 +57,7 @@ export function GithubCollectTypesSection({
             Collection Scope
           </h3>
           <p className="text-xs text-(--color-secondary-muted)">
-            Choose which GitHub date types this job should collect.
+            Choose which GitHub data types this job should collect.
           </p>
         </div>
       </div>

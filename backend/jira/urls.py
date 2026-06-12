@@ -4,7 +4,7 @@ from .export import ExportDataView
 
 urlpatterns = [
     # Collect Endpoints
-    path('issues/collect/', JiraIssueCollectView.as_view(), name='collect-jira-issues'),
+    path('collect/', JiraIssueCollectView.as_view(), name='collect-jira-issues'),
 
     # Dashboard Endpoints
     path('dashboard/', JiraDashboardView.as_view(), name='dashboard'),

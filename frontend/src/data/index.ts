@@ -33,13 +33,11 @@ export type {
   JiraPreviewParams,
   JiraPreviewResponse,
   JiraPreviewRow,
-  JiraProject,
 } from "./modules/jira";
 export type { JobsListItem, JobsListResponse } from "./modules/jobs";
 export type {
-  StackOverflowAdvancedCollectBody,
-  StackOverflowAdvancedCollectFilters,
   StackOverflowCollectBody,
+  StackOverflowCollectFilters,
   StackOverflowDateRangeParams,
   StackOverflowGraphParams,
   StackOverflowOverviewParams,

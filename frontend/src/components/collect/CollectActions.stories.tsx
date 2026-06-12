@@ -10,12 +10,12 @@ const meta = {
     collectButtonText: {
       control: { type: "text" },
       description: "Button text in normal state.",
-      table: { type: { summary: "string" } },
+      table: { type: { summary: "string | undefined" } },
     },
     collectPendingButtonText: {
       control: { type: "text" },
       description: "Text shown while collection is pending.",
-      table: { type: { summary: "string" } },
+      table: { type: { summary: "string | undefined" } },
     },
     onCollect: {
       action: "collectClick",
@@ -34,8 +34,6 @@ const meta = {
     },
   },
   args: {
-    collectButtonText: "Collect",
-    collectPendingButtonText: "Collecting...",
     isCollectPending: false,
     isCollectDisabled: false,
   },

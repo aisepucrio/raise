@@ -140,6 +140,19 @@ class GitHubAPITests(APITestCase):
             time_mined=timezone.now(),
         )
 
+    def _collect_url(self):
+        return reverse('github:collect-list')
+
+    def _collect_payload(self, collect_type, **overrides):
+        payload = {
+            'targets': [self.meta.repository],
+            'collect_types': [collect_type],
+            'filters': {},
+            'options': {},
+        }
+        payload.update(overrides)
+        return payload
+
     @patch('github.views.collect.fetch_commits')
     def test_fetch_commit_success(self, mock_task):
         '''
@@ -150,8 +163,8 @@ class GitHubAPITests(APITestCase):
             within a GitHubCommitViewSet object.
             [Expected Result]: "HTTP_202_ACCEPTED"
         '''
-        url = reverse('github:commit-collect-list')
-        data = {'repo_name': self.meta.repository}
+        url = self._collect_url()
+        data = self._collect_payload('commits')
         mock_task.apply_async.return_value = MagicMock(id=str(uuid.uuid4()))
 
         response = self.client.post(url, data, format='json')
@@ -166,8 +179,8 @@ class GitHubAPITests(APITestCase):
         [How It Tests]: Sends a POST request to 'github:commit-collect-by-sha-list'.
         [Expected Result]: 202/200 response and task.apply_async called once.
         """
-        url = reverse('github:commit-collect-by-sha-list')
-        data = {'repo_name': self.meta.repository, 'commit_sha': 'a'*40}
+        url = self._collect_url()
+        data = self._collect_payload('commits', filters={'sha': 'a'*40})
         mock_task.apply_async.return_value = MagicMock(id=str(uuid.uuid4()))
 
         response = self.client.post(url, data, format='json')
@@ -182,8 +195,13 @@ class GitHubAPITests(APITestCase):
         [How It Tests]: Sends a POST request to 'github:issue-collect-list'.
         [Expected Result]: 202/200 response and task.apply_async called once.
         """
-        url = reverse('github:issue-collect-list')
-        data = {'repo_name': self.meta.repository, 'start_date': '2025-01-01T00:00:00Z', 'end_date': '2025-01-31T23:59:59Z', 'depth': 'basic'}
+        url = self._collect_url()
+        data = self._collect_payload(
+            'issues',
+            start_date='2025-01-01T00:00:00Z',
+            end_date='2025-01-31T23:59:59Z',
+            options={'depth': 'basic'},
+        )
         mock_task.apply_async.return_value = MagicMock(id=str(uuid.uuid4()))
 
         response = self.client.post(url, data, format='json')
@@ -198,8 +216,13 @@ class GitHubAPITests(APITestCase):
         [How It Tests]: Sends a POST request to 'github:pullrequest-collect-list'.
         [Expected Result]: 202/200 response and task.apply_async called once.
         """
-        url = reverse('github:pullrequest-collect-list')
-        data = {'repo_name': self.meta.repository, 'start_date': '2025-01-01T00:00:00Z', 'end_date': '2025-01-31T23:59:59Z', 'depth': 'basic'}
+        url = self._collect_url()
+        data = self._collect_payload(
+            'pull_requests',
+            start_date='2025-01-01T00:00:00Z',
+            end_date='2025-01-31T23:59:59Z',
+            options={'depth': 'basic'},
+        )
         mock_task.apply_async.return_value = MagicMock(id=str(uuid.uuid4()))
 
         response = self.client.post(url, data, format='json')
@@ -214,8 +237,8 @@ class GitHubAPITests(APITestCase):
         [How It Tests]: Sends a POST request to 'github:branch-collect-list'.
         [Expected Result]: 202/200 response and task.apply_async called once.
         """
-        url = reverse('github:branch-collect-list')
-        data = {'repo_name': self.meta.repository}
+        url = self._collect_url()
+        data = self._collect_payload('branches')
         mock_task.apply_async.return_value = MagicMock(id=str(uuid.uuid4()))
 
         response = self.client.post(url, data, format='json')
@@ -230,8 +253,8 @@ class GitHubAPITests(APITestCase):
         [How It Tests]: Sends a POST request to 'github:metadata-collect-list'.
         [Expected Result]: 202/200 response and task.apply_async called once.
         """
-        url = reverse('github:metadata-collect-list')
-        data = {'repo_name': self.meta.repository}
+        url = self._collect_url()
+        data = self._collect_payload('metadata')
         mock_task.apply_async.return_value = MagicMock(id=str(uuid.uuid4()))
 
         response = self.client.post(url, data, format='json')
@@ -253,13 +276,14 @@ class GitHubAPITests(APITestCase):
         for m in (mock_commits, mock_issues, mock_prs, mock_branches, mock_meta):
             m.apply_async.return_value = MagicMock(id=str(uuid.uuid4()))
 
-        url = reverse('github:collect-all-list')
+        url = self._collect_url()
         data = {
-            'repositories': [self.meta.repository],
+            'targets': [self.meta.repository],
             'collect_types': ['commits', 'issues', 'pull_requests', 'branches', 'metadata'],
             'start_date': '2025-01-01T00:00:00Z',
             'end_date':   '2025-01-31T23:59:59Z',
-            'depth': 'basic'
+            'filters': {},
+            'options': {'depth': 'basic'}
         }
 
         response = self.client.post(url, data, format='json')
@@ -278,8 +302,8 @@ class GitHubAPITests(APITestCase):
         [How It Tests]: Sends a POST request without 'repo_name'.
         [Expected Result]: 400 response.
         """
-        url = reverse('github:commit-collect-list')
-        resp = self.client.post(url, {}, format='json')
+        url = self._collect_url()
+        resp = self.client.post(url, {'collect_types': ['commits']}, format='json')
         self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST, getattr(resp,'data',resp.content))
 
     def test_commit_collect_invalid_date_format_returns_400(self):
@@ -289,11 +313,11 @@ class GitHubAPITests(APITestCase):
         [How It Tests]: Sends invalid start_date/end_date values.
         [Expected Result]: 400 response.
         """
-        url = reverse('github:commit-collect-list')
+        url = self._collect_url()
         bads = [
-            {'repo_name': self.meta.repository, 'start_date': '31-01-2025'},
-            {'repo_name': self.meta.repository, 'end_date':   'not-a-date'},
-            {'repo_name': self.meta.repository, 'start_date': 1234},
+            self._collect_payload('commits', start_date='31-01-2025'),
+            self._collect_payload('commits', end_date='not-a-date'),
+            self._collect_payload('commits', start_date=1234),
         ]
         for p in bads:
             with self.subTest(p=p):
@@ -307,44 +331,44 @@ class GitHubAPITests(APITestCase):
         [How It Tests]: start_date > end_date.
         [Expected Result]: 400 response.
         """
-        url = reverse('github:commit-collect-list')
-        p = {
-            'repo_name': self.meta.repository,
-            'start_date': '2025-02-01T00:00:00Z',
-            'end_date':   '2025-01-01T00:00:00Z',
-        }
+        url = self._collect_url()
+        p = self._collect_payload(
+            'commits',
+            start_date='2025-02-01T00:00:00Z',
+            end_date='2025-01-01T00:00:00Z',
+        )
         r = self.client.post(url, p, format='json')
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST, getattr(r,'data',r.content))
 
     # Negative validations: Issues, PRs, Branches, Metadata
     def test_issue_collect_missing_repo_name_returns_400(self):
-        url = reverse('github:issue-collect-list')
-        r = self.client.post(url, {}, format='json')
+        url = self._collect_url()
+        r = self.client.post(url, {'collect_types': ['issues']}, format='json')
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST, getattr(r,'data',r.content))
 
     def test_pullrequest_collect_missing_repo_name_returns_400(self):
-        url = reverse('github:pullrequest-collect-list')
-        r = self.client.post(url, {}, format='json')
+        url = self._collect_url()
+        r = self.client.post(url, {'collect_types': ['pull_requests']}, format='json')
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST, getattr(r,'data',r.content))
 
     def test_branch_collect_missing_repo_name_returns_400(self):
-        url = reverse('github:branch-collect-list')
-        r = self.client.post(url, {}, format='json')
+        url = self._collect_url()
+        r = self.client.post(url, {'collect_types': ['branches']}, format='json')
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST, getattr(r,'data',r.content))
 
     def test_metadata_collect_missing_repo_name_returns_400(self):
-        url = reverse('github:metadata-collect-list')
-        r = self.client.post(url, {}, format='json')
+        url = self._collect_url()
+        r = self.client.post(url, {'collect_types': ['metadata']}, format='json')
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST, getattr(r,'data',r.content))
 
     # Negative validations: Commits by sha
     def test_commit_by_sha_missing_fields_returns_400(self):
-        url = reverse('github:commit-collect-by-sha-list')
+        url = self._collect_url()
 
-        r = self.client.post(url, {'commit_sha': 'a'*40}, format='json')
+        r = self.client.post(url, {'collect_types': ['commits'], 'filters': {'sha': 'a'*40}}, format='json')
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST, getattr(r,'data',r.content))
 
-        r = self.client.post(url, {'repo_name': self.meta.repository}, format='json')
+        r = self.client.post(url, self._collect_payload('issues', filters={'sha': 'a'*40}), format='json')
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST, getattr(r,'data',r.content))
 
 
@@ -800,4 +824,3 @@ class TestTokenRotation(APITestCase):
 
         self.assertFalse(rotated)
         self.miner.wait_for_rate_limit_reset.assert_called_once()
-
