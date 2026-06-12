@@ -13,7 +13,7 @@ export function useGithubCollectMutation() {
   });
 }
 
-// Exports GitHub preview data in the current standard format (json).
+// Exports GitHub preview data.
 export function useGithubExportMutation() {
   return useMutation({
     mutationFn: (body: GithubExportBody) => githubService.exportPreview(body),

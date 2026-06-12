@@ -48,4 +48,16 @@ export type JiraPreviewResponse = {
   results?: JiraPreviewRow[];
 };
 
-export type JiraCollectBody = StandardCollectBody<"issues">;
+export type JiraProject = { jira_domain: string; project_key: string };
+
+export type JiraCollectBody = {
+  projects: JiraProject[];
+  start_date?: string;
+  end_date?: string;
+};
+
+export type JiraExportBody = {
+  format: "json" | "csv";
+  table: string;
+  date_type?: string;
+};

@@ -9,6 +9,7 @@ export default function JiraPreviewIssues() {
       emptyStateMessage="No issues found for the selected filters."
       loadErrorMessage="Failed to load Jira issues."
       exportFileNamePrefix="jira-issues-preview"
+      exportTable="jiraissue"
       dateFilterField="created"
     />
   );
