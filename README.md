@@ -62,6 +62,29 @@ Changes to `.env` and to `backend/dataminer_api/settings.py` might be needed to 
 
 Once the containers are running, you will be able to access our web interface via [http://localhost:5173]() and our API via [http://localhost:8000]().
 
+### Infrastructure commands
+
+Use `make` to manage the Docker stack:
+
+| Command | Description |
+|---------|-------------|
+| `make infra-up` | Start all services in the background |
+| `make infra-down` | Stop all services (keeps data volumes) |
+| `make infra-build` | Rebuild images and start services |
+| `make infra-reset` | Full reset: wipe volumes, rebuild, and restart |
+| `make infra-logs` | Tail logs from all services |
+| `make infra-ps` | Show running service status |
+
+Run `make infra-reset` when dependencies change (e.g., after updating `pyproject.toml` or `package.json`).
+
+### Testing
+
+```sh
+make test        # backend + frontend (fast, no extra setup needed)
+make test-e2e    # full-stack pipeline tests (requires make infra-up first)
+make test-all    # all tiers
+```
+
 ---
 If you encounter any issues, please open an issue in the repository.
 

@@ -436,9 +436,9 @@ class GitHubTasksTests(APITestCase):
         self.assertEqual(task_obj, expected_task)
         self.assertFalse(created)
 
-    @patch("github.tasks.GitHubMiner", autospec=True)                
-    @patch("github.tasks._reuse_or_create_task")      
-    @patch("celery.app.task.Task.request")            
+    @patch("github.tasks.GitHubMiner", autospec=True)
+    @patch("github.tasks._reuse_or_create_task")
+    @patch("celery.app.task.Task.request")
     def test_fetch_commit_logic(self, mock_request, mock_reuse, mock_miner_cls):
         from github.tasks import fetch_commits
 
@@ -480,7 +480,7 @@ class GitHubTasksTests(APITestCase):
         self.assertEqual(res["repository"], "pandas-dev/pandas")
         self.assertEqual(res["commit_sha"], "xyz")
         self.assertListEqual(res["data"], [{"sha": "abc"}, {"sha": "def"}])
-    
+
     @patch("github.tasks.GitHubMiner", autospec=True)
     @patch("github.tasks._reuse_or_create_task")
     @patch("celery.app.task.Task.request")
@@ -635,9 +635,9 @@ class GitHubTasksTests(APITestCase):
         }
         self.assertEqual(res, expected)
 
-    @patch("github.tasks.GitHubMiner")               
-    @patch("github.tasks._reuse_or_create_task")     
-    @patch("celery.app.task.Task.request")          
+    @patch("github.tasks.GitHubMiner")
+    @patch("github.tasks._reuse_or_create_task")
+    @patch("celery.app.task.Task.request")
     def test_fetch_metadata_success_basic(self, mock_request, mock_reuse, mock_miner_cls):
         from github.tasks import fetch_metadata, format_date_for_json
 
@@ -754,10 +754,10 @@ class GitHubTasksTests(APITestCase):
 
         mock_fetch_commits.apply_async.assert_called_once()
         args = mock_fetch_commits.apply_async.call_args.kwargs["args"]
-        self.assertEqual(args[0], "pandas-dev/pandas")    
-        self.assertEqual(args[-1], task_obj.pk)    
-        self.assertIsInstance(args[1], datetime)   
-        self.assertIsInstance(args[2], datetime)   
+        self.assertEqual(args[0], "pandas-dev/pandas")
+        self.assertEqual(args[-1], task_obj.pk)
+        self.assertIsInstance(args[1], datetime)
+        self.assertIsInstance(args[2], datetime)
 
         states = [c.kwargs["state"] for c in mock_state.call_args_list]
         self.assertIn("SUCCESS", states)
@@ -770,10 +770,10 @@ class TestTokenRotation(APITestCase):
 
     def setUp(self):
         with patch.object(
-            BaseMiner, "load_tokens", 
-            return_value={"success": True, 
+            BaseMiner, "load_tokens",
+            return_value={"success": True,
                           "tokens_loaded": 3,
-                          "valid_tokens": 3, 
+                          "valid_tokens": 3,
                           "selected_token":{"index": 0, "remaining": 0} ,
                           "error": None}
         ):

@@ -21,3 +21,8 @@ dependencies = [
     "requests==2.33.1",
     "selenium==4.41.0",
 ]
+
+[dependency-groups]
+dev = [
+    "factory-boy>=3.3.0",
+]
