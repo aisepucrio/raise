@@ -105,12 +105,8 @@ export function GithubPreview({
 
   // Converts repositories to select options.
   const repositoryOptions = useMemo(
-    () =>
-      buildSelectOptions(overviewData?.repositories, {
-        getValue: (repository) => repository.id,
-        getLabel: (repository) => repository.repository,
-      }),
-    [overviewData?.repositories],
+    () => buildSelectOptions(overviewData?.entities),
+    [overviewData?.entities],
   );
 
   // Fetches the selected repository date range to constrain the date picker.

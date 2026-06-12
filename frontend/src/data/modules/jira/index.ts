@@ -6,10 +6,7 @@ export { mutations, queries };
 export type {
   JiraCollectBody,
   JiraDateRangeParams,
-  JiraGraphParams,
   JiraOverviewParams,
-  JiraOverviewProject,
-  JiraOverviewResponse,
   JiraPreviewParams,
   JiraPreviewResponse,
   JiraPreviewRow,

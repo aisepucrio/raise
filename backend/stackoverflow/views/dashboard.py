@@ -1,7 +1,7 @@
 import logging
 
 from django.db.models import Count, Min, Max, Q
-from django.db.models.functions import TruncDay, TruncMonth, TruncYear
+from django.db.models.functions import TruncDay, TruncMonth, TruncWeek, TruncYear
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
 from rest_framework import serializers, status
@@ -18,7 +18,7 @@ class GraphDashboardSerializer(serializers.Serializer):
     tag = serializers.CharField(required=False)
     start_date = serializers.DateTimeField(required=False)
     end_date = serializers.DateTimeField(required=False)
-    interval = serializers.ChoiceField(choices=["day", "month", "year"], default="day", required=False)
+    interval = serializers.ChoiceField(choices=["day", "week", "month", "year"], default="day", required=False)
 
     def validate(self, data):
         if data.get("start_date") and data.get("end_date"):
@@ -55,17 +55,9 @@ class GraphDashboardSerializer(serializers.Serializer):
         200: {
             "type": "object",
             "properties": {
-                "tag": {"type": "string", "nullable": True},
-                "questions_count": {"type": "integer"},
-                "answers_count": {"type": "integer"},
-                "comments_count": {"type": "integer"},
-                "users_count": {"type": "integer"},
-                "tags_count": {"type": "integer", "nullable": True},
-                "top_tags": {
-                    "type": "array",
-                    "items": {"type": "object", "properties": {"name": {"type": "string"}, "count": {"type": "integer"}}},
-                    "nullable": True,
-                },
+                "selectedEntity": {"type": "object", "nullable": True},
+                "entities": {"type": "array", "items": {"type": "object"}},
+                "cards": {"type": "object"},
                 "time_mined": {"type": "string", "format": "date-time", "nullable": True},
             },
         },
@@ -73,29 +65,25 @@ class GraphDashboardSerializer(serializers.Serializer):
     },
     examples=[
         OpenApiExample(
-            "Tag Example",
+            "Tag dashboard",
             value={
-                "tag": "python",
-                "questions_count": 120,
-                "answers_count": 260,
-                "comments_count": 480,
-                "users_count": 180,
+                "selectedEntity": {"id": "python", "name": "python"},
+                "entities": [],
+                "cards": {"questions": 120, "answers": 260, "comments": 480, "users": 180},
                 "time_mined": "2025-12-31T23:59:59Z",
             },
             summary="Example with tag filter",
         ),
         OpenApiExample(
-            "All Tags Example",
+            "All tags dashboard",
             value={
-                "questions_count": 500,
-                "answers_count": 1100,
-                "comments_count": 2400,
-                "users_count": 850,
-                "tags_count": 50,
-                "top_tags": [
-                    {"name": "python", "count": 200},
-                    {"name": "javascript", "count": 150},
+                "selectedEntity": None,
+                "entities": [
+                    {"id": "python", "name": "python", "count": 200},
+                    {"id": "javascript", "name": "javascript", "count": 150},
                 ],
+                "cards": {"tags": 50, "questions": 500, "answers": 1100, "comments": 2400, "users": 850},
+                "time_mined": "2025-12-31T23:59:59Z",
             },
             summary="Example without tag filter",
         ),
@@ -140,11 +128,14 @@ class DashboardView(APIView):
         time_mined = StackDateTimeHandler.format_date(latest_time_mined.time_mined) if latest_time_mined else None
 
         response_data = {
-            "tag": tag,
-            "questions_count": questions_qs.count(),
-            "answers_count": answers_qs.count(),
-            "comments_count": comments_qs.count(),
-            "users_count": users_qs.count(),
+            "selectedEntity": {"id": tag, "name": tag} if tag else None,
+            "entities": [],
+            "cards": {
+                "questions": questions_qs.count(),
+                "answers": answers_qs.count(),
+                "comments": comments_qs.count(),
+                "users": users_qs.count(),
+            },
             "time_mined": time_mined,
         }
 
@@ -155,13 +146,11 @@ class DashboardView(APIView):
                 .exclude(tags__name__isnull=True)
                 .order_by("-count")
             )
-            response_data["tags_count"] = tag_counts.count()
-            response_data["top_tags"] = [
-                {"name": entry["tags__name"], "count": entry["count"]} for entry in tag_counts[:10]
+            response_data["cards"]["tags"] = StackTag.objects.count()
+            response_data["entities"] = [
+                {"id": entry["tags__name"], "name": entry["tags__name"], "count": entry["count"]}
+                for entry in tag_counts[:10]
             ]
-        else:
-            response_data["tags_count"] = None
-            response_data["top_tags"] = None
 
         return Response(response_data)
 
@@ -192,9 +181,10 @@ class DashboardView(APIView):
         ),
         OpenApiParameter(
             name="interval",
-            description="Time interval for grouping data (day, month, year). Default is 'day'.",
+            description="Time interval for grouping data (day, week, month, year). Default is 'day'.",
             required=False,
             type=str,
+            enum=["day", "week", "month", "year"],
             default="day",
         ),
     ],
@@ -202,14 +192,13 @@ class DashboardView(APIView):
         200: {
             "type": "object",
             "properties": {
-                "tag": {"type": "string", "nullable": True},
+                "selectedEntity": {"type": "object", "nullable": True},
+                "interval": {"type": "string"},
                 "time_series": {
                     "type": "object",
                     "properties": {
                         "labels": {"type": "array", "items": {"type": "string"}},
-                        "questions": {"type": "array", "items": {"type": "integer"}},
-                        "answers": {"type": "array", "items": {"type": "integer"}},
-                        "comments": {"type": "array", "items": {"type": "integer"}},
+                        "datasets": {"type": "object"},
                     },
                 },
             },
@@ -220,12 +209,15 @@ class DashboardView(APIView):
         OpenApiExample(
             "Single Tag Example",
             value={
-                "tag": "python",
+                "selectedEntity": {"id": "python", "name": "python"},
+                "interval": "day",
                 "time_series": {
                     "labels": ["2025-01-01", "2025-01-02"],
-                    "questions": [5, 9],
-                    "answers": [2, 6],
-                    "comments": [3, 8],
+                    "datasets": {
+                        "questions": [5, 9],
+                        "answers": [2, 6],
+                        "comments": [3, 8],
+                    },
                 },
             },
             description="Example response for a specific tag showing cumulative counts",
@@ -233,11 +225,15 @@ class DashboardView(APIView):
         OpenApiExample(
             "All Tags Example",
             value={
+                "selectedEntity": None,
+                "interval": "day",
                 "time_series": {
                     "labels": ["2025-01-01", "2025-01-02"],
-                    "questions": [10, 18],
-                    "answers": [4, 10],
-                    "comments": [6, 15],
+                    "datasets": {
+                        "questions": [10, 18],
+                        "answers": [4, 10],
+                        "comments": [6, 15],
+                    },
                 },
             },
             description="Example response for all questions showing cumulative counts",
@@ -257,6 +253,9 @@ class GraphDashboardView(APIView):
 
         if interval == "day":
             trunc_func = TruncDay
+            date_format = "%Y-%m-%d"
+        elif interval == "week":
+            trunc_func = TruncWeek
             date_format = "%Y-%m-%d"
         elif interval == "month":
             trunc_func = TruncMonth
@@ -345,16 +344,17 @@ class GraphDashboardView(APIView):
             comments_data.append(last_c)
 
         response_data = {
+            "selectedEntity": {"id": tag, "name": tag} if tag else None,
+            "interval": interval,
             "time_series": {
                 "labels": date_range,
-                "questions": questions_data,
-                "answers": answers_data,
-                "comments": comments_data,
+                "datasets": {
+                    "questions": questions_data,
+                    "answers": answers_data,
+                    "comments": comments_data,
+                },
             }
         }
-
-        if tag:
-            response_data["tag"] = tag
 
         return Response(response_data)
 
@@ -376,9 +376,8 @@ class GraphDashboardView(APIView):
         200: {
             "type": "object",
             "properties": {
-                "tag": {"type": "string", "nullable": True},
-                "min_date": {"type": "string", "format": "date-time", "nullable": True},
-                "max_date": {"type": "string", "format": "date-time", "nullable": True},
+                "selectedEntity": {"type": "object", "nullable": True},
+                "date_range": {"type": "object"},
             },
         },
         400: {"type": "object", "properties": {"error": {"type": "string"}}},
@@ -401,9 +400,11 @@ class TagDateRangeView(APIView):
         max_date = date_agg.get("max_date")
 
         response = {
-            "tag": tag,
-            "min_date": StackDateTimeHandler.format_date(min_date) if min_date else None,
-            "max_date": StackDateTimeHandler.format_date(max_date) if max_date else None,
+            "selectedEntity": {"id": tag, "name": tag} if tag else None,
+            "date_range": {
+                "min_date": StackDateTimeHandler.format_date(min_date) if min_date else None,
+                "max_date": StackDateTimeHandler.format_date(max_date) if max_date else None,
+            },
         }
 
         return Response(response)

@@ -9,6 +9,35 @@ export type DateFilterRange = {
   end_date?: string;
 };
 
+export type DashboardGraphInterval = "day" | "week" | "month" | "year";
+
+export type DashboardGraphParams<TScope extends object = object> =
+  DateFilterRange &
+    TScope & {
+      interval: DashboardGraphInterval;
+    };
+
+export type DashboardEntity = {
+  id: string;
+  name: string;
+  count?: number;
+};
+
+export type DashboardOverviewResponse = {
+  selectedEntity?: DashboardEntity | null;
+  entities?: DashboardEntity[];
+  cards?: Record<string, number | undefined>;
+  time_mined?: string | null;
+};
+
+export type DashboardGraphResponse = {
+  selectedEntity?: DashboardEntity | null;
+  interval?: DashboardGraphInterval;
+  time_series?: {
+    labels?: string[];
+    datasets?: Record<string, number[]>;
+  };
+  
 export type StandardCollectBody<
   CollectType extends string,
   Filters extends object = Record<string, never>,
@@ -23,8 +52,11 @@ export type StandardCollectBody<
 };
 
 export type ApiDateRangeResponse = {
-  min_date?: string | null;
-  max_date?: string | null;
+  selectedEntity?: DashboardEntity | null;
+  date_range?: {
+    min_date?: string | null;
+    max_date?: string | null;
+  };
 };
 
 // Lightweight option used by query hooks to enable/disable calls.
@@ -45,8 +77,8 @@ export type DateInputBounds = {
 // Normalizes the API date-range response to the simple UI format.
 export function toDateBounds(response?: ApiDateRangeResponse | null): DateBounds {
   return {
-    minDate: response?.min_date ?? undefined,
-    maxDate: response?.max_date ?? undefined,
+    minDate: response?.date_range?.min_date ?? undefined,
+    maxDate: response?.date_range?.max_date ?? undefined,
   };
 }
 

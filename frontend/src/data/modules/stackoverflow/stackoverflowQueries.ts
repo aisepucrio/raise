@@ -3,10 +3,9 @@ import type { StackOverflowSection } from "../../api/endpoints";
 import { queryKeys } from "../../query/keys";
 import { stackoverflowService } from "./stackoverflowService";
 import { toDateBounds } from "../shared";
-import type { HookQueryOptions } from "../shared";
+import type { DashboardGraphParams, HookQueryOptions } from "../shared";
 import type {
   StackOverflowDateRangeParams,
-  StackOverflowGraphParams,
   StackOverflowOverviewParams,
   StackOverflowPreviewParams,
 } from "./stackoverflowTypes";
@@ -20,16 +19,17 @@ export function useStackOverflowOverviewQuery(
   return useQuery({
     queryKey: queryKeys.stackoverflow.overview(params),
     enabled: options?.enabled,
-    queryFn: ({ signal }) => stackoverflowService.getOverview(params, { signal }),
+    queryFn: ({ signal }) =>
+      stackoverflowService.getOverview(params, { signal }),
   });
 }
 
-// Fetches min/max date range for the selected question.
+// Fetches min/max date range for the selected tag.
 export function useStackOverflowDateRangeQuery(
   params?: StackOverflowDateRangeParams,
   options?: HookQueryOptions,
 ) {
-  const isEnabled = (options?.enabled ?? true) && Boolean(params?.question_id);
+  const isEnabled = options?.enabled ?? true;
 
   return useQuery({
     queryKey: queryKeys.stackoverflow.dateRange(params),
@@ -37,7 +37,7 @@ export function useStackOverflowDateRangeQuery(
     queryFn: ({ signal }) => {
       if (!params) {
         throw new Error(
-          "question_id is required to fetch Stack Overflow date range.",
+          "params are required to fetch Stack Overflow date range.",
         );
       }
       return stackoverflowService.getDateRange(params, { signal });
@@ -46,22 +46,22 @@ export function useStackOverflowDateRangeQuery(
   });
 }
 
-// Convenience wrapper for components that only have `questionId`.
-export function useStackOverflowDateRangeByQuestionQuery(
-  questionId?: string,
+// Convenience wrapper for components that only have `tag`.
+export function useStackOverflowDateRangeByTagQuery(
+  tag?: string,
   options?: HookQueryOptions,
 ) {
-  const trimmedQuestionId = questionId?.trim();
+  const trimmedTag = tag?.trim();
 
   return useStackOverflowDateRangeQuery(
-    trimmedQuestionId ? { question_id: trimmedQuestionId } : undefined,
+    trimmedTag ? { tag: trimmedTag } : {},
     options,
   );
 }
 
 // Fetches Stack Overflow dashboard time series.
 export function useStackOverflowGraphQuery(
-  params: StackOverflowGraphParams,
+  params: DashboardGraphParams<{ tag?: string }>,
   options?: HookQueryOptions,
 ) {
   return useQuery({

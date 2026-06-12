@@ -2,39 +2,6 @@ import type { DateFilterRange, StandardCollectBody } from "../shared";
 
 export type GithubOverviewParams = DateFilterRange & { repository_id?: string };
 export type GithubDateRangeParams = { repository_id: string };
-export type GithubGraphParams = DateFilterRange & {
-  interval: "day" | "month" | "year";
-  repository_id?: string;
-};
-
-// Dashboard/overview response (cards + repository list).
-export type GithubRepository = {
-  id: number;
-  repository: string;
-};
-
-export type GithubOverviewResponse = {
-  issues_count?: number;
-  pull_requests_count?: number;
-  commits_count?: number;
-  comments_count?: number;
-  forks_count?: number;
-  stars_count?: number;
-  users_count?: number;
-  repositories_count?: number;
-  repositories?: GithubRepository[];
-  time_mined?: string | null;
-};
-
-// Dashboard chart response (series by label/time).
-export type GithubGraphResponse = {
-  time_series?: {
-    labels?: string[];
-    [key: string]: unknown;
-  };
-  repository_id?: number;
-  repository_name?: string;
-};
 
 export type GithubPreviewParams = {
   page: number;

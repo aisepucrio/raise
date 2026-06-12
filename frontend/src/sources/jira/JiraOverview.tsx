@@ -10,9 +10,8 @@ import {
   useJiraDateRangeByProjectQuery,
   useJiraGraphQuery,
   useJiraOverviewQuery,
-  type JiraGraphParams,
+  type DashboardOverviewResponse,
   type JiraOverviewParams,
-  type JiraOverviewResponse,
 } from "@/data";
 import {
   buildOverviewEndpointParams,
@@ -26,20 +25,20 @@ import { buildSelectOptions } from "@/sources/shared/AllShared";
 
 // Cards shown when in project is selected.
 // Order here matches sidebar visual order in "All projects" mode.
-const ALL_PROJECTS_CARD_CONFIG: readonly OverviewMetricCardConfig<JiraOverviewResponse>[] =
+const ALL_PROJECTS_CARD_CONFIG: readonly OverviewMetricCardConfig<DashboardOverviewResponse>[] =
   [
-    { title: "Issues", getValue: (data) => data?.issues_count },
-    { title: "Projects", getValue: (data) => data?.projects_count },
-    { title: "Users", getValue: (data) => data?.users_count },
+    { title: "Issues", getValue: (data) => data?.cards?.issues },
+    { title: "Projects", getValue: (data) => data?.cards?.projects },
+    { title: "Users", getValue: (data) => data?.cards?.users },
   ];
 
 // Cards shown for the specific project.
-const PROJECT_CARD_CONFIG: readonly OverviewMetricCardConfig<JiraOverviewResponse>[] =
+const PROJECT_CARD_CONFIG: readonly OverviewMetricCardConfig<DashboardOverviewResponse>[] =
   [
-    { title: "Issues", getValue: (data) => data?.issues_count },
-    { title: "Comments", getValue: (data) => data?.comments_count },
-    { title: "Sprints", getValue: (data) => data?.sprints_count },
-    { title: "Users", getValue: (data) => data?.users_count },
+    { title: "Issues", getValue: (data) => data?.cards?.issues },
+    { title: "Comments", getValue: (data) => data?.cards?.comments },
+    { title: "Sprints", getValue: (data) => data?.cards?.sprints },
+    { title: "Users", getValue: (data) => data?.cards?.users },
   ];
 
 export default function JiraOverview() {
@@ -53,12 +52,8 @@ export default function JiraOverview() {
 
   // Adapts API payload to the standard UI option format.
   const projectOptions = useMemo(
-    () =>
-      buildSelectOptions(projectCatalogQuery.data?.projects, {
-        getValue: (project) => project.name,
-        getLabel: (project) => project.name,
-      }),
-    [projectCatalogQuery.data?.projects],
+    () => buildSelectOptions(projectCatalogQuery.data?.entities),
+    [projectCatalogQuery.data?.entities],
   );
 
   // Query parameters for overview cards.
@@ -79,7 +74,7 @@ export default function JiraOverview() {
   // Time series uses the same filters plus range-derived interval.
   const graphParams = useMemo(
     () =>
-      buildOverviewGraphEndpointParams<JiraGraphParams>(
+      buildOverviewGraphEndpointParams(
         {
           selectedSourceId: selectedProjectId,
           startDate,

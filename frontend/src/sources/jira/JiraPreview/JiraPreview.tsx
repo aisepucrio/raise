@@ -108,12 +108,8 @@ export function JiraPreview({
 
   // Converts overview projects to select options.
   const projectOptions = useMemo(
-    () =>
-      buildSelectOptions(overviewData?.projects, {
-        getValue: (project) => project.name,
-        getLabel: (project) => project.name,
-      }),
-    [overviewData?.projects],
+    () => buildSelectOptions(overviewData?.entities),
+    [overviewData?.entities],
   );
 
   // Fetches the selected project's date range to constrain the date picker.

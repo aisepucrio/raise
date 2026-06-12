@@ -3,10 +3,9 @@ import type { GithubSection } from "../../api/endpoints";
 import { queryKeys } from "../../query/keys";
 import { githubService } from "./githubService";
 import { toDateBounds } from "../shared";
-import type { HookQueryOptions } from "../shared";
+import type { DashboardGraphParams, HookQueryOptions } from "../shared";
 import type {
   GithubDateRangeParams,
-  GithubGraphParams,
   GithubOverviewParams,
   GithubPreviewParams,
 } from "./githubTypes";
@@ -62,7 +61,7 @@ export function useGithubDateRangeByRepositoryQuery(
 
 // Fetches GitHub dashboard time series.
 export function useGithubGraphQuery(
-  params: GithubGraphParams,
+  params: DashboardGraphParams<{ repository_id?: string }>,
   options?: HookQueryOptions,
 ) {
   return useQuery({

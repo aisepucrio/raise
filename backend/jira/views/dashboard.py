@@ -1,7 +1,7 @@
 import logging
 
 from django.conf import settings
-from django.db.models.functions import TruncDay, TruncMonth, TruncYear
+from django.db.models.functions import TruncDay, TruncMonth, TruncWeek, TruncYear
 from django.db.models import Min, Max
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
@@ -12,6 +12,11 @@ from rest_framework.views import APIView
 from jira.models import JiraIssue, JiraProject, JiraSprint, JiraComment, JiraCommit, JiraUser
 
 logger = logging.getLogger(__name__)
+
+
+def format_project_name(project):
+    return f"{project.key} - {project.name}"
+
 
 @extend_schema(
     tags=['Jira'],
@@ -48,24 +53,10 @@ logger = logging.getLogger(__name__)
         200: {
             "type": "object",
             "properties": {
-                "project_name": {"type": "string", "nullable": True},
-                "issues_count": {"type": "integer"},
+                "selectedEntity": {"type": "object", "nullable": True},
+                "entities": {"type": "array", "items": {"type": "object"}},
+                "cards": {"type": "object"},
                 "time_mined": {"type": "string", "format": "date-time", "nullable": True},
-                "projects_count": {"type": "integer", "nullable": True},
-                "projects": {
-                    "type": "array", 
-                    "items": {
-                        "type": "object",
-                        "properties": { 
-                            "id": {"type": "string"},
-                            "name": {"type": "string"}
-                        }
-                    },
-                    "nullable": True
-                },
-                "sprints_count": {"type": "integer", "nullable": True}, # Added
-                "comments_count": {"type": "integer", "nullable": True}, # Added
-                "commits_count": {"type": "integer", "nullable": True}  # Added
             }
         },
         400: {
@@ -92,30 +83,25 @@ logger = logging.getLogger(__name__)
     },
     examples=[
         OpenApiExample(
-            "Project Example",
+            "Project dashboard",
             value={
-                "project_name": "Sample Project",
-                "issues_count": 120,
+                "selectedEntity": {"id": "1", "name": "PROJ - Sample Project"},
+                "entities": [],
+                "cards": {"issues": 120, "comments": 250, "commits": 80, "sprints": 5, "users": 10},
                 "time_mined": "2023-01-01T12:00:00Z",
-                "sprints_count": 5,
-                "comments_count": 250,
-                "commits_count": 80
             },
             summary="Example with project_id"
         ),
         OpenApiExample(
-            "All Projects Example",
+            "All projects dashboard",
             value={
-                "issues_count": 500,
-                "projects_count": 3,
-                "projects": [
-                    {"id": "1", "name": "Project One"},
-                    {"id": "2", "name": "Project Two"},
-                    {"id": "3", "name": "Project Three"}
+                "selectedEntity": None,
+                "entities": [
+                    {"id": "1", "name": "PROJ1 - Project One"},
+                    {"id": "2", "name": "PROJ2 - Project Two"}
                 ],
-                "sprints_count": 15,
-                "comments_count": 750,
-                "commits_count": 300
+                "cards": {"projects": 2, "issues": 500, "comments": 750, "commits": 300, "sprints": 15, "users": 30},
+                "time_mined": "2023-01-01T12:00:00Z",
             },
             summary="Example without project_name"
         ),
@@ -162,13 +148,16 @@ class JiraDashboardView(APIView):
                     users_count = JiraUser.objects.filter().distinct().count()
 
                     response_data = {
-                        "project_name": project.name,
-                        "issues_count": project_issues.count(),
+                        "selectedEntity": {"id": str(project.id), "name": format_project_name(project)},
+                        "entities": [],
+                        "cards": {
+                            "issues": project_issues.count(),
+                            "comments": comments_count,
+                            "commits": commits_count,
+                            "sprints": sprints_count,
+                            "users": users_count,
+                        },
                         "time_mined": latest_time_mined.isoformat() if latest_time_mined else None,
-                        "sprints_count": sprints_count,
-                        "comments_count": comments_count,
-                        "commits_count": commits_count,
-                        "users_count": users_count
                     }
                 except JiraProject.DoesNotExist:
                     return Response(
@@ -182,21 +171,26 @@ class JiraDashboardView(APIView):
                     )
             else:
                 projects = JiraProject.objects.all()
-                projects_list = [{"id": p.id, "name": f"{p.name} ({p.key})"} for p in projects]
+                projects_list = [{"id": str(p.id), "name": format_project_name(p)} for p in projects]
 
                 sprints_count = JiraSprint.objects.filter(issues__in=issues_query).distinct().count()
                 comments_count = JiraComment.objects.filter(issue__in=issues_query).distinct().count()
                 commits_count = JiraCommit.objects.filter(issue__in=issues_query).distinct().count()
                 users_count = JiraUser.objects.filter().distinct().count()
+                latest_time_mined = issues_query.aggregate(value=Max("time_mined"))["value"]
 
                 response_data = {
-                    "issues_count": issues_query.count(),
-                    "projects_count": len(projects_list),
-                    "projects": projects_list,
-                    "sprints_count": sprints_count,
-                    "comments_count": comments_count,
-                    "commits_count": commits_count,
-                    "users_count": users_count
+                    "selectedEntity": None,
+                    "entities": projects_list,
+                    "cards": {
+                        "projects": len(projects_list),
+                        "issues": issues_query.count(),
+                        "comments": comments_count,
+                        "commits": commits_count,
+                        "sprints": sprints_count,
+                        "users": users_count,
+                    },
+                    "time_mined": latest_time_mined.isoformat() if latest_time_mined else None,
                 }
 
             return Response(response_data)
@@ -230,9 +224,10 @@ class JiraDashboardView(APIView):
         ),
         OpenApiParameter(
             name='interval',
-            description='Time interval for grouping (day, month, year)',
+            description='Time interval for grouping (day, week, month, year)',
             required=False,
             type=str,
+            enum=["day", "week", "month", "year"],
             default='day'
         )
     ],
@@ -240,16 +235,13 @@ class JiraDashboardView(APIView):
         200: {
             "type": "object",
             "properties": {
-                "project_id": {"type": "string", "nullable": True},
-                "project_name": {"type": "string", "nullable": True},
+                "selectedEntity": {"type": "object", "nullable": True},
+                "interval": {"type": "string"},
                 "time_series": {
                     "type": "object",
                     "properties": {
                         "labels": {"type": "array", "items": {"type": "string"}},
-                        "issues": {"type": "array", "items": {"type": "integer"}},
-                        "comments": {"type": "array", "items": {"type": "integer"}},
-                        "commits": {"type": "array", "items": {"type": "integer"}},
-                        "sprints": {"type": "array", "items": {"type": "integer"}}
+                        "datasets": {"type": "object"},
                     }
                 }
             }
@@ -259,14 +251,16 @@ class JiraDashboardView(APIView):
         OpenApiExample(
             "Project Example",
             value={
-                "project_id": "123",
-                "project_name": "Sample Project",
+                "selectedEntity": {"id": "123", "name": "PROJ - Sample Project"},
+                "interval": "day",
                 "time_series": {
                     "labels": ["2023-01-01", "2023-01-02", "2023-01-03"],
-                    "issues": [5, 12, 15],
-                    "comments": [2, 6, 7],
-                    "commits": [1, 1, 3],
-                    "sprints": [0, 1, 1]
+                    "datasets": {
+                        "issues": [5, 12, 15],
+                        "comments": [2, 6, 7],
+                        "commits": [1, 1, 3],
+                        "sprints": [0, 1, 1],
+                    },
                 }
             },
             summary="Example with project_id showing cumulative counts"
@@ -274,12 +268,16 @@ class JiraDashboardView(APIView):
         OpenApiExample(
             "All Projects Example",
             value={
+                "selectedEntity": None,
+                "interval": "day",
                 "time_series": {
                     "labels": ["2023-01-01", "2023-01-02", "2023-01-03"],
-                    "issues": [10, 22, 30],
-                    "comments": [5, 11, 14],
-                    "commits": [2, 3, 6],
-                    "sprints": [1, 1, 2]
+                    "datasets": {
+                        "issues": [10, 22, 30],
+                        "comments": [5, 11, 14],
+                        "commits": [2, 3, 6],
+                        "sprints": [1, 1, 2],
+                    },
                 }
             },
             summary="Example without project_id showing cumulative counts"
@@ -304,9 +302,15 @@ class JiraGraphDashboardView(APIView):
             end_date = request.query_params.get('end_date')
             interval = request.query_params.get('interval', 'day')
 
+            if interval not in ("day", "week", "month", "year"):
+                return Response({"error": "interval must be one of: day, week, month, year"}, status=status.HTTP_400_BAD_REQUEST)
+
             # Determine the truncation function and date format based on interval
             if interval == 'day':
                 trunc_func = TruncDay
+                date_format = '%Y-%m-%d'
+            elif interval == 'week':
+                trunc_func = TruncWeek
                 date_format = '%Y-%m-%d'
             elif interval == 'month':
                 trunc_func = TruncMonth
@@ -367,27 +371,28 @@ class JiraGraphDashboardView(APIView):
             sprints_list = [item['count'] for item in sprints_data]
 
             # Get project name if needed
-            project_name = None
+            project_label = None
             if project_id:
                 try:
                     project = JiraProject.objects.get(id=project_id)
-                    project_name = project.name
+                    project_label = format_project_name(project)
                 except JiraProject.DoesNotExist:
                     logger.error(f"Project with ID {project_id} not found", exc_info=True)
-                    project_name = None
+                    project_label = None
 
             response_data = {
+                "selectedEntity": {"id": str(project_id), "name": project_label} if project_id else None,
+                "interval": interval,
                 "time_series": {
                     "labels": date_range,
-                    "issues": issues_list,
-                    "comments": comments_list,
-                    # "commits": commits_list,
-                    "sprints": sprints_list
+                    "datasets": {
+                        "issues": issues_list,
+                        "comments": comments_list,
+                        "commits": commits_list,
+                        "sprints": sprints_list,
+                    },
                 }
             }
-            if project_id:
-                response_data["project_id"] = project_id
-                response_data["project_name"] = project_name
 
             return Response(response_data)
 
@@ -415,9 +420,8 @@ class JiraGraphDashboardView(APIView):
         200: {
             "type": "object",
             "properties": {
-                "project_id": {"type": "integer"},
-                "min_date": {"type": "string", "format": "date-time", "nullable": True},
-                "max_date": {"type": "string", "format": "date-time", "nullable": True}
+                "selectedEntity": {"type": "object"},
+                "date_range": {"type": "object"}
             }
         },
         400: {"type": "object", "properties": {"error": {"type": "string"}}},
@@ -426,7 +430,6 @@ class JiraGraphDashboardView(APIView):
 )
 class JiraProjectDateRangeView(APIView):
     def get(self, request):
-        # Accept project_id via query parameter only
         project_id = request.query_params.get('project_id')
 
         if project_id is None:
@@ -448,9 +451,11 @@ class JiraProjectDateRangeView(APIView):
         max_date = date_agg.get('max_date')
 
         response = {
-            "project_id": project_id,
-            "min_date": min_date.isoformat() if min_date else None,
-            "max_date": max_date.isoformat() if max_date else None,
+            "selectedEntity": {"id": str(project_id), "name": format_project_name(project)},
+            "date_range": {
+                "min_date": min_date.isoformat() if min_date else None,
+                "max_date": max_date.isoformat() if max_date else None,
+            },
         }
 
         return Response(response)

@@ -1,19 +1,19 @@
 import type { CSSProperties } from "react";
 import type { LineSeries } from "@/components/line-chart";
 import { getQueryErrorMessage } from "@/data";
+import type { DashboardGraphInterval, DashboardGraphParams } from "@/data";
 
 // Graph intervals supported by overview endpoints.
-export type OverviewGraphInterval = "day" | "month" | "year";
+export type OverviewGraphInterval = DashboardGraphInterval;
 
 // Standard time-series shape used by multiple overview endpoints.
 export type LabeledTimeSeriesPayload = {
   labels?: Array<string | number>;
-  [key: string]: unknown;
+  datasets?: Record<string, TimeSeriesRawPoint[]>;
 };
 
 // Raw values from API time-series arrays.
 type TimeSeriesRawPoint = string | number | null;
-type TimeSeriesEntry = [seriesKey: string, values: TimeSeriesRawPoint[]];
 
 type BuildLineSeriesFromTimeSeriesOptions = {
   labelFormatter?: (seriesKey: string) => string;
@@ -60,6 +60,7 @@ export function resolveOverviewGraphInterval(
 
   if (diffDays > 730) return "year";
   if (diffDays > 120) return "month";
+  if (diffDays > 30) return "week";
   return "day";
 }
 
@@ -104,12 +105,10 @@ export function buildOverviewEndpointParams<TParams extends Record<string, unkno
 }
 
 // Build graph endpoint params with required interval.
-export function buildOverviewGraphEndpointParams<
-  TParams extends { interval: OverviewGraphInterval },
->(
+export function buildOverviewGraphEndpointParams<TSourceIdParamKey extends string>(
   input: OverviewGraphFilterParamsInput,
-  sourceIdParamKey: Extract<keyof TParams, string>,
-): TParams {
+  sourceIdParamKey: TSourceIdParamKey,
+): DashboardGraphParams<Partial<Record<TSourceIdParamKey, string>>> {
   const { selectedSourceId, startDate, endDate, interval } = input;
   const params: MutableOverviewParams = { interval };
 
@@ -119,7 +118,9 @@ export function buildOverviewGraphEndpointParams<
 
   appendOptionalDateRangeFilters(params, startDate, endDate);
 
-  return params as TParams;
+  return params as DashboardGraphParams<
+    Partial<Record<TSourceIdParamKey, string>>
+  >;
 }
 
 export function buildScopedOverviewMetricCardItems<TData>(input: {
@@ -184,18 +185,17 @@ function appendOptionalDateRangeFilters(
   }
 }
 
-// Adapt `{ labels, seriesA: [], seriesB: [] }` to `LineChart` data format.
+// Adapt `{ labels, datasets }` to `LineChart` data format.
 export function buildLineSeriesFromTimeSeries(
   timeSeries?: LabeledTimeSeriesPayload | null,
   options?: BuildLineSeriesFromTimeSeriesOptions,
 ): LineSeries[] {
-  if (!timeSeries || !Array.isArray(timeSeries.labels)) return [];
+  if (!timeSeries?.labels || !timeSeries.datasets) return [];
 
   const labels = timeSeries.labels.map(String);
   const labelFormatter = options?.labelFormatter ?? humanizeOverviewSeriesKey;
 
-  return Object.entries(timeSeries)
-    .filter(isTimeSeriesDataEntry)
+  return Object.entries(timeSeries.datasets)
     .map(([seriesKey, values]) => {
       const data = values
         .map((value, index) => {
@@ -232,16 +232,4 @@ function humanizeOverviewSeriesKey(value: string) {
   return value
     .replace(/_/g, " ")
     .replace(/\b\w/g, (char) => char.toUpperCase());
-}
-
-// TS guard for time-series entries (skip `labels`).
-function isTimeSeriesDataEntry(
-  entry: [string, unknown],
-): entry is TimeSeriesEntry {
-  const [key, values] = entry;
-
-  if (key === "labels") return false;
-  if (!Array.isArray(values)) return false;
-
-  return true;
 }
