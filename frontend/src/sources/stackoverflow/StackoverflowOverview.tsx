@@ -65,6 +65,8 @@ export default function StackoverflowOverview() {
     [selectedTag, startDate, endDate],
   );
 
+  const dateRangeQuery = useStackOverflowDateRangeByTagQuery(selectedTag);
+
   const graphParams = useMemo(
     () =>
       buildOverviewGraphEndpointParams(
@@ -72,16 +74,19 @@ export default function StackoverflowOverview() {
           selectedSourceId: selectedTag,
           startDate,
           endDate,
-          interval: resolveOverviewGraphInterval(startDate, endDate),
+          interval: resolveOverviewGraphInterval(
+            startDate,
+            endDate,
+            dateRangeQuery.data,
+          ),
         },
         "tag",
       ),
-    [selectedTag, startDate, endDate],
+    [selectedTag, startDate, endDate, dateRangeQuery.data],
   );
 
   const overviewQuery = useStackOverflowOverviewQuery(overviewParams);
   const graphQuery = useStackOverflowGraphQuery(graphParams);
-  const dateRangeQuery = useStackOverflowDateRangeByTagQuery(selectedTag);
 
   const { graphSeries, graphErrorMessage } = resolveOverviewGraphPresentation(
     graphQuery,

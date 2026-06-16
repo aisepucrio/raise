@@ -71,6 +71,11 @@ export default function JiraOverview() {
   );
   const overviewQuery = useJiraOverviewQuery(overviewParams);
 
+  // The hook itself already:
+  // - normalizes string empty for `undefined`
+  // - only enables the query when there is `project_id`
+  const dateRangeQuery = useJiraDateRangeByProjectQuery(selectedProjectId);
+
   // Time series uses the same filters plus range-derived interval.
   const graphParams = useMemo(
     () =>
@@ -79,18 +84,17 @@ export default function JiraOverview() {
           selectedSourceId: selectedProjectId,
           startDate,
           endDate,
-          interval: resolveOverviewGraphInterval(startDate, endDate),
+          interval: resolveOverviewGraphInterval(
+            startDate,
+            endDate,
+            dateRangeQuery.data,
+          ),
         },
         "project_id",
       ),
-    [selectedProjectId, startDate, endDate],
+    [selectedProjectId, startDate, endDate, dateRangeQuery.data],
   );
   const graphQuery = useJiraGraphQuery(graphParams);
-
-  // The hook itself already:
-  // - normalizes string empty for `undefined`
-  // - only enables the query when there is `project_id`
-  const dateRangeQuery = useJiraDateRangeByProjectQuery(selectedProjectId);
 
   const { graphSeries, graphErrorMessage } = resolveOverviewGraphPresentation(
     graphQuery,

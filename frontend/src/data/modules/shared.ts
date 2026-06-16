@@ -37,7 +37,8 @@ export type DashboardGraphResponse = {
     labels?: string[];
     datasets?: Record<string, number[]>;
   };
-  
+};
+
 export type StandardCollectBody<
   CollectType extends string,
   Filters extends object = Record<string, never>,
@@ -75,7 +76,9 @@ export type DateInputBounds = {
 };
 
 // Normalizes the API date-range response to the simple UI format.
-export function toDateBounds(response?: ApiDateRangeResponse | null): DateBounds {
+export function toDateBounds(
+  response?: ApiDateRangeResponse | null,
+): DateBounds {
   return {
     minDate: response?.date_range?.min_date ?? undefined,
     maxDate: response?.date_range?.max_date ?? undefined,
@@ -83,7 +86,9 @@ export function toDateBounds(response?: ApiDateRangeResponse | null): DateBounds
 }
 
 // Converts UI date bounds to `<input type="date">` attributes.
-export function getDateInputBounds(bounds?: DateBounds | null): DateInputBounds {
+export function getDateInputBounds(
+  bounds?: DateBounds | null,
+): DateInputBounds {
   return {
     min: bounds?.minDate ?? undefined,
     max: bounds?.maxDate ?? undefined,
