@@ -75,6 +75,13 @@ export default function GithubOverview() {
   );
   const overviewQuery = useGithubOverviewQuery(overviewParams);
 
+  // The hook itself already:
+  // - normalizes string empty for `undefined`
+  // - only enables the query when there is `repository_id`
+  const dateRangeQuery = useGithubDateRangeByRepositoryQuery(
+    selectedRepositoryId,
+  );
+
   // Time series uses the same filters plus range-derived interval.
   const graphParams = useMemo(
     () =>
@@ -83,20 +90,17 @@ export default function GithubOverview() {
           selectedSourceId: selectedRepositoryId,
           startDate,
           endDate,
-          interval: resolveOverviewGraphInterval(startDate, endDate),
+          interval: resolveOverviewGraphInterval(
+            startDate,
+            endDate,
+            dateRangeQuery.data,
+          ),
         },
         "repository_id",
       ),
-    [selectedRepositoryId, startDate, endDate],
+    [selectedRepositoryId, startDate, endDate, dateRangeQuery.data],
   );
   const graphQuery = useGithubGraphQuery(graphParams);
-
-  // The hook itself already:
-  // - normalizes string empty for `undefined`
-  // - only enables the query when there is `repository_id`
-  const dateRangeQuery = useGithubDateRangeByRepositoryQuery(
-    selectedRepositoryId,
-  );
 
   const { graphSeries, graphErrorMessage } = resolveOverviewGraphPresentation(
     graphQuery,

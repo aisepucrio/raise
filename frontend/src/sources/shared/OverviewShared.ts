@@ -43,25 +43,41 @@ type OverviewGraphQueryLike = {
 
 type MutableOverviewParams = Record<string, unknown>;
 
-// Choose graph aggregation interval from selected date range.
+const DAY_IN_MS = 1000 * 60 * 60 * 24;
+
+// Choose graph aggregation interval from selected dates or backend date bounds.
 export function resolveOverviewGraphInterval(
   startDate: string,
   endDate: string,
+  dateRange?: { minDate?: string | null; maxDate?: string | null },
 ): OverviewGraphInterval {
-  if (!startDate || !endDate) return "month";
+  const resolvedStartDate = startDate || dateRange?.minDate || "";
+  const resolvedEndDate = endDate || dateRange?.maxDate || "";
+  const diffMs = Date.parse(resolvedEndDate) - Date.parse(resolvedStartDate);
+  const diffDays = diffMs / DAY_IN_MS;
+  const interval =
+    !resolvedStartDate || !resolvedEndDate
+      ? "month"
+      : !Number.isFinite(diffMs) || diffMs <= 0
+        ? "day"
+        : diffDays > 730
+          ? "year"
+          : diffDays > 24 * 7
+            ? "month"
+            : diffDays > 24
+              ? "week"
+              : "day";
 
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  const diffMs = end.getTime() - start.getTime();
+  console.debug("[Overview] graph interval resolved", {
+    startDate,
+    endDate,
+    resolvedStartDate,
+    resolvedEndDate,
+    diffDays,
+    interval,
+  });
 
-  if (!Number.isFinite(diffMs) || diffMs <= 0) return "day";
-
-  const diffDays = diffMs / (1000 * 60 * 60 * 24);
-
-  if (diffDays > 730) return "year";
-  if (diffDays > 120) return "month";
-  if (diffDays > 30) return "week";
-  return "day";
+  return interval;
 }
 
 // Format numeric values for overview cards.
