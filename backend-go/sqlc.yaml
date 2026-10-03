@@ -1,0 +1,59 @@
+version: "2"
+sql:
+  - engine: postgresql
+    schema: internal/db/migrations
+    queries: internal/auth/query.sql
+    gen:
+      go: &go_defaults
+        package: sqlc
+        out: internal/auth/sqlc
+        sql_package: pgx/v5
+        emit_pointers_for_null_types: true
+        emit_json_tags: true
+        omit_unused_structs: true
+        overrides:
+          - db_type: timestamptz
+            go_type: time.Time
+          - db_type: timestamptz
+            nullable: true
+            go_type: {type: time.Time, pointer: true}
+          - db_type: jsonb
+            go_type: encoding/json.RawMessage
+          - db_type: jsonb
+            nullable: true
+            go_type: encoding/json.RawMessage
+  - engine: postgresql
+    schema: internal/db/migrations
+    queries: internal/credential/query.sql
+    gen:
+      go:
+        <<: *go_defaults
+        out: internal/credential/sqlc
+  - engine: postgresql
+    schema: internal/db/migrations
+    queries: internal/jobkit/query.sql
+    gen:
+      go:
+        <<: *go_defaults
+        out: internal/jobkit/sqlc
+  - engine: postgresql
+    schema: internal/db/migrations
+    queries: internal/collection/query.sql
+    gen:
+      go:
+        <<: *go_defaults
+        out: internal/collection/sqlc
+  - engine: postgresql
+    schema: internal/db/migrations
+    queries: internal/platform/git/query.sql
+    gen:
+      go:
+        <<: *go_defaults
+        out: internal/platform/git/sqlc
+  - engine: postgresql
+    schema: internal/db/migrations
+    queries: internal/platform/github/query.sql
+    gen:
+      go:
+        <<: *go_defaults
+        out: internal/platform/github/sqlc

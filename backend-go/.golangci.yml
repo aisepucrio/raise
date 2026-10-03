@@ -1,0 +1,79 @@
+version: "2"
+
+issues:
+  max-same-issues: 0
+
+linters:
+  enable:
+    - depguard
+  settings:
+    depguard:
+      # Enforces the dependency direction described in architecture.md.
+      rules:
+        leaf-packages:
+          files:
+            - "**/internal/access/**"
+            - "**/internal/apperr/**"
+            - "**/internal/httpapi/**"
+            - "**/internal/jobkit/**"
+            - "**/internal/db/**"
+          deny:
+            - { pkg: raise/internal/auth, desc: leaf packages must not import domain packages }
+            - { pkg: raise/internal/credential, desc: leaf packages must not import domain packages }
+            - { pkg: raise/internal/collection, desc: leaf packages must not import domain packages }
+            - { pkg: raise/internal/platform, desc: leaf packages must not import domain packages }
+            - { pkg: "raise/internal/app$", desc: only cmd/ imports app }
+
+        platform-contracts:
+          files: ["**/internal/platform/*.go"]
+          deny:
+            - { pkg: raise/internal/platform/, desc: the contracts package must not import concrete platforms }
+
+        platforms:
+          files: ["**/internal/platform/*/**"]
+          deny:
+            - { pkg: raise/internal/auth, desc: platforms use internal/access, not auth }
+            - { pkg: raise/internal/credential, desc: platforms lease credentials via platform.Leaser }
+            - { pkg: raise/internal/collection, desc: platforms receive a jobkit.Enqueuer instead }
+            - { pkg: "raise/internal/app$", desc: only cmd/ imports app }
+
+        git-is-the-base:
+          files: ["**/internal/platform/git/**"]
+          deny:
+            - { pkg: raise/internal/platform/github, desc: git receives forges as git.Enricher }
+            - { pkg: raise/internal/platform/gitlab, desc: git receives forges as git.Enricher }
+            - { pkg: raise/internal/platform/jira, desc: platforms are independent }
+            - { pkg: raise/internal/platform/stackoverflow, desc: platforms are independent }
+
+        forges-only-know-git:
+          files: ["**/internal/platform/github/**", "**/internal/platform/gitlab/**"]
+          deny:
+            - { pkg: raise/internal/platform/jira, desc: platforms are independent }
+            - { pkg: raise/internal/platform/stackoverflow, desc: platforms are independent }
+        github-not-gitlab:
+          files: ["**/internal/platform/github/**"]
+          deny:
+            - { pkg: raise/internal/platform/gitlab, desc: forges are independent }
+        gitlab-not-github:
+          files: ["**/internal/platform/gitlab/**"]
+          deny:
+            - { pkg: raise/internal/platform/github, desc: forges are independent }
+
+        standalone-sources:
+          files: ["**/internal/platform/jira/**", "**/internal/platform/stackoverflow/**"]
+          deny:
+            - { pkg: raise/internal/platform/git, desc: standalone sources don't depend on git or forges }
+            - { pkg: raise/internal/platform/github, desc: standalone sources don't depend on git or forges }
+            - { pkg: raise/internal/platform/gitlab, desc: standalone sources don't depend on git or forges }
+        jira-not-stackoverflow:
+          files: ["**/internal/platform/jira/**"]
+          deny:
+            - { pkg: raise/internal/platform/stackoverflow, desc: platforms are independent }
+        stackoverflow-not-jira:
+          files: ["**/internal/platform/stackoverflow/**"]
+          deny:
+            - { pkg: raise/internal/platform/jira, desc: platforms are independent }
+
+  exclusions:
+    presets:
+      - std-error-handling

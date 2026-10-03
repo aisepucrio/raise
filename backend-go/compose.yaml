@@ -1,0 +1,53 @@
+# Development stack for the Go backend. Usage:
+#   cp .env.example .env   # then fill in ENCRYPTION_KEYS (make keygen)
+#   docker compose up --build
+#   docker compose run --rm -it migrate raisectl user create -username admin -role admin
+# See README.md for details.
+name: raise-go
+
+x-backend: &backend
+  build: .
+  env_file: .env
+  environment:
+    DATABASE_URL: postgres://raise:raise@db:5432/raise?sslmode=disable
+    GIT_MIRROR_DIR: /data/mirrors
+  depends_on:
+    migrate:
+      condition: service_completed_successfully
+
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: raise
+      POSTGRES_USER: raise
+      POSTGRES_PASSWORD: raise
+    ports: ["5433:5432"]
+    volumes: [pg:/var/lib/postgresql]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "raise"]
+      interval: 2s
+      retries: 30
+
+  migrate:
+    build: .
+    command: ["raisectl", "migrate", "up"]
+    environment:
+      DATABASE_URL: postgres://raise:raise@db:5432/raise?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    <<: *backend
+    command: ["api"]
+    ports: ["8000:8000"]
+
+  worker:
+    <<: *backend
+    command: ["worker"]
+    volumes: [mirrors:/data/mirrors]
+
+volumes:
+  pg:
+  mirrors:
