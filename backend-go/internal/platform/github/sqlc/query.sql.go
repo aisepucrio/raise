@@ -7,13 +7,346 @@ package sqlc
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 )
 
-const listIssues = `-- name: ListIssues :many
-SELECT repository_id, number, github_id, title, state, author_login, label_names, assignee_logins,
-       comment_count, is_pull_request, github_created_at, github_updated_at, github_closed_at,
+const getIssue = `-- name: GetIssue :one
+SELECT repository_id, number, github_id, title, state, state_reason, author_login, author_association,
+       label_names, assignee_logins, milestone_title, is_locked, comment_count, reaction_counts,
+       is_pull_request, body, github_created_at, github_updated_at, github_closed_at, first_mined_at, last_mined_at
+FROM github_issues
+WHERE repository_id = $1 AND number = $2
+`
+
+type GetIssueParams struct {
+	RepositoryID int64 `json:"repository_id"`
+	Number       int32 `json:"number"`
+}
+
+type GetIssueRow struct {
+	RepositoryID      int64           `json:"repository_id"`
+	Number            int32           `json:"number"`
+	GithubID          int64           `json:"github_id"`
+	Title             string          `json:"title"`
+	State             string          `json:"state"`
+	StateReason       *string         `json:"state_reason"`
+	AuthorLogin       *string         `json:"author_login"`
+	AuthorAssociation string          `json:"author_association"`
+	LabelNames        []string        `json:"label_names"`
+	AssigneeLogins    []string        `json:"assignee_logins"`
+	MilestoneTitle    *string         `json:"milestone_title"`
+	IsLocked          bool            `json:"is_locked"`
+	CommentCount      int32           `json:"comment_count"`
+	ReactionCounts    json.RawMessage `json:"reaction_counts"`
+	IsPullRequest     bool            `json:"is_pull_request"`
+	Body              *string         `json:"body"`
+	GithubCreatedAt   time.Time       `json:"github_created_at"`
+	GithubUpdatedAt   time.Time       `json:"github_updated_at"`
+	GithubClosedAt    *time.Time      `json:"github_closed_at"`
+	FirstMinedAt      time.Time       `json:"first_mined_at"`
+	LastMinedAt       time.Time       `json:"last_mined_at"`
+}
+
+func (q *Queries) GetIssue(ctx context.Context, arg GetIssueParams) (GetIssueRow, error) {
+	row := q.db.QueryRow(ctx, getIssue, arg.RepositoryID, arg.Number)
+	var i GetIssueRow
+	err := row.Scan(
+		&i.RepositoryID,
+		&i.Number,
+		&i.GithubID,
+		&i.Title,
+		&i.State,
+		&i.StateReason,
+		&i.AuthorLogin,
+		&i.AuthorAssociation,
+		&i.LabelNames,
+		&i.AssigneeLogins,
+		&i.MilestoneTitle,
+		&i.IsLocked,
+		&i.CommentCount,
+		&i.ReactionCounts,
+		&i.IsPullRequest,
+		&i.Body,
+		&i.GithubCreatedAt,
+		&i.GithubUpdatedAt,
+		&i.GithubClosedAt,
+		&i.FirstMinedAt,
+		&i.LastMinedAt,
+	)
+	return i, err
+}
+
+const getPullRequest = `-- name: GetPullRequest :one
+SELECT p.number, p.github_id, i.title, p.state, p.is_draft, p.is_merged, p.author_login,
+       p.merged_by_login, p.head_ref, p.head_sha, p.head_repository_full_name, p.base_ref, p.base_sha,
+       p.merge_commit_sha, p.commit_count, p.files_changed, p.lines_added, p.lines_deleted,
+       p.comment_count, p.review_count, p.review_thread_count, p.requested_reviewer_logins,
+       p.github_created_at, p.github_updated_at, p.github_closed_at, p.github_merged_at,
+       p.first_mined_at, p.last_mined_at
+FROM github_pull_requests p
+JOIN github_issues i ON i.repository_id = p.repository_id AND i.number = p.number
+WHERE p.repository_id = $1 AND p.number = $2
+`
+
+type GetPullRequestParams struct {
+	RepositoryID int64 `json:"repository_id"`
+	Number       int32 `json:"number"`
+}
+
+type GetPullRequestRow struct {
+	Number                  int32      `json:"number"`
+	GithubID                int64      `json:"github_id"`
+	Title                   string     `json:"title"`
+	State                   string     `json:"state"`
+	IsDraft                 bool       `json:"is_draft"`
+	IsMerged                bool       `json:"is_merged"`
+	AuthorLogin             *string    `json:"author_login"`
+	MergedByLogin           *string    `json:"merged_by_login"`
+	HeadRef                 string     `json:"head_ref"`
+	HeadSha                 string     `json:"head_sha"`
+	HeadRepositoryFullName  *string    `json:"head_repository_full_name"`
+	BaseRef                 string     `json:"base_ref"`
+	BaseSha                 string     `json:"base_sha"`
+	MergeCommitSha          *string    `json:"merge_commit_sha"`
+	CommitCount             int32      `json:"commit_count"`
+	FilesChanged            int32      `json:"files_changed"`
+	LinesAdded              int32      `json:"lines_added"`
+	LinesDeleted            int32      `json:"lines_deleted"`
+	CommentCount            int32      `json:"comment_count"`
+	ReviewCount             int32      `json:"review_count"`
+	ReviewThreadCount       int32      `json:"review_thread_count"`
+	RequestedReviewerLogins []string   `json:"requested_reviewer_logins"`
+	GithubCreatedAt         time.Time  `json:"github_created_at"`
+	GithubUpdatedAt         time.Time  `json:"github_updated_at"`
+	GithubClosedAt          *time.Time `json:"github_closed_at"`
+	GithubMergedAt          *time.Time `json:"github_merged_at"`
+	FirstMinedAt            time.Time  `json:"first_mined_at"`
+	LastMinedAt             time.Time  `json:"last_mined_at"`
+}
+
+func (q *Queries) GetPullRequest(ctx context.Context, arg GetPullRequestParams) (GetPullRequestRow, error) {
+	row := q.db.QueryRow(ctx, getPullRequest, arg.RepositoryID, arg.Number)
+	var i GetPullRequestRow
+	err := row.Scan(
+		&i.Number,
+		&i.GithubID,
+		&i.Title,
+		&i.State,
+		&i.IsDraft,
+		&i.IsMerged,
+		&i.AuthorLogin,
+		&i.MergedByLogin,
+		&i.HeadRef,
+		&i.HeadSha,
+		&i.HeadRepositoryFullName,
+		&i.BaseRef,
+		&i.BaseSha,
+		&i.MergeCommitSha,
+		&i.CommitCount,
+		&i.FilesChanged,
+		&i.LinesAdded,
+		&i.LinesDeleted,
+		&i.CommentCount,
+		&i.ReviewCount,
+		&i.ReviewThreadCount,
+		&i.RequestedReviewerLogins,
+		&i.GithubCreatedAt,
+		&i.GithubUpdatedAt,
+		&i.GithubClosedAt,
+		&i.GithubMergedAt,
+		&i.FirstMinedAt,
+		&i.LastMinedAt,
+	)
+	return i, err
+}
+
+const getRepository = `-- name: GetRepository :one
+SELECT repository_id, github_id, github_node_id, full_name, description, homepage_url, default_branch,
+       primary_language, language_bytes, topic_names, license_spdx_id, visibility, is_fork, is_archived,
+       is_template, parent_full_name, star_count, watcher_count, fork_count, open_issue_count,
+       open_pull_request_count, github_created_at, github_updated_at, github_pushed_at,
        first_mined_at, last_mined_at
+FROM github_repositories
+WHERE repository_id = $1
+`
+
+type GetRepositoryRow struct {
+	RepositoryID         int64           `json:"repository_id"`
+	GithubID             int64           `json:"github_id"`
+	GithubNodeID         string          `json:"github_node_id"`
+	FullName             string          `json:"full_name"`
+	Description          *string         `json:"description"`
+	HomepageURL          *string         `json:"homepage_url"`
+	DefaultBranch        *string         `json:"default_branch"`
+	PrimaryLanguage      *string         `json:"primary_language"`
+	LanguageBytes        json.RawMessage `json:"language_bytes"`
+	TopicNames           []string        `json:"topic_names"`
+	LicenseSpdxID        *string         `json:"license_spdx_id"`
+	Visibility           string          `json:"visibility"`
+	IsFork               bool            `json:"is_fork"`
+	IsArchived           bool            `json:"is_archived"`
+	IsTemplate           bool            `json:"is_template"`
+	ParentFullName       *string         `json:"parent_full_name"`
+	StarCount            int32           `json:"star_count"`
+	WatcherCount         int32           `json:"watcher_count"`
+	ForkCount            int32           `json:"fork_count"`
+	OpenIssueCount       int32           `json:"open_issue_count"`
+	OpenPullRequestCount int32           `json:"open_pull_request_count"`
+	GithubCreatedAt      time.Time       `json:"github_created_at"`
+	GithubUpdatedAt      time.Time       `json:"github_updated_at"`
+	GithubPushedAt       *time.Time      `json:"github_pushed_at"`
+	FirstMinedAt         time.Time       `json:"first_mined_at"`
+	LastMinedAt          time.Time       `json:"last_mined_at"`
+}
+
+func (q *Queries) GetRepository(ctx context.Context, repositoryID int64) (GetRepositoryRow, error) {
+	row := q.db.QueryRow(ctx, getRepository, repositoryID)
+	var i GetRepositoryRow
+	err := row.Scan(
+		&i.RepositoryID,
+		&i.GithubID,
+		&i.GithubNodeID,
+		&i.FullName,
+		&i.Description,
+		&i.HomepageURL,
+		&i.DefaultBranch,
+		&i.PrimaryLanguage,
+		&i.LanguageBytes,
+		&i.TopicNames,
+		&i.LicenseSpdxID,
+		&i.Visibility,
+		&i.IsFork,
+		&i.IsArchived,
+		&i.IsTemplate,
+		&i.ParentFullName,
+		&i.StarCount,
+		&i.WatcherCount,
+		&i.ForkCount,
+		&i.OpenIssueCount,
+		&i.OpenPullRequestCount,
+		&i.GithubCreatedAt,
+		&i.GithubUpdatedAt,
+		&i.GithubPushedAt,
+		&i.FirstMinedAt,
+		&i.LastMinedAt,
+	)
+	return i, err
+}
+
+const listIssueComments = `-- name: ListIssueComments :many
+SELECT github_id, issue_number, author_login, author_association, body, reaction_counts,
+       github_created_at, github_updated_at, first_mined_at, last_mined_at
+FROM github_issue_comments
+WHERE repository_id = $1 AND issue_number = $2
+ORDER BY github_created_at, github_id
+`
+
+type ListIssueCommentsParams struct {
+	RepositoryID int64 `json:"repository_id"`
+	IssueNumber  int32 `json:"issue_number"`
+}
+
+type ListIssueCommentsRow struct {
+	GithubID          int64           `json:"github_id"`
+	IssueNumber       int32           `json:"issue_number"`
+	AuthorLogin       *string         `json:"author_login"`
+	AuthorAssociation string          `json:"author_association"`
+	Body              string          `json:"body"`
+	ReactionCounts    json.RawMessage `json:"reaction_counts"`
+	GithubCreatedAt   time.Time       `json:"github_created_at"`
+	GithubUpdatedAt   time.Time       `json:"github_updated_at"`
+	FirstMinedAt      time.Time       `json:"first_mined_at"`
+	LastMinedAt       time.Time       `json:"last_mined_at"`
+}
+
+func (q *Queries) ListIssueComments(ctx context.Context, arg ListIssueCommentsParams) ([]ListIssueCommentsRow, error) {
+	rows, err := q.db.Query(ctx, listIssueComments, arg.RepositoryID, arg.IssueNumber)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListIssueCommentsRow
+	for rows.Next() {
+		var i ListIssueCommentsRow
+		if err := rows.Scan(
+			&i.GithubID,
+			&i.IssueNumber,
+			&i.AuthorLogin,
+			&i.AuthorAssociation,
+			&i.Body,
+			&i.ReactionCounts,
+			&i.GithubCreatedAt,
+			&i.GithubUpdatedAt,
+			&i.FirstMinedAt,
+			&i.LastMinedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listIssueEvents = `-- name: ListIssueEvents :many
+SELECT github_node_id, issue_number, event_type, actor_login, commit_sha, github_created_at, raw_payload, first_mined_at
+FROM github_issue_events
+WHERE repository_id = $1 AND issue_number = $2
+ORDER BY github_created_at, github_node_id
+`
+
+type ListIssueEventsParams struct {
+	RepositoryID int64 `json:"repository_id"`
+	IssueNumber  int32 `json:"issue_number"`
+}
+
+type ListIssueEventsRow struct {
+	GithubNodeID    string          `json:"github_node_id"`
+	IssueNumber     int32           `json:"issue_number"`
+	EventType       string          `json:"event_type"`
+	ActorLogin      *string         `json:"actor_login"`
+	CommitSha       *string         `json:"commit_sha"`
+	GithubCreatedAt time.Time       `json:"github_created_at"`
+	RawPayload      json.RawMessage `json:"raw_payload"`
+	FirstMinedAt    time.Time       `json:"first_mined_at"`
+}
+
+func (q *Queries) ListIssueEvents(ctx context.Context, arg ListIssueEventsParams) ([]ListIssueEventsRow, error) {
+	rows, err := q.db.Query(ctx, listIssueEvents, arg.RepositoryID, arg.IssueNumber)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListIssueEventsRow
+	for rows.Next() {
+		var i ListIssueEventsRow
+		if err := rows.Scan(
+			&i.GithubNodeID,
+			&i.IssueNumber,
+			&i.EventType,
+			&i.ActorLogin,
+			&i.CommitSha,
+			&i.GithubCreatedAt,
+			&i.RawPayload,
+			&i.FirstMinedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listIssues = `-- name: ListIssues :many
+SELECT repository_id, number, github_id, title, state, state_reason, author_login, author_association,
+       label_names, assignee_logins, milestone_title, is_locked, comment_count, reaction_counts,
+       is_pull_request, github_created_at, github_updated_at, github_closed_at, first_mined_at, last_mined_at
 FROM github_issues
 WHERE repository_id = $1
   AND ($4::text IS NULL OR state = $4)
@@ -31,21 +364,26 @@ type ListIssuesParams struct {
 }
 
 type ListIssuesRow struct {
-	RepositoryID    int64      `json:"repository_id"`
-	Number          int32      `json:"number"`
-	GithubID        int64      `json:"github_id"`
-	Title           string     `json:"title"`
-	State           string     `json:"state"`
-	AuthorLogin     *string    `json:"author_login"`
-	LabelNames      []string   `json:"label_names"`
-	AssigneeLogins  []string   `json:"assignee_logins"`
-	CommentCount    int32      `json:"comment_count"`
-	IsPullRequest   bool       `json:"is_pull_request"`
-	GithubCreatedAt time.Time  `json:"github_created_at"`
-	GithubUpdatedAt time.Time  `json:"github_updated_at"`
-	GithubClosedAt  *time.Time `json:"github_closed_at"`
-	FirstMinedAt    time.Time  `json:"first_mined_at"`
-	LastMinedAt     time.Time  `json:"last_mined_at"`
+	RepositoryID      int64           `json:"repository_id"`
+	Number            int32           `json:"number"`
+	GithubID          int64           `json:"github_id"`
+	Title             string          `json:"title"`
+	State             string          `json:"state"`
+	StateReason       *string         `json:"state_reason"`
+	AuthorLogin       *string         `json:"author_login"`
+	AuthorAssociation string          `json:"author_association"`
+	LabelNames        []string        `json:"label_names"`
+	AssigneeLogins    []string        `json:"assignee_logins"`
+	MilestoneTitle    *string         `json:"milestone_title"`
+	IsLocked          bool            `json:"is_locked"`
+	CommentCount      int32           `json:"comment_count"`
+	ReactionCounts    json.RawMessage `json:"reaction_counts"`
+	IsPullRequest     bool            `json:"is_pull_request"`
+	GithubCreatedAt   time.Time       `json:"github_created_at"`
+	GithubUpdatedAt   time.Time       `json:"github_updated_at"`
+	GithubClosedAt    *time.Time      `json:"github_closed_at"`
+	FirstMinedAt      time.Time       `json:"first_mined_at"`
+	LastMinedAt       time.Time       `json:"last_mined_at"`
 }
 
 func (q *Queries) ListIssues(ctx context.Context, arg ListIssuesParams) ([]ListIssuesRow, error) {
@@ -69,10 +407,15 @@ func (q *Queries) ListIssues(ctx context.Context, arg ListIssuesParams) ([]ListI
 			&i.GithubID,
 			&i.Title,
 			&i.State,
+			&i.StateReason,
 			&i.AuthorLogin,
+			&i.AuthorAssociation,
 			&i.LabelNames,
 			&i.AssigneeLogins,
+			&i.MilestoneTitle,
+			&i.IsLocked,
 			&i.CommentCount,
+			&i.ReactionCounts,
 			&i.IsPullRequest,
 			&i.GithubCreatedAt,
 			&i.GithubUpdatedAt,
@@ -88,4 +431,378 @@ func (q *Queries) ListIssues(ctx context.Context, arg ListIssuesParams) ([]ListI
 		return nil, err
 	}
 	return items, nil
+}
+
+const listPullRequestCommits = `-- name: ListPullRequestCommits :many
+SELECT position, sha
+FROM github_pull_request_commits
+WHERE repository_id = $1 AND pull_request_number = $2
+ORDER BY position
+`
+
+type ListPullRequestCommitsParams struct {
+	RepositoryID      int64 `json:"repository_id"`
+	PullRequestNumber int32 `json:"pull_request_number"`
+}
+
+type ListPullRequestCommitsRow struct {
+	Position int32  `json:"position"`
+	Sha      string `json:"sha"`
+}
+
+func (q *Queries) ListPullRequestCommits(ctx context.Context, arg ListPullRequestCommitsParams) ([]ListPullRequestCommitsRow, error) {
+	rows, err := q.db.Query(ctx, listPullRequestCommits, arg.RepositoryID, arg.PullRequestNumber)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPullRequestCommitsRow
+	for rows.Next() {
+		var i ListPullRequestCommitsRow
+		if err := rows.Scan(&i.Position, &i.Sha); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPullRequestReviewComments = `-- name: ListPullRequestReviewComments :many
+SELECT github_id, pull_request_number, review_github_id, in_reply_to_github_id, thread_github_node_id,
+       author_login, author_association, path, line, original_line, commit_sha, diff_hunk, body,
+       github_created_at, github_updated_at, first_mined_at, last_mined_at
+FROM github_pull_request_review_comments
+WHERE repository_id = $1 AND pull_request_number = $2
+ORDER BY github_created_at, github_id
+`
+
+type ListPullRequestReviewCommentsParams struct {
+	RepositoryID      int64 `json:"repository_id"`
+	PullRequestNumber int32 `json:"pull_request_number"`
+}
+
+type ListPullRequestReviewCommentsRow struct {
+	GithubID           int64     `json:"github_id"`
+	PullRequestNumber  int32     `json:"pull_request_number"`
+	ReviewGithubID     *int64    `json:"review_github_id"`
+	InReplyToGithubID  *int64    `json:"in_reply_to_github_id"`
+	ThreadGithubNodeID string    `json:"thread_github_node_id"`
+	AuthorLogin        *string   `json:"author_login"`
+	AuthorAssociation  string    `json:"author_association"`
+	Path               string    `json:"path"`
+	Line               *int32    `json:"line"`
+	OriginalLine       *int32    `json:"original_line"`
+	CommitSha          *string   `json:"commit_sha"`
+	DiffHunk           string    `json:"diff_hunk"`
+	Body               string    `json:"body"`
+	GithubCreatedAt    time.Time `json:"github_created_at"`
+	GithubUpdatedAt    time.Time `json:"github_updated_at"`
+	FirstMinedAt       time.Time `json:"first_mined_at"`
+	LastMinedAt        time.Time `json:"last_mined_at"`
+}
+
+func (q *Queries) ListPullRequestReviewComments(ctx context.Context, arg ListPullRequestReviewCommentsParams) ([]ListPullRequestReviewCommentsRow, error) {
+	rows, err := q.db.Query(ctx, listPullRequestReviewComments, arg.RepositoryID, arg.PullRequestNumber)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPullRequestReviewCommentsRow
+	for rows.Next() {
+		var i ListPullRequestReviewCommentsRow
+		if err := rows.Scan(
+			&i.GithubID,
+			&i.PullRequestNumber,
+			&i.ReviewGithubID,
+			&i.InReplyToGithubID,
+			&i.ThreadGithubNodeID,
+			&i.AuthorLogin,
+			&i.AuthorAssociation,
+			&i.Path,
+			&i.Line,
+			&i.OriginalLine,
+			&i.CommitSha,
+			&i.DiffHunk,
+			&i.Body,
+			&i.GithubCreatedAt,
+			&i.GithubUpdatedAt,
+			&i.FirstMinedAt,
+			&i.LastMinedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPullRequestReviews = `-- name: ListPullRequestReviews :many
+SELECT github_id, pull_request_number, reviewer_login, author_association, state, body, commit_sha,
+       github_submitted_at, github_updated_at, first_mined_at, last_mined_at
+FROM github_pull_request_reviews
+WHERE repository_id = $1 AND pull_request_number = $2
+ORDER BY github_submitted_at NULLS LAST, github_id
+`
+
+type ListPullRequestReviewsParams struct {
+	RepositoryID      int64 `json:"repository_id"`
+	PullRequestNumber int32 `json:"pull_request_number"`
+}
+
+type ListPullRequestReviewsRow struct {
+	GithubID          int64      `json:"github_id"`
+	PullRequestNumber int32      `json:"pull_request_number"`
+	ReviewerLogin     *string    `json:"reviewer_login"`
+	AuthorAssociation string     `json:"author_association"`
+	State             string     `json:"state"`
+	Body              string     `json:"body"`
+	CommitSha         *string    `json:"commit_sha"`
+	GithubSubmittedAt *time.Time `json:"github_submitted_at"`
+	GithubUpdatedAt   time.Time  `json:"github_updated_at"`
+	FirstMinedAt      time.Time  `json:"first_mined_at"`
+	LastMinedAt       time.Time  `json:"last_mined_at"`
+}
+
+func (q *Queries) ListPullRequestReviews(ctx context.Context, arg ListPullRequestReviewsParams) ([]ListPullRequestReviewsRow, error) {
+	rows, err := q.db.Query(ctx, listPullRequestReviews, arg.RepositoryID, arg.PullRequestNumber)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPullRequestReviewsRow
+	for rows.Next() {
+		var i ListPullRequestReviewsRow
+		if err := rows.Scan(
+			&i.GithubID,
+			&i.PullRequestNumber,
+			&i.ReviewerLogin,
+			&i.AuthorAssociation,
+			&i.State,
+			&i.Body,
+			&i.CommitSha,
+			&i.GithubSubmittedAt,
+			&i.GithubUpdatedAt,
+			&i.FirstMinedAt,
+			&i.LastMinedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPullRequests = `-- name: ListPullRequests :many
+SELECT p.number, p.github_id, i.title, p.state, p.is_draft, p.is_merged, p.author_login,
+       p.merged_by_login, p.head_ref, p.head_sha, p.head_repository_full_name, p.base_ref, p.base_sha,
+       p.merge_commit_sha, p.commit_count, p.files_changed, p.lines_added, p.lines_deleted,
+       p.comment_count, p.review_count, p.review_thread_count, p.requested_reviewer_logins,
+       p.github_created_at, p.github_updated_at, p.github_closed_at, p.github_merged_at,
+       p.first_mined_at, p.last_mined_at
+FROM github_pull_requests p
+JOIN github_issues i ON i.repository_id = p.repository_id AND i.number = p.number
+WHERE p.repository_id = $1
+  AND ($4::text IS NULL OR p.state = $4)
+  AND ($5::boolean IS NULL OR p.is_merged = $5)
+ORDER BY p.number DESC
+LIMIT $2 OFFSET $3
+`
+
+type ListPullRequestsParams struct {
+	RepositoryID int64   `json:"repository_id"`
+	Limit        int32   `json:"limit"`
+	Offset       int32   `json:"offset"`
+	State        *string `json:"state"`
+	IsMerged     *bool   `json:"is_merged"`
+}
+
+type ListPullRequestsRow struct {
+	Number                  int32      `json:"number"`
+	GithubID                int64      `json:"github_id"`
+	Title                   string     `json:"title"`
+	State                   string     `json:"state"`
+	IsDraft                 bool       `json:"is_draft"`
+	IsMerged                bool       `json:"is_merged"`
+	AuthorLogin             *string    `json:"author_login"`
+	MergedByLogin           *string    `json:"merged_by_login"`
+	HeadRef                 string     `json:"head_ref"`
+	HeadSha                 string     `json:"head_sha"`
+	HeadRepositoryFullName  *string    `json:"head_repository_full_name"`
+	BaseRef                 string     `json:"base_ref"`
+	BaseSha                 string     `json:"base_sha"`
+	MergeCommitSha          *string    `json:"merge_commit_sha"`
+	CommitCount             int32      `json:"commit_count"`
+	FilesChanged            int32      `json:"files_changed"`
+	LinesAdded              int32      `json:"lines_added"`
+	LinesDeleted            int32      `json:"lines_deleted"`
+	CommentCount            int32      `json:"comment_count"`
+	ReviewCount             int32      `json:"review_count"`
+	ReviewThreadCount       int32      `json:"review_thread_count"`
+	RequestedReviewerLogins []string   `json:"requested_reviewer_logins"`
+	GithubCreatedAt         time.Time  `json:"github_created_at"`
+	GithubUpdatedAt         time.Time  `json:"github_updated_at"`
+	GithubClosedAt          *time.Time `json:"github_closed_at"`
+	GithubMergedAt          *time.Time `json:"github_merged_at"`
+	FirstMinedAt            time.Time  `json:"first_mined_at"`
+	LastMinedAt             time.Time  `json:"last_mined_at"`
+}
+
+func (q *Queries) ListPullRequests(ctx context.Context, arg ListPullRequestsParams) ([]ListPullRequestsRow, error) {
+	rows, err := q.db.Query(ctx, listPullRequests,
+		arg.RepositoryID,
+		arg.Limit,
+		arg.Offset,
+		arg.State,
+		arg.IsMerged,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPullRequestsRow
+	for rows.Next() {
+		var i ListPullRequestsRow
+		if err := rows.Scan(
+			&i.Number,
+			&i.GithubID,
+			&i.Title,
+			&i.State,
+			&i.IsDraft,
+			&i.IsMerged,
+			&i.AuthorLogin,
+			&i.MergedByLogin,
+			&i.HeadRef,
+			&i.HeadSha,
+			&i.HeadRepositoryFullName,
+			&i.BaseRef,
+			&i.BaseSha,
+			&i.MergeCommitSha,
+			&i.CommitCount,
+			&i.FilesChanged,
+			&i.LinesAdded,
+			&i.LinesDeleted,
+			&i.CommentCount,
+			&i.ReviewCount,
+			&i.ReviewThreadCount,
+			&i.RequestedReviewerLogins,
+			&i.GithubCreatedAt,
+			&i.GithubUpdatedAt,
+			&i.GithubClosedAt,
+			&i.GithubMergedAt,
+			&i.FirstMinedAt,
+			&i.LastMinedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const upsertRepository = `-- name: UpsertRepository :exec
+INSERT INTO github_repositories (
+    repository_id, github_id, github_node_id, full_name, description, homepage_url, default_branch,
+    primary_language, language_bytes, topic_names, license_spdx_id, visibility, is_fork, is_archived,
+    is_template, parent_full_name, star_count, watcher_count, fork_count, open_issue_count,
+    open_pull_request_count, github_created_at, github_updated_at, github_pushed_at, raw_payload
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
+ON CONFLICT (repository_id) DO UPDATE SET
+    github_id               = EXCLUDED.github_id,
+    github_node_id          = EXCLUDED.github_node_id,
+    full_name               = EXCLUDED.full_name,
+    description             = EXCLUDED.description,
+    homepage_url            = EXCLUDED.homepage_url,
+    default_branch          = EXCLUDED.default_branch,
+    primary_language        = EXCLUDED.primary_language,
+    language_bytes          = EXCLUDED.language_bytes,
+    topic_names             = EXCLUDED.topic_names,
+    license_spdx_id         = EXCLUDED.license_spdx_id,
+    visibility              = EXCLUDED.visibility,
+    is_fork                 = EXCLUDED.is_fork,
+    is_archived             = EXCLUDED.is_archived,
+    is_template             = EXCLUDED.is_template,
+    parent_full_name        = EXCLUDED.parent_full_name,
+    star_count              = EXCLUDED.star_count,
+    watcher_count           = EXCLUDED.watcher_count,
+    fork_count              = EXCLUDED.fork_count,
+    open_issue_count        = EXCLUDED.open_issue_count,
+    open_pull_request_count = EXCLUDED.open_pull_request_count,
+    github_created_at       = EXCLUDED.github_created_at,
+    github_updated_at       = EXCLUDED.github_updated_at,
+    github_pushed_at        = EXCLUDED.github_pushed_at,
+    raw_payload             = EXCLUDED.raw_payload,
+    last_mined_at           = now()
+WHERE github_repositories.github_updated_at <= EXCLUDED.github_updated_at
+`
+
+type UpsertRepositoryParams struct {
+	RepositoryID         int64           `json:"repository_id"`
+	GithubID             int64           `json:"github_id"`
+	GithubNodeID         string          `json:"github_node_id"`
+	FullName             string          `json:"full_name"`
+	Description          *string         `json:"description"`
+	HomepageURL          *string         `json:"homepage_url"`
+	DefaultBranch        *string         `json:"default_branch"`
+	PrimaryLanguage      *string         `json:"primary_language"`
+	LanguageBytes        json.RawMessage `json:"language_bytes"`
+	TopicNames           []string        `json:"topic_names"`
+	LicenseSpdxID        *string         `json:"license_spdx_id"`
+	Visibility           string          `json:"visibility"`
+	IsFork               bool            `json:"is_fork"`
+	IsArchived           bool            `json:"is_archived"`
+	IsTemplate           bool            `json:"is_template"`
+	ParentFullName       *string         `json:"parent_full_name"`
+	StarCount            int32           `json:"star_count"`
+	WatcherCount         int32           `json:"watcher_count"`
+	ForkCount            int32           `json:"fork_count"`
+	OpenIssueCount       int32           `json:"open_issue_count"`
+	OpenPullRequestCount int32           `json:"open_pull_request_count"`
+	GithubCreatedAt      time.Time       `json:"github_created_at"`
+	GithubUpdatedAt      time.Time       `json:"github_updated_at"`
+	GithubPushedAt       *time.Time      `json:"github_pushed_at"`
+	RawPayload           json.RawMessage `json:"raw_payload"`
+}
+
+// Counts (stars, forks) change without updatedAt moving, so equal timestamps update too.
+func (q *Queries) UpsertRepository(ctx context.Context, arg UpsertRepositoryParams) error {
+	_, err := q.db.Exec(ctx, upsertRepository,
+		arg.RepositoryID,
+		arg.GithubID,
+		arg.GithubNodeID,
+		arg.FullName,
+		arg.Description,
+		arg.HomepageURL,
+		arg.DefaultBranch,
+		arg.PrimaryLanguage,
+		arg.LanguageBytes,
+		arg.TopicNames,
+		arg.LicenseSpdxID,
+		arg.Visibility,
+		arg.IsFork,
+		arg.IsArchived,
+		arg.IsTemplate,
+		arg.ParentFullName,
+		arg.StarCount,
+		arg.WatcherCount,
+		arg.ForkCount,
+		arg.OpenIssueCount,
+		arg.OpenPullRequestCount,
+		arg.GithubCreatedAt,
+		arg.GithubUpdatedAt,
+		arg.GithubPushedAt,
+		arg.RawPayload,
+	)
+	return err
 }

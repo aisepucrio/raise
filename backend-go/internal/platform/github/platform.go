@@ -1,5 +1,5 @@
 // Package github is a forge: it enriches git repositories hosted on GitHub
-// with issues, pull requests and commit metadata from the REST API.
+// with repository metadata, issues and pull requests from the GraphQL API.
 package github
 
 import (
@@ -14,7 +14,10 @@ import (
 const ID platform.ID = "github"
 
 type Config struct {
+	// REST base URL, used for credential tests.
 	APIURL string
+	// GraphQL endpoint, used for mining. Derived from APIURL when empty.
+	GraphQLURL string
 	// Hosts whose repositories this forge recognises (GitHub Enterprise
 	// installations can be added here together with their APIURL).
 	Hosts       []string
@@ -37,6 +40,9 @@ func New(deps platform.Deps, cfg Config) *Platform {
 	if cfg.APIURL == "" {
 		cfg.APIURL = "https://api.github.com"
 	}
+	if cfg.GraphQLURL == "" {
+		cfg.GraphQLURL = graphqlURLFor(cfg.APIURL)
+	}
 	if len(cfg.Hosts) == 0 {
 		cfg.Hosts = []string{"github.com"}
 	}
@@ -47,7 +53,7 @@ func New(deps platform.Deps, cfg Config) *Platform {
 		cfg:    cfg,
 		deps:   deps,
 		q:      sqlc.New(deps.DB),
-		client: NewClient(deps.HTTP, cfg.APIURL, deps.Credentials),
+		client: NewClient(deps.HTTP, cfg.APIURL, cfg.GraphQLURL, deps.Credentials),
 	}
 }
 
@@ -58,8 +64,12 @@ func (p *Platform) Queues() map[string]river.QueueConfig {
 }
 
 func (p *Platform) RegisterWorkers(w *river.Workers) {
-	river.AddWorker(w, &planIssuesWorker{p: p})
-	river.AddWorker(w, &fetchIssuePageWorker{p: p})
+	river.AddWorker(w, &fetchRepositoryWorker{p: p})
+	river.AddWorker(w, &listIssuesWorker{p: p})
+	river.AddWorker(w, &fetchIssuesWorker{p: p})
+	river.AddWorker(w, &listPullRequestsWorker{p: p})
+	river.AddWorker(w, &fetchPullRequestsWorker{p: p})
+	river.AddWorker(w, &fetchConnectionWorker{p: p})
 }
 
 func (p *Platform) RegisterRoutes(api huma.API) { p.registerRoutes(api) }

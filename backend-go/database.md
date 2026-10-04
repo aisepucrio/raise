@@ -118,7 +118,14 @@ erDiagram
     commits ||--o{ repository_commits : "appears in"
     commits ||--o{ commit_files : changes
 
+    repositories ||--o| github_repositories : "enriched by"
     repositories ||--o{ github_issues : "enriched by"
+    github_issues ||--o| github_pull_requests : "is a"
+    github_issues ||--o{ github_issue_comments : has
+    github_issues ||--o{ github_issue_events : has
+    github_pull_requests ||--o{ github_pull_request_commits : contains
+    github_pull_requests ||--o{ github_pull_request_reviews : has
+    github_pull_requests ||--o{ github_pull_request_review_comments : has
     repositories ||--o{ gitlab_issues : "enriched by"
     jira_sites ||--o{ jira_issues : hosts
     stackoverflow_questions ||--o{ stackoverflow_answers : has
@@ -336,147 +343,201 @@ commits were last planned.
 
 ## GitHub
 
-Every GitHub table except `github_users` is keyed by `repository_id`, and all
-of them follow the mined-data conventions (`github_*_at`, `first_mined_at`,
-`last_mined_at`, `raw_payload`). People are referenced by `*_login`.
+GitHub data is mined through the GraphQL API. Every GitHub table except
+`github_users` is keyed by `repository_id` (directly or through a GitHub ID),
+and all of them follow the mined-data conventions (`github_*_at`,
+`first_mined_at`, `last_mined_at`, `raw_payload`). People are referenced by
+`*_login`.
+
+- **IDs.** `github_id` is GitHub's numeric database ID (GraphQL
+  `fullDatabaseId`, the same value the REST API calls `id`). `github_node_id`
+  is the GraphQL global node ID.
+- **`raw_payload`** is the GraphQL node as Raise requested it, minus nested
+  connections that have their own tables (comments, timeline items, commits,
+  reviews, review threads). It holds every field Raise selects but doesn't
+  model as a column, such as `url`, `lastEditedAt` and `activeLockReason`.
+- **Enumerations** that GraphQL returns in upper case (`OPEN`, `NOT_PLANNED`,
+  `APPROVED`, `PUBLIC`) are stored in lower case, matching the REST API. The
+  exception is `author_association` (`OWNER`, `MEMBER`, `CONTRIBUTOR`, …),
+  which is upper case in both APIs.
+- **Deleted accounts** (GitHub's "ghost") have a `NULL` login.
+
+### `github_repositories` ✅
+
+Migration: `00005_github.sql`. Repository metadata, with one row per
+repository. Re-mining overwrites it with the current snapshot.
+
+| Column | Type | Null | Description |
+|---|---|:-:|---|
+| `repository_id` | `bigint` | | Primary key, → `repositories.id` |
+| `github_id` | `bigint` | | |
+| `github_node_id` | `text` | | |
+| `full_name` | `text` | | `owner/name` as GitHub reports it (it may differ after renames or transfers) |
+| `description` | `text` | ✓ | |
+| `homepage_url` | `text` | ✓ | |
+| `default_branch` | `text` | ✓ | `NULL` for empty repositories |
+| `primary_language` | `text` | ✓ | |
+| `language_bytes` | `jsonb` | | `{"Go": 123456, ...}` |
+| `topic_names` | `text[]` | | |
+| `license_spdx_id` | `text` | ✓ | e.g. `MIT`; `NOASSERTION` for unrecognised licenses |
+| `visibility` | `text` | | `public`, `private`, `internal` |
+| `is_fork`, `is_archived`, `is_template` | `boolean` | | |
+| `parent_full_name` | `text` | ✓ | Upstream repository for forks |
+| `star_count`, `watcher_count`, `fork_count` | `integer` | | |
+| `open_issue_count` | `integer` | | Open issues, **excluding** pull requests (unlike the REST field of the same name) |
+| `open_pull_request_count` | `integer` | | |
+| `github_created_at`, `github_updated_at` | `timestamptz` | | |
+| `github_pushed_at` | `timestamptz` | ✓ | |
+| `raw_payload` | `jsonb` | | Includes mirror, lock and feature flags (`hasWikiEnabled`, …), `diskUsage`, template repository |
+| `first_mined_at`, `last_mined_at` | `timestamptz` | | |
 
 ### `github_issues` ✅
 
-Migration: `00005_github.sql`. Issues **and pull requests**: GitHub's issues
-endpoint returns both. PR-specific fields live in `github_pull_requests`.
+Migration: `00005_github.sql`. Issues **and pull requests**, which share
+GitHub's number space. This table holds the conversation (title, body, labels,
+assignees); PR-specific fields live in `github_pull_requests` under the same
+`number`.
 
 | Column | Type | Null | Description |
 |---|---|:-:|---|
 | `repository_id` | `bigint` | | → `repositories.id`; part of the primary key |
 | `number` | `integer` | | `#number` on GitHub; part of the primary key |
-| `github_id` | `bigint` | | GitHub's numeric issue ID |
+| `github_id` | `bigint` | | |
+| `github_node_id` | `text` | | |
 | `title` | `text` | | |
-| `state` | `text` | | `open` or `closed` |
-| `author_login` | `text` | ✓ | `NULL` for deleted accounts ("ghost") |
-| `label_names` | `text[]` | | |
+| `state` | `text` | | `open` or `closed` (merged pull requests are `closed`) |
+| `state_reason` | `text` | ✓ | Issues only: `completed`, `not_planned`, `duplicate`, `reopened` |
+| `author_login` | `text` | ✓ | |
+| `author_association` | `text` | | |
+| `label_names` | `text[]` | | First 100 labels |
 | `assignee_logins` | `text[]` | | |
+| `milestone_title` | `text` | ✓ | |
+| `is_locked` | `boolean` | | |
 | `comment_count` | `integer` | | |
+| `reaction_counts` | `jsonb` | | Non-zero counts with REST names: `{"+1": 3, "heart": 1, ...}` |
 | `is_pull_request` | `boolean` | | |
-| `body` | `text` | ✓ | Markdown |
-| `github_created_at` | `timestamptz` | | |
-| `github_updated_at` | `timestamptz` | | |
+| `body` | `text` | ✓ | Markdown; `NULL` when empty |
+| `github_created_at`, `github_updated_at` | `timestamptz` | | |
 | `github_closed_at` | `timestamptz` | ✓ | |
-| `raw_payload` | `jsonb` | | Full API response (milestone, reactions, author association, …) |
+| `raw_payload` | `jsonb` | | |
 | `first_mined_at`, `last_mined_at` | `timestamptz` | | |
 
-### `github_repositories` 📝
+### `github_pull_requests` ✅
 
-Repository metadata, with one row per repository.
+Migration: `00005_github.sql`. Complements the `github_issues` row with the
+same `number`; title, body, labels and assignees stay there.
 
-| Column | Type | Description |
-|---|---|---|
-| `repository_id` | `bigint` | Primary key, → `repositories.id` |
-| `github_id`, `github_node_id` | `bigint`, `text` | |
-| `full_name` | `text` | `owner/name` as GitHub reports it (it may differ after renames or transfers) |
-| `description`, `homepage_url` | `text` | |
-| `default_branch` | `text` | |
-| `primary_language` | `text` | |
-| `language_bytes` | `jsonb` | `{"Go": 123456, ...}` from the languages endpoint |
-| `topic_names` | `text[]` | |
-| `license_spdx_id` | `text` | |
-| `visibility` | `text` | `public`, `private`, `internal` |
-| `is_fork`, `is_archived`, `is_template` | `boolean` | |
-| `parent_full_name` | `text` | Upstream repository for forks |
-| `star_count`, `watcher_count`, `fork_count`, `open_issue_count` | `integer` | |
-| `github_created_at`, `github_updated_at`, `github_pushed_at` | `timestamptz` | |
-| `raw_payload`, `first_mined_at`, `last_mined_at` | | |
+| Column | Type | Null | Description |
+|---|---|:-:|---|
+| `repository_id`, `number` | `bigint`, `integer` | | Primary key |
+| `github_id` | `bigint` | | |
+| `github_node_id` | `text` | | |
+| `state` | `text` | | `open` or `closed` |
+| `is_draft`, `is_merged` | `boolean` | | |
+| `author_login`, `merged_by_login` | `text` | ✓ | |
+| `head_ref`, `head_sha` | `text` | | Source branch and its tip |
+| `head_repository_full_name` | `text` | ✓ | `NULL` if the fork was deleted |
+| `base_ref`, `base_sha` | `text` | | Target branch |
+| `merge_commit_sha` | `text` | ✓ | |
+| `commit_count`, `files_changed`, `lines_added`, `lines_deleted` | `integer` | | |
+| `comment_count` | `integer` | | Conversation comments |
+| `review_count` | `integer` | | Reviews, including pending ones that aren't mined |
+| `review_thread_count` | `integer` | | Inline review threads (GraphQL exposes no total of review comments) |
+| `requested_reviewer_logins` | `text[]` | | Pending review requests to users; team requests are in `raw_payload` |
+| `github_created_at`, `github_updated_at` | `timestamptz` | | |
+| `github_closed_at`, `github_merged_at` | `timestamptz` | ✓ | |
+| `raw_payload` | `jsonb` | | Includes `reviewDecision`, `mergeStateStatus`, review requests |
+| `first_mined_at`, `last_mined_at` | `timestamptz` | | |
 
-### `github_pull_requests` 📝
+### `github_pull_request_commits` ✅
 
-Complements the `github_issues` row with the same `number`; title, body,
-labels and assignees stay there.
+Migration: `00005_github.sql`. Commits in each PR, in order. `sha` is not a
+foreign key, because PR commits from forks may not exist in the mirror. After a
+force push, positions are overwritten and positions beyond the new commit count
+are deleted. GitHub lists at most 250 commits per pull request.
 
-| Column | Type | Description |
-|---|---|---|
-| `repository_id`, `number` | `bigint`, `integer` | Primary key |
-| `github_id` | `bigint` | |
-| `state` | `text` | `open` or `closed` |
-| `is_draft`, `is_merged` | `boolean` | |
-| `author_login`, `merged_by_login` | `text` | |
-| `head_ref`, `head_sha`, `head_repository_full_name` | `text` | Source branch; the repository is `NULL` if the fork was deleted |
-| `base_ref`, `base_sha` | `text` | Target branch |
-| `merge_commit_sha` | `text` | |
-| `commit_count`, `files_changed`, `lines_added`, `lines_deleted` | `integer` | |
-| `comment_count`, `review_comment_count` | `integer` | |
-| `requested_reviewer_logins` | `text[]` | |
-| `github_created_at`, `github_updated_at`, `github_closed_at`, `github_merged_at` | `timestamptz` | |
-| `raw_payload`, `first_mined_at`, `last_mined_at` | | |
+| Column | Type | Null | Description |
+|---|---|:-:|---|
+| `repository_id`, `pull_request_number`, `position` | `bigint`, `integer`, `integer` | | Primary key; `position` is 0-based |
+| `sha` | `text` | | |
+| `first_mined_at` | `timestamptz` | | |
 
-### `github_pull_request_commits` 📝
+### `github_pull_request_reviews` ✅
 
-Commits in each PR, in order. `sha` is not a foreign key, because PR commits
-from forks may not exist in the mirror.
+Migration: `00005_github.sql`. Submitted reviews. Pending (draft) reviews are
+only visible to their author and are not mined.
 
-| Column | Type | Description |
-|---|---|---|
-| `repository_id`, `pull_request_number`, `position` | | Primary key; `position` is 0-based |
-| `sha` | `text` | |
-| `first_mined_at` | `timestamptz` | |
+| Column | Type | Null | Description |
+|---|---|:-:|---|
+| `github_id` | `bigint` | | Primary key |
+| `repository_id`, `pull_request_number` | `bigint`, `integer` | | Indexed together |
+| `reviewer_login` | `text` | ✓ | |
+| `author_association` | `text` | | |
+| `state` | `text` | | `approved`, `changes_requested`, `commented`, `dismissed` |
+| `body` | `text` | | Empty string when the review has no summary |
+| `commit_sha` | `text` | ✓ | Commit the review was made against |
+| `github_submitted_at` | `timestamptz` | ✓ | |
+| `github_updated_at` | `timestamptz` | | Reviews can be edited |
+| `raw_payload` | `jsonb` | | |
+| `first_mined_at`, `last_mined_at` | `timestamptz` | | |
 
-### `github_pull_request_reviews` 📝
+### `github_pull_request_review_comments` ✅
 
-| Column | Type | Description |
-|---|---|---|
-| `github_id` | `bigint` | Primary key |
-| `repository_id`, `pull_request_number` | | |
-| `reviewer_login` | `text` | |
-| `state` | `text` | `approved`, `changes_requested`, `commented`, `dismissed` |
-| `body` | `text` | |
-| `commit_sha` | `text` | Commit the review was made against |
-| `github_submitted_at` | `timestamptz` | |
-| `raw_payload`, `first_mined_at`, `last_mined_at` | | |
+Migration: `00005_github.sql`. Inline comments on diffs, mined through review
+threads.
 
-### `github_pull_request_review_comments` 📝
+| Column | Type | Null | Description |
+|---|---|:-:|---|
+| `github_id` | `bigint` | | Primary key |
+| `repository_id`, `pull_request_number` | `bigint`, `integer` | | Indexed together |
+| `review_github_id` | `bigint` | ✓ | Review the comment belongs to |
+| `in_reply_to_github_id` | `bigint` | ✓ | Comment this one replies to |
+| `thread_github_node_id` | `text` | | Review thread; groups a comment with its replies |
+| `author_login` | `text` | ✓ | |
+| `author_association` | `text` | | |
+| `path` | `text` | | |
+| `line`, `original_line` | `integer` | ✓ | `line` is `NULL` when the comment is outdated |
+| `commit_sha` | `text` | ✓ | |
+| `diff_hunk` | `text` | | |
+| `body` | `text` | | |
+| `github_created_at`, `github_updated_at` | `timestamptz` | | |
+| `raw_payload` | `jsonb` | | Includes `outdated`, `startLine`, `originalCommit` |
+| `first_mined_at`, `last_mined_at` | `timestamptz` | | |
 
-Inline comments on diffs.
+### `github_issue_comments` ✅
 
-| Column | Type | Description |
-|---|---|---|
-| `github_id` | `bigint` | Primary key |
-| `repository_id`, `pull_request_number` | | |
-| `review_github_id` | `bigint` | Review the comment belongs to |
-| `in_reply_to_github_id` | `bigint` | Thread parent |
-| `author_login` | `text` | |
-| `path`, `line`, `original_line` | `text`, `integer`, `integer` | |
-| `commit_sha`, `diff_hunk` | `text` | |
-| `body` | `text` | |
-| `github_created_at`, `github_updated_at` | `timestamptz` | |
-| `raw_payload`, `first_mined_at`, `last_mined_at` | | |
+Migration: `00005_github.sql`. Conversation comments on issues and PRs.
 
-### `github_issue_comments` 📝
+| Column | Type | Null | Description |
+|---|---|:-:|---|
+| `github_id` | `bigint` | | Primary key |
+| `repository_id`, `issue_number` | `bigint`, `integer` | | The issue or PR commented on; indexed together |
+| `author_login` | `text` | ✓ | |
+| `author_association` | `text` | | |
+| `body` | `text` | | |
+| `reaction_counts` | `jsonb` | | As in `github_issues` |
+| `github_created_at`, `github_updated_at` | `timestamptz` | | |
+| `raw_payload` | `jsonb` | | Includes `isMinimized` and `minimizedReason` |
+| `first_mined_at`, `last_mined_at` | `timestamptz` | | |
 
-Conversation comments on issues and PRs.
+### `github_issue_events` ✅
 
-| Column | Type | Description |
-|---|---|---|
-| `github_id` | `bigint` | Primary key |
-| `repository_id`, `issue_number` | | The issue or PR commented on |
-| `author_login`, `author_association` | `text` | Association: `OWNER`, `MEMBER`, `CONTRIBUTOR`, … |
-| `body` | `text` | |
-| `reaction_counts` | `jsonb` | `{"+1": 3, "heart": 1, ...}` |
-| `github_created_at`, `github_updated_at` | `timestamptz` | |
-| `raw_payload`, `first_mined_at`, `last_mined_at` | | |
+Migration: `00005_github.sql`. Timeline events on issues and PRs. Events are
+immutable. Comments, reviews and commits also appear in GitHub's timeline but
+are stored in their own tables. Noisy event types (`mentioned`, `subscribed`,
+project-board moves) are not mined. The mined types are listed in
+`internal/platform/github/queries.go`.
 
-### `github_issue_events` 📝
-
-Timeline events on issues and PRs (labelled, assigned, referenced, closed, …).
-Events are immutable.
-
-| Column | Type | Description |
-|---|---|---|
-| `github_node_id` | `text` | Primary key (some timeline items have no numeric ID) |
-| `repository_id`, `issue_number` | | |
-| `event_type` | `text` | GitHub's event name, e.g. `labeled`, `cross-referenced`, `closed` |
-| `actor_login` | `text` | |
-| `commit_sha` | `text` | For `referenced` and `closed` events caused by a commit |
-| `details` | `jsonb` | Event-specific fields (label, assignee, source issue, …) |
-| `github_created_at` | `timestamptz` | |
-| `first_mined_at` | `timestamptz` | |
+| Column | Type | Null | Description |
+|---|---|:-:|---|
+| `github_node_id` | `text` | | Primary key (timeline items have no numeric ID in GraphQL) |
+| `repository_id`, `issue_number` | `bigint`, `integer` | | Indexed together |
+| `event_type` | `text` | | The REST event name, e.g. `labeled`, `cross-referenced`, `closed`, `merged`, `head_ref_force_pushed` |
+| `actor_login` | `text` | ✓ | |
+| `commit_sha` | `text` | ✓ | For `referenced`, `merged` and `head_ref_force_pushed` (the new head) events, and `closed` events caused by a commit |
+| `github_created_at` | `timestamptz` | | |
+| `raw_payload` | `jsonb` | | The full timeline item: label, assignee, source issue, previous title, … depending on `event_type` |
+| `first_mined_at` | `timestamptz` | | |
 
 ### `github_commits` 📝
 
@@ -896,6 +957,18 @@ SELECT number, title,
 FROM github_issues
 WHERE repository_id = 1 AND NOT is_pull_request AND github_closed_at IS NOT NULL
 ORDER BY time_to_close DESC;
+```
+
+Time from opening a merged pull request to its first approval:
+
+```sql
+SELECT p.number, min(r.github_submitted_at) - p.github_created_at AS time_to_first_approval
+FROM github_pull_requests p
+JOIN github_pull_request_reviews r
+  ON r.repository_id = p.repository_id AND r.pull_request_number = p.number AND r.state = 'approved'
+WHERE p.repository_id = 1 AND p.is_merged
+GROUP BY p.number, p.github_created_at
+ORDER BY time_to_first_approval DESC;
 ```
 
 Collection progress:

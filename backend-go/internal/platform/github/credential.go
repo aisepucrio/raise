@@ -23,7 +23,7 @@ func (p *Platform) CredentialKinds() []platform.CredentialKind {
 func (p *Platform) TestCredential(ctx context.Context, c platform.Credential) (platform.TestResult, error) {
 	token := c.Field("token")
 
-	resp, err := p.client.do(ctx, token, "/user", nil)
+	resp, err := p.client.rest(ctx, token, "/user")
 	if err != nil {
 		return platform.TestResult{}, err
 	}
@@ -46,7 +46,7 @@ func (p *Platform) TestCredential(ctx context.Context, c platform.Credential) (p
 
 	result := platform.TestResult{OK: true, Identity: user.Login}
 
-	rl, err := p.client.do(ctx, token, "/rate_limit", nil)
+	rl, err := p.client.rest(ctx, token, "/rate_limit")
 	if err != nil {
 		return result, nil // identity is enough to call it valid
 	}
@@ -59,7 +59,7 @@ func (p *Platform) TestCredential(ctx context.Context, c platform.Credential) (p
 		} `json:"resources"`
 	}
 	if rl.StatusCode == http.StatusOK && json.NewDecoder(rl.Body).Decode(&limits) == nil {
-		for _, scope := range []string{ScopeCore, ScopeSearch, "graphql"} {
+		for _, scope := range []string{ScopeGraphQL, ScopeCore} {
 			if r, ok := limits.Resources[scope]; ok {
 				result.Quotas = append(result.Quotas, platform.Quota{
 					Scope: scope, RequestLimit: r.Limit, RequestsRemaining: r.Remaining, ResetsAt: time.Unix(r.Reset, 0),

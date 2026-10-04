@@ -27,6 +27,7 @@ type Config struct {
 
 	// Forges
 	GitHubAPIURL      string   `env:"GITHUB_API_URL" envDefault:"https://api.github.com"`
+	GitHubGraphQLURL  string   `env:"GITHUB_GRAPHQL_URL"` // derived from GITHUB_API_URL when empty
 	GitHubHosts       []string `env:"GITHUB_HOSTS" envDefault:"github.com" envSeparator:","`
 	GitHubConcurrency int      `env:"GITHUB_CONCURRENCY" envDefault:"20"`
 	GitLabHosts       []string `env:"GITLAB_HOSTS" envDefault:"gitlab.com" envSeparator:","`

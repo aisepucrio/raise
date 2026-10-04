@@ -317,7 +317,7 @@ curl -b cookies -H 'Content-Type: application/json' -d '{
   "parameters": {
     "url": "https://github.com/spf13/cobra",
     "commits": true,
-    "enrich": {"github": {"resources": ["issues"]}}
+    "enrich": {"github": {"resources": ["metadata", "issues", "pull_requests"]}}
   }
 }' http://localhost:8000/api/collections
 ```
@@ -325,7 +325,14 @@ curl -b cookies -H 'Content-Type: application/json' -d '{
 - `commits: true` clones or fetches the repository and mines its history
   locally. No token is needed for public repositories.
 - `enrich` fetches platform data from the forge hosting the repository. It needs
-  credentials for that platform.
+  credentials for that platform. GitHub resources:
+  - `metadata`: repository metadata (stars, languages, topics, license, …).
+  - `issues`: issues, with their comments and timeline events.
+  - `pull_requests`: pull requests, with their comments, timeline events,
+    commits, reviews and review comments.
+
+  Add `"since": "2024-01-01T00:00:00Z"` to fetch only issues and pull requests
+  updated since then.
 - Re-running a collection only mines what's new.
 
 To track progress:
@@ -346,7 +353,11 @@ curl -b cookies http://localhost:8000/api/collections/1
 | `GET /api/repositories` | Registered repositories and the forges that host them |
 | `GET /api/repositories/{id}/commits?limit=&offset=` | Commits, newest first |
 | `GET /api/repositories/{id}/commits/{sha}` | One commit with its changed files |
-| `GET /api/github/repositories/{id}/issues?state=&kind=` | GitHub issues and pull requests |
+| `GET /api/github/repositories/{id}` | GitHub repository metadata |
+| `GET /api/github/repositories/{id}/issues?state=&kind=` | GitHub issues and pull requests (the conversation side) |
+| `GET /api/github/repositories/{id}/issues/{number}` | One issue or pull request with its comments and timeline events |
+| `GET /api/github/repositories/{id}/pull-requests?state=&merged=` | GitHub pull requests (the code side) |
+| `GET /api/github/repositories/{id}/pull-requests/{number}` | One pull request with its commits, reviews and review comments |
 
 Response fields use the same names as the database columns described in
 [database.md](database.md). For example, `github_created_at` is when an issue
@@ -357,11 +368,12 @@ same names.
 ### What works today
 
 - **Git:** commit mining.
-- **GitHub:** issues and pull requests (from the issues endpoint).
+- **GitHub** (GraphQL API): repository metadata, plus issues and pull requests
+  with comments, timeline events, PR commits, reviews and review comments.
 - **All platforms:** credential testing.
 
-Pull request details, Jira, Stack Overflow and GitLab mining are still to be
-built; starting those collections returns `501 Not Implemented`. The roadmap is
+GitHub commit enrichment, Jira, Stack Overflow and GitLab mining are still to
+be built; starting those collections returns `501 Not Implemented`. The roadmap is
 in architecture.md §12.
 
 ---
@@ -380,7 +392,8 @@ in architecture.md §12.
 | `GIT_BINARY` | `git` | worker | Path to the git executable |
 | `GIT_COMMIT_BATCH_SIZE` | `500` | worker | Commits per mining job |
 | `GIT_CONCURRENCY` | number of CPUs | worker | Parallel git jobs per worker process |
-| `GITHUB_API_URL` | `https://api.github.com` | api, worker | GitHub API base URL (GitHub Enterprise: `https://host/api/v3`) |
+| `GITHUB_API_URL` | `https://api.github.com` | api, worker | GitHub REST base URL, used for credential tests (GitHub Enterprise: `https://host/api/v3`) |
+| `GITHUB_GRAPHQL_URL` | derived from `GITHUB_API_URL` | api, worker | GitHub GraphQL endpoint, used for mining (`https://api.github.com/graphql`; GitHub Enterprise: `https://host/api/graphql`) |
 | `GITHUB_HOSTS` | `github.com` | api, worker | Hosts treated as GitHub when registering repositories |
-| `GITHUB_CONCURRENCY` | `20` | worker | Parallel GitHub jobs per worker process |
+| `GITHUB_CONCURRENCY` | `20` | worker | Parallel GitHub jobs per worker process. GitHub limits GraphQL CPU time per account (architecture.md §5.3), so with a single token, values above about 10 mostly cause snoozes. |
 | `GITLAB_HOSTS` | `gitlab.com` | api, worker | Hosts treated as GitLab when registering repositories |

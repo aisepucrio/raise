@@ -28,6 +28,7 @@ func buildRegistry(cfg Config, pool *pgxpool.Pool, keys *credential.Keyring, log
 
 	gh := github.New(deps, github.Config{
 		APIURL:      cfg.GitHubAPIURL,
+		GraphQLURL:  cfg.GitHubGraphQLURL,
 		Hosts:       cfg.GitHubHosts,
 		Concurrency: cfg.GitHubConcurrency,
 	})

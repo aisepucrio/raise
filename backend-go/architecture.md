@@ -175,6 +175,7 @@ reference implementation:
 |---|---|
 | `platform.go` | `ID`, `Config`, `New(deps, cfg)`, queues, worker registration |
 | `client.go` | typed API client: leases a credential per request, reports quota, maps HTTP errors |
+| `queries.go` | (GraphQL platforms) query documents and page sizes |
 | `credential.go` | `CredentialKinds` and `TestCredential` |
 | `enricher.go` | (forges) the `git.Enricher` implementation |
 | `jobs.go` | `JobArgs` types: `Kind()`, `InsertOpts()` (queue, uniqueness) |
@@ -227,9 +228,13 @@ POST /api/collections {platform:"git", parameters:{url|repository_id, commits:tr
  │       └─ git.mine_commit_batch{repo, shas[≤500]} × N    (parallel)
  │            ├─ upsert commits, commit_files, repository_commits   (ON CONFLICT DO NOTHING)
  │            └─ forge.OnCommitsMined(...) → enqueued in the same transaction
- └─ github.plan_issues{repo}            runs in parallel with git; no dependency on it
-     └─ github.fetch_issue_page{page} × (last page − 1)
+ └─ github.list_issues{repo, cursor}    runs in parallel with git; no dependency on it
+     ├─ github.fetch_issues{repo, node_ids[≤25]} × N        (parallel)
+     │   └─ github.fetch_connection{node_id, cursor}        only for overflowing comments/timelines
+     └─ github.list_issues{repo, next cursor}               chained until the last page
 ```
+
+GitHub's side of the pipeline is described in §5.3.
 
 Implementation details:
 
@@ -253,6 +258,57 @@ Implementation details:
   hosts later means per-host queues (e.g. `git@node-1`) plus a
   `repository → host` assignment; the jobs themselves don't change.
 
+### 5.3 GitHub (GraphQL)
+
+One GraphQL query returns an issue or pull request together with its labels,
+assignees, comments, timeline events, commits, reviews and review threads. The
+REST API needs a request per resource per item, so GraphQL reduces the
+request count by one to two orders of magnitude. For example, all of
+spf13/cobra (1,259 issues, 1,227 pull requests and their nested data) costs
+about 700 points of the 5,000-point hourly quota.
+
+| Resource | Jobs | Writes |
+|---|---|---|
+| `metadata` | `fetch_repository` (1 query) | `github_repositories` |
+| `issues` | `list_issues` → `fetch_issues` (25 per query) | `github_issues`, `github_issue_comments`, `github_issue_events` |
+| `pull_requests` | `list_pull_requests` → `fetch_pull_requests` (10 per query) | the above, plus `github_pull_requests`, `github_pull_request_commits`, `github_pull_request_reviews`, `github_pull_request_review_comments` |
+
+- **List, then fetch in parallel.** GraphQL pages with opaque cursors, so pages
+  can't be fanned out up front. A `list_*` job fetches one page of 100 node
+  IDs, which is cheap. In the same transaction it enqueues `fetch_*` jobs for
+  those IDs (loaded with `nodes(ids:)`) and the `list_*` job for the next
+  cursor. Listing is sequential, but the expensive fetches run in parallel.
+- **Stable cursors.** Full runs list in creation order, so new items don't
+  shift the pages. With `since`, issues are filtered by GitHub
+  (`filterBy: {since}`). Pull requests have no such filter, so they are listed
+  by `UPDATED_AT DESC` and listing stops at the first one older than `since`.
+- **Nested overflow.** Each fetch includes the first page of every nested
+  connection. If a connection has more pages, `batch` enqueues a
+  `fetch_connection{connection, node_id, cursor}` job, which chains itself
+  until the connection is exhausted. Review threads nest two levels deep
+  (threads → comments), so they use smaller first pages (30 × 20).
+- **Timeouts split batches.** GitHub aborts queries after 10 seconds (HTTP
+  502). When a batch times out, the worker replaces it with two half-size jobs
+  instead of retrying the same query.
+- **Errors.** GraphQL returns errors in a 200 response, so the client
+  classifies them:
+
+  | Error | Handling |
+  |---|---|
+  | `NOT_FOUND` on a path (a deleted node in a batch, a missing repository) | tolerated: the field is `null` and the worker decides what that means |
+  | `RATE_LIMITED` with no points left | rotate to the next credential |
+  | `RATE_LIMITED` otherwise, or a 403/429 secondary limit | snooze |
+  | `FORBIDDEN` | `ErrPermanent` |
+  | anything else | retried |
+- **IDs.** The `Int` `databaseId` field overflows for recent issues, comments
+  and reviews, so `fullDatabaseId` (a `BigInt` sent as a string) is used
+  everywhere.
+- **Secondary limits.** GitHub also caps GraphQL CPU time, at roughly 60
+  seconds of query execution per minute per user. A heavy pull request batch
+  takes about 3 seconds, so `GITHUB_CONCURRENCY=20` on a single token runs into
+  this limit. The jobs then snooze for a minute and continue. Throughput scales
+  with the number of tokens from different accounts in the pool.
+
 ---
 
 ## 6. Jobs
@@ -272,7 +328,9 @@ Implementation details:
    - `jobkit.NewEnqueuer(client, collectionID)` when starting a collection.
 5. **Each job makes one external request**, or a small bounded number. A
    page-based platform first fetches page 1 to learn the page count, then fans
-   out all remaining pages at once.
+   out all remaining pages at once. A cursor-based platform (GitHub GraphQL)
+   lists cheap ID pages sequentially, chaining one job per cursor, and fans
+   out the expensive detail fetches in parallel (§5.3).
 6. **Never sleep in a job.** Return `*jobkit.RateLimitedError` and the job is
    snoozed until the quota resets, which frees the worker slot.
 7. **One queue per platform**, sized by its own concurrency setting. Git is
@@ -339,7 +397,7 @@ Credentials are a **lab-wide pool** managed by admins: they are not per-user.
   | stackoverflow | `/info` (also reports the daily quota) |
 - **Leasing.** `credential.Pool` implements `platform.Leaser`.
   - `Lease(platform, scope)` picks the active credential with the most
-    remaining quota in that scope (e.g. GitHub's `core` and `search`), breaking
+    remaining quota in that scope (e.g. GitHub's `graphql` and `core`), breaking
     ties randomly. Selection takes no row locks, so many workers can lease
     concurrently.
   - The quota count (`credential_quotas.requests_remaining`) is decremented
@@ -412,8 +470,16 @@ The API uses huma v2 on chi (`humachi`). The OpenAPI 3.1 spec is served at
 | credentials | `GET/POST /api/credentials`, `POST /api/credentials/{id}/test`, `DELETE /api/credentials/{id}` |
 | collections | `POST/GET /api/collections`, `GET /api/collections/{id}`, `POST /api/collections/{id}/cancel` |
 | git | `POST/GET /api/repositories`, `GET /api/repositories/{id}`, `GET /api/repositories/{id}/commits`, `GET /api/repositories/{id}/commits/{sha}` |
-| github | `GET /api/github/repositories/{id}/issues` |
+| github | `GET /api/github/repositories/{id}`, `GET /api/github/repositories/{id}/issues`, `GET /api/github/repositories/{id}/issues/{number}`, `GET /api/github/repositories/{id}/pull-requests`, `GET /api/github/repositories/{id}/pull-requests/{number}` |
 | health | `GET /healthz` |
+
+**Schema names.** huma names each OpenAPI schema after its Go type, and the
+names must be unique across the whole API. Response types therefore follow the
+table naming convention: git's are unprefixed (`Repository`, `Commit`), and a
+platform's types carry the platform prefix (`GitHubRepository`, `GitHubIssue`,
+`GitHubPullRequest`), just as its tables do. The prefix stutters in Go
+(`github.GitHubIssue`), but it keeps two platforms' `Issue` types from
+colliding.
 
 Handlers return `httpapi.Error(err)`, which maps the `apperr` sentinels to
 status codes:
@@ -474,13 +540,17 @@ collection and one 1,118-commit spf13/cobra collection):
   tracking.
 - Collections: transactional start, sharded progress, reconcile, cancel.
 - Git: registration, mirrors, incremental planning, parallel batch mining.
-- GitHub: issues and PRs via the issues endpoint, with credential rotation, rate
-  limits and secondary limits.
+- GitHub (GraphQL): repository metadata, issues and pull requests with
+  comments, timeline events, commits, reviews and review comments. Includes
+  credential rotation, rate limits, secondary limits and timeout splitting.
+  Verified against spf13/cobra: every issue, PR, comment, PR commit, review
+  and review thread matched GitHub's totals. An incremental (`since`) run
+  re-mined only the updated items.
 
 TODO, in rough priority order:
 
-- GitHub: pull requests (reviews, commits, comments), `EnrichCommits`
-  (commit → login/PR via `OnCommitsMined`), branches, repository metadata.
+- GitHub: `EnrichCommits` (commit → login/PR via `OnCommitsMined`, filling
+  `github_commits` and `github_commit_pull_requests`), releases, users.
 - Jira and Stack Overflow collection jobs: port from the Python miners using the
   plan → page pattern. Jira can split large ranges with `jobkit.SplitWindows`.
 - GitLab enrichment, plus scoping credentials by host for self-managed
@@ -502,6 +572,7 @@ TODO, in rough priority order:
 | Small idempotent jobs | parallelism across workers and tokens; cheap retries; safe re-runs |
 | Platforms as vertical slices behind capability interfaces | adding a platform doesn't touch shared code |
 | Git as the base platform; forges implement `git.Enricher` | the repository is the central concept; the import direction expresses that |
+| GitHub through GraphQL, not REST | one query per batch of items with all nested data instead of one request per resource per item; listing IDs then fetching batches in parallel keeps the parallelism despite cursor pagination |
 | Drop pydriller; git CLI + custom parser | performance on large histories; no Python dependency |
 | Commits keyed by SHA and shared across repositories | forks are common in mining datasets and are stored once |
 | huma for HTTP | OpenAPI generated from Go types; operation metadata drives authorization |

@@ -18,26 +18,150 @@ var (
 	ErrBatchAlreadyClosed = errors.New("batch already closed")
 )
 
+const insertIssueEvent = `-- name: InsertIssueEvent :batchexec
+INSERT INTO github_issue_events (
+    github_node_id, repository_id, issue_number, event_type, actor_login, commit_sha, github_created_at, raw_payload
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+ON CONFLICT (github_node_id) DO NOTHING
+`
+
+type InsertIssueEventBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type InsertIssueEventParams struct {
+	GithubNodeID    string          `json:"github_node_id"`
+	RepositoryID    int64           `json:"repository_id"`
+	IssueNumber     int32           `json:"issue_number"`
+	EventType       string          `json:"event_type"`
+	ActorLogin      *string         `json:"actor_login"`
+	CommitSha       *string         `json:"commit_sha"`
+	GithubCreatedAt time.Time       `json:"github_created_at"`
+	RawPayload      json.RawMessage `json:"raw_payload"`
+}
+
+func (q *Queries) InsertIssueEvent(ctx context.Context, arg []InsertIssueEventParams) *InsertIssueEventBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.GithubNodeID,
+			a.RepositoryID,
+			a.IssueNumber,
+			a.EventType,
+			a.ActorLogin,
+			a.CommitSha,
+			a.GithubCreatedAt,
+			a.RawPayload,
+		}
+		batch.Queue(insertIssueEvent, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &InsertIssueEventBatchResults{br, len(arg), false}
+}
+
+func (b *InsertIssueEventBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *InsertIssueEventBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
+const trimPullRequestCommits = `-- name: TrimPullRequestCommits :batchexec
+DELETE FROM github_pull_request_commits
+WHERE repository_id = $1 AND pull_request_number = $2 AND position >= $3::integer
+`
+
+type TrimPullRequestCommitsBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type TrimPullRequestCommitsParams struct {
+	RepositoryID      int64 `json:"repository_id"`
+	PullRequestNumber int32 `json:"pull_request_number"`
+	CommitCount       int32 `json:"commit_count"`
+}
+
+// Drops positions beyond the pull request's current commit count (after a force push).
+func (q *Queries) TrimPullRequestCommits(ctx context.Context, arg []TrimPullRequestCommitsParams) *TrimPullRequestCommitsBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.RepositoryID,
+			a.PullRequestNumber,
+			a.CommitCount,
+		}
+		batch.Queue(trimPullRequestCommits, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &TrimPullRequestCommitsBatchResults{br, len(arg), false}
+}
+
+func (b *TrimPullRequestCommitsBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *TrimPullRequestCommitsBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
 const upsertIssue = `-- name: UpsertIssue :batchexec
 INSERT INTO github_issues (
-    repository_id, number, github_id, title, state, author_login, label_names, assignee_logins,
-    comment_count, is_pull_request, body, github_created_at, github_updated_at, github_closed_at, raw_payload
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+    repository_id, number, github_id, github_node_id, title, state, state_reason, author_login,
+    author_association, label_names, assignee_logins, milestone_title, is_locked, comment_count,
+    reaction_counts, is_pull_request, body, github_created_at, github_updated_at, github_closed_at, raw_payload
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
 ON CONFLICT (repository_id, number) DO UPDATE SET
-    github_id         = EXCLUDED.github_id,
-    title             = EXCLUDED.title,
-    state             = EXCLUDED.state,
-    author_login      = EXCLUDED.author_login,
-    label_names       = EXCLUDED.label_names,
-    assignee_logins   = EXCLUDED.assignee_logins,
-    comment_count     = EXCLUDED.comment_count,
-    is_pull_request   = EXCLUDED.is_pull_request,
-    body              = EXCLUDED.body,
-    github_created_at = EXCLUDED.github_created_at,
-    github_updated_at = EXCLUDED.github_updated_at,
-    github_closed_at  = EXCLUDED.github_closed_at,
-    raw_payload       = EXCLUDED.raw_payload,
-    last_mined_at     = now()
+    github_id          = EXCLUDED.github_id,
+    github_node_id     = EXCLUDED.github_node_id,
+    title              = EXCLUDED.title,
+    state              = EXCLUDED.state,
+    state_reason       = EXCLUDED.state_reason,
+    author_login       = EXCLUDED.author_login,
+    author_association = EXCLUDED.author_association,
+    label_names        = EXCLUDED.label_names,
+    assignee_logins    = EXCLUDED.assignee_logins,
+    milestone_title    = EXCLUDED.milestone_title,
+    is_locked          = EXCLUDED.is_locked,
+    comment_count      = EXCLUDED.comment_count,
+    reaction_counts    = EXCLUDED.reaction_counts,
+    is_pull_request    = EXCLUDED.is_pull_request,
+    body               = EXCLUDED.body,
+    github_created_at  = EXCLUDED.github_created_at,
+    github_updated_at  = EXCLUDED.github_updated_at,
+    github_closed_at   = EXCLUDED.github_closed_at,
+    raw_payload        = EXCLUDED.raw_payload,
+    last_mined_at      = now()
 WHERE github_issues.github_updated_at <= EXCLUDED.github_updated_at
 `
 
@@ -48,24 +172,30 @@ type UpsertIssueBatchResults struct {
 }
 
 type UpsertIssueParams struct {
-	RepositoryID    int64           `json:"repository_id"`
-	Number          int32           `json:"number"`
-	GithubID        int64           `json:"github_id"`
-	Title           string          `json:"title"`
-	State           string          `json:"state"`
-	AuthorLogin     *string         `json:"author_login"`
-	LabelNames      []string        `json:"label_names"`
-	AssigneeLogins  []string        `json:"assignee_logins"`
-	CommentCount    int32           `json:"comment_count"`
-	IsPullRequest   bool            `json:"is_pull_request"`
-	Body            *string         `json:"body"`
-	GithubCreatedAt time.Time       `json:"github_created_at"`
-	GithubUpdatedAt time.Time       `json:"github_updated_at"`
-	GithubClosedAt  *time.Time      `json:"github_closed_at"`
-	RawPayload      json.RawMessage `json:"raw_payload"`
+	RepositoryID      int64           `json:"repository_id"`
+	Number            int32           `json:"number"`
+	GithubID          int64           `json:"github_id"`
+	GithubNodeID      string          `json:"github_node_id"`
+	Title             string          `json:"title"`
+	State             string          `json:"state"`
+	StateReason       *string         `json:"state_reason"`
+	AuthorLogin       *string         `json:"author_login"`
+	AuthorAssociation string          `json:"author_association"`
+	LabelNames        []string        `json:"label_names"`
+	AssigneeLogins    []string        `json:"assignee_logins"`
+	MilestoneTitle    *string         `json:"milestone_title"`
+	IsLocked          bool            `json:"is_locked"`
+	CommentCount      int32           `json:"comment_count"`
+	ReactionCounts    json.RawMessage `json:"reaction_counts"`
+	IsPullRequest     bool            `json:"is_pull_request"`
+	Body              *string         `json:"body"`
+	GithubCreatedAt   time.Time       `json:"github_created_at"`
+	GithubUpdatedAt   time.Time       `json:"github_updated_at"`
+	GithubClosedAt    *time.Time      `json:"github_closed_at"`
+	RawPayload        json.RawMessage `json:"raw_payload"`
 }
 
-// Never overwrite newer data with an older snapshot (pages can be fetched out of order).
+// Never overwrite newer data with an older snapshot (batches can run out of order).
 func (q *Queries) UpsertIssue(ctx context.Context, arg []UpsertIssueParams) *UpsertIssueBatchResults {
 	batch := &pgx.Batch{}
 	for _, a := range arg {
@@ -73,12 +203,18 @@ func (q *Queries) UpsertIssue(ctx context.Context, arg []UpsertIssueParams) *Ups
 			a.RepositoryID,
 			a.Number,
 			a.GithubID,
+			a.GithubNodeID,
 			a.Title,
 			a.State,
+			a.StateReason,
 			a.AuthorLogin,
+			a.AuthorAssociation,
 			a.LabelNames,
 			a.AssigneeLogins,
+			a.MilestoneTitle,
+			a.IsLocked,
 			a.CommentCount,
+			a.ReactionCounts,
 			a.IsPullRequest,
 			a.Body,
 			a.GithubCreatedAt,
@@ -109,6 +245,465 @@ func (b *UpsertIssueBatchResults) Exec(f func(int, error)) {
 }
 
 func (b *UpsertIssueBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
+const upsertIssueComment = `-- name: UpsertIssueComment :batchexec
+INSERT INTO github_issue_comments (
+    github_id, repository_id, issue_number, author_login, author_association, body, reaction_counts,
+    github_created_at, github_updated_at, raw_payload
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+ON CONFLICT (github_id) DO UPDATE SET
+    repository_id      = EXCLUDED.repository_id,
+    issue_number       = EXCLUDED.issue_number,
+    author_login       = EXCLUDED.author_login,
+    author_association = EXCLUDED.author_association,
+    body               = EXCLUDED.body,
+    reaction_counts    = EXCLUDED.reaction_counts,
+    github_created_at  = EXCLUDED.github_created_at,
+    github_updated_at  = EXCLUDED.github_updated_at,
+    raw_payload        = EXCLUDED.raw_payload,
+    last_mined_at      = now()
+WHERE github_issue_comments.github_updated_at <= EXCLUDED.github_updated_at
+`
+
+type UpsertIssueCommentBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type UpsertIssueCommentParams struct {
+	GithubID          int64           `json:"github_id"`
+	RepositoryID      int64           `json:"repository_id"`
+	IssueNumber       int32           `json:"issue_number"`
+	AuthorLogin       *string         `json:"author_login"`
+	AuthorAssociation string          `json:"author_association"`
+	Body              string          `json:"body"`
+	ReactionCounts    json.RawMessage `json:"reaction_counts"`
+	GithubCreatedAt   time.Time       `json:"github_created_at"`
+	GithubUpdatedAt   time.Time       `json:"github_updated_at"`
+	RawPayload        json.RawMessage `json:"raw_payload"`
+}
+
+func (q *Queries) UpsertIssueComment(ctx context.Context, arg []UpsertIssueCommentParams) *UpsertIssueCommentBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.GithubID,
+			a.RepositoryID,
+			a.IssueNumber,
+			a.AuthorLogin,
+			a.AuthorAssociation,
+			a.Body,
+			a.ReactionCounts,
+			a.GithubCreatedAt,
+			a.GithubUpdatedAt,
+			a.RawPayload,
+		}
+		batch.Queue(upsertIssueComment, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &UpsertIssueCommentBatchResults{br, len(arg), false}
+}
+
+func (b *UpsertIssueCommentBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *UpsertIssueCommentBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
+const upsertPullRequest = `-- name: UpsertPullRequest :batchexec
+INSERT INTO github_pull_requests (
+    repository_id, number, github_id, github_node_id, state, is_draft, is_merged, author_login,
+    merged_by_login, head_ref, head_sha, head_repository_full_name, base_ref, base_sha, merge_commit_sha,
+    commit_count, files_changed, lines_added, lines_deleted, comment_count, review_count,
+    review_thread_count, requested_reviewer_logins, github_created_at, github_updated_at,
+    github_closed_at, github_merged_at, raw_payload
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20,
+          $21, $22, $23, $24, $25, $26, $27, $28)
+ON CONFLICT (repository_id, number) DO UPDATE SET
+    github_id                 = EXCLUDED.github_id,
+    github_node_id            = EXCLUDED.github_node_id,
+    state                     = EXCLUDED.state,
+    is_draft                  = EXCLUDED.is_draft,
+    is_merged                 = EXCLUDED.is_merged,
+    author_login              = EXCLUDED.author_login,
+    merged_by_login           = EXCLUDED.merged_by_login,
+    head_ref                  = EXCLUDED.head_ref,
+    head_sha                  = EXCLUDED.head_sha,
+    head_repository_full_name = EXCLUDED.head_repository_full_name,
+    base_ref                  = EXCLUDED.base_ref,
+    base_sha                  = EXCLUDED.base_sha,
+    merge_commit_sha          = EXCLUDED.merge_commit_sha,
+    commit_count              = EXCLUDED.commit_count,
+    files_changed             = EXCLUDED.files_changed,
+    lines_added               = EXCLUDED.lines_added,
+    lines_deleted             = EXCLUDED.lines_deleted,
+    comment_count             = EXCLUDED.comment_count,
+    review_count              = EXCLUDED.review_count,
+    review_thread_count       = EXCLUDED.review_thread_count,
+    requested_reviewer_logins = EXCLUDED.requested_reviewer_logins,
+    github_created_at         = EXCLUDED.github_created_at,
+    github_updated_at         = EXCLUDED.github_updated_at,
+    github_closed_at          = EXCLUDED.github_closed_at,
+    github_merged_at          = EXCLUDED.github_merged_at,
+    raw_payload               = EXCLUDED.raw_payload,
+    last_mined_at             = now()
+WHERE github_pull_requests.github_updated_at <= EXCLUDED.github_updated_at
+`
+
+type UpsertPullRequestBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type UpsertPullRequestParams struct {
+	RepositoryID            int64           `json:"repository_id"`
+	Number                  int32           `json:"number"`
+	GithubID                int64           `json:"github_id"`
+	GithubNodeID            string          `json:"github_node_id"`
+	State                   string          `json:"state"`
+	IsDraft                 bool            `json:"is_draft"`
+	IsMerged                bool            `json:"is_merged"`
+	AuthorLogin             *string         `json:"author_login"`
+	MergedByLogin           *string         `json:"merged_by_login"`
+	HeadRef                 string          `json:"head_ref"`
+	HeadSha                 string          `json:"head_sha"`
+	HeadRepositoryFullName  *string         `json:"head_repository_full_name"`
+	BaseRef                 string          `json:"base_ref"`
+	BaseSha                 string          `json:"base_sha"`
+	MergeCommitSha          *string         `json:"merge_commit_sha"`
+	CommitCount             int32           `json:"commit_count"`
+	FilesChanged            int32           `json:"files_changed"`
+	LinesAdded              int32           `json:"lines_added"`
+	LinesDeleted            int32           `json:"lines_deleted"`
+	CommentCount            int32           `json:"comment_count"`
+	ReviewCount             int32           `json:"review_count"`
+	ReviewThreadCount       int32           `json:"review_thread_count"`
+	RequestedReviewerLogins []string        `json:"requested_reviewer_logins"`
+	GithubCreatedAt         time.Time       `json:"github_created_at"`
+	GithubUpdatedAt         time.Time       `json:"github_updated_at"`
+	GithubClosedAt          *time.Time      `json:"github_closed_at"`
+	GithubMergedAt          *time.Time      `json:"github_merged_at"`
+	RawPayload              json.RawMessage `json:"raw_payload"`
+}
+
+func (q *Queries) UpsertPullRequest(ctx context.Context, arg []UpsertPullRequestParams) *UpsertPullRequestBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.RepositoryID,
+			a.Number,
+			a.GithubID,
+			a.GithubNodeID,
+			a.State,
+			a.IsDraft,
+			a.IsMerged,
+			a.AuthorLogin,
+			a.MergedByLogin,
+			a.HeadRef,
+			a.HeadSha,
+			a.HeadRepositoryFullName,
+			a.BaseRef,
+			a.BaseSha,
+			a.MergeCommitSha,
+			a.CommitCount,
+			a.FilesChanged,
+			a.LinesAdded,
+			a.LinesDeleted,
+			a.CommentCount,
+			a.ReviewCount,
+			a.ReviewThreadCount,
+			a.RequestedReviewerLogins,
+			a.GithubCreatedAt,
+			a.GithubUpdatedAt,
+			a.GithubClosedAt,
+			a.GithubMergedAt,
+			a.RawPayload,
+		}
+		batch.Queue(upsertPullRequest, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &UpsertPullRequestBatchResults{br, len(arg), false}
+}
+
+func (b *UpsertPullRequestBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *UpsertPullRequestBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
+const upsertPullRequestCommit = `-- name: UpsertPullRequestCommit :batchexec
+INSERT INTO github_pull_request_commits (repository_id, pull_request_number, position, sha)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (repository_id, pull_request_number, position) DO UPDATE SET sha = EXCLUDED.sha
+WHERE github_pull_request_commits.sha <> EXCLUDED.sha
+`
+
+type UpsertPullRequestCommitBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type UpsertPullRequestCommitParams struct {
+	RepositoryID      int64  `json:"repository_id"`
+	PullRequestNumber int32  `json:"pull_request_number"`
+	Position          int32  `json:"position"`
+	Sha               string `json:"sha"`
+}
+
+// A force push can change the commit at a position.
+func (q *Queries) UpsertPullRequestCommit(ctx context.Context, arg []UpsertPullRequestCommitParams) *UpsertPullRequestCommitBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.RepositoryID,
+			a.PullRequestNumber,
+			a.Position,
+			a.Sha,
+		}
+		batch.Queue(upsertPullRequestCommit, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &UpsertPullRequestCommitBatchResults{br, len(arg), false}
+}
+
+func (b *UpsertPullRequestCommitBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *UpsertPullRequestCommitBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
+const upsertPullRequestReview = `-- name: UpsertPullRequestReview :batchexec
+INSERT INTO github_pull_request_reviews (
+    github_id, repository_id, pull_request_number, reviewer_login, author_association, state, body,
+    commit_sha, github_submitted_at, github_updated_at, raw_payload
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+ON CONFLICT (github_id) DO UPDATE SET
+    repository_id       = EXCLUDED.repository_id,
+    pull_request_number = EXCLUDED.pull_request_number,
+    reviewer_login      = EXCLUDED.reviewer_login,
+    author_association  = EXCLUDED.author_association,
+    state               = EXCLUDED.state,
+    body                = EXCLUDED.body,
+    commit_sha          = EXCLUDED.commit_sha,
+    github_submitted_at = EXCLUDED.github_submitted_at,
+    github_updated_at   = EXCLUDED.github_updated_at,
+    raw_payload         = EXCLUDED.raw_payload,
+    last_mined_at       = now()
+WHERE github_pull_request_reviews.github_updated_at <= EXCLUDED.github_updated_at
+`
+
+type UpsertPullRequestReviewBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type UpsertPullRequestReviewParams struct {
+	GithubID          int64           `json:"github_id"`
+	RepositoryID      int64           `json:"repository_id"`
+	PullRequestNumber int32           `json:"pull_request_number"`
+	ReviewerLogin     *string         `json:"reviewer_login"`
+	AuthorAssociation string          `json:"author_association"`
+	State             string          `json:"state"`
+	Body              string          `json:"body"`
+	CommitSha         *string         `json:"commit_sha"`
+	GithubSubmittedAt *time.Time      `json:"github_submitted_at"`
+	GithubUpdatedAt   time.Time       `json:"github_updated_at"`
+	RawPayload        json.RawMessage `json:"raw_payload"`
+}
+
+func (q *Queries) UpsertPullRequestReview(ctx context.Context, arg []UpsertPullRequestReviewParams) *UpsertPullRequestReviewBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.GithubID,
+			a.RepositoryID,
+			a.PullRequestNumber,
+			a.ReviewerLogin,
+			a.AuthorAssociation,
+			a.State,
+			a.Body,
+			a.CommitSha,
+			a.GithubSubmittedAt,
+			a.GithubUpdatedAt,
+			a.RawPayload,
+		}
+		batch.Queue(upsertPullRequestReview, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &UpsertPullRequestReviewBatchResults{br, len(arg), false}
+}
+
+func (b *UpsertPullRequestReviewBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *UpsertPullRequestReviewBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
+const upsertPullRequestReviewComment = `-- name: UpsertPullRequestReviewComment :batchexec
+INSERT INTO github_pull_request_review_comments (
+    github_id, repository_id, pull_request_number, review_github_id, in_reply_to_github_id,
+    thread_github_node_id, author_login, author_association, path, line, original_line, commit_sha,
+    diff_hunk, body, github_created_at, github_updated_at, raw_payload
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+ON CONFLICT (github_id) DO UPDATE SET
+    repository_id         = EXCLUDED.repository_id,
+    pull_request_number   = EXCLUDED.pull_request_number,
+    review_github_id      = EXCLUDED.review_github_id,
+    in_reply_to_github_id = EXCLUDED.in_reply_to_github_id,
+    thread_github_node_id = EXCLUDED.thread_github_node_id,
+    author_login          = EXCLUDED.author_login,
+    author_association    = EXCLUDED.author_association,
+    path                  = EXCLUDED.path,
+    line                  = EXCLUDED.line,
+    original_line         = EXCLUDED.original_line,
+    commit_sha            = EXCLUDED.commit_sha,
+    diff_hunk             = EXCLUDED.diff_hunk,
+    body                  = EXCLUDED.body,
+    github_created_at     = EXCLUDED.github_created_at,
+    github_updated_at     = EXCLUDED.github_updated_at,
+    raw_payload           = EXCLUDED.raw_payload,
+    last_mined_at         = now()
+WHERE github_pull_request_review_comments.github_updated_at <= EXCLUDED.github_updated_at
+`
+
+type UpsertPullRequestReviewCommentBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type UpsertPullRequestReviewCommentParams struct {
+	GithubID           int64           `json:"github_id"`
+	RepositoryID       int64           `json:"repository_id"`
+	PullRequestNumber  int32           `json:"pull_request_number"`
+	ReviewGithubID     *int64          `json:"review_github_id"`
+	InReplyToGithubID  *int64          `json:"in_reply_to_github_id"`
+	ThreadGithubNodeID string          `json:"thread_github_node_id"`
+	AuthorLogin        *string         `json:"author_login"`
+	AuthorAssociation  string          `json:"author_association"`
+	Path               string          `json:"path"`
+	Line               *int32          `json:"line"`
+	OriginalLine       *int32          `json:"original_line"`
+	CommitSha          *string         `json:"commit_sha"`
+	DiffHunk           string          `json:"diff_hunk"`
+	Body               string          `json:"body"`
+	GithubCreatedAt    time.Time       `json:"github_created_at"`
+	GithubUpdatedAt    time.Time       `json:"github_updated_at"`
+	RawPayload         json.RawMessage `json:"raw_payload"`
+}
+
+func (q *Queries) UpsertPullRequestReviewComment(ctx context.Context, arg []UpsertPullRequestReviewCommentParams) *UpsertPullRequestReviewCommentBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.GithubID,
+			a.RepositoryID,
+			a.PullRequestNumber,
+			a.ReviewGithubID,
+			a.InReplyToGithubID,
+			a.ThreadGithubNodeID,
+			a.AuthorLogin,
+			a.AuthorAssociation,
+			a.Path,
+			a.Line,
+			a.OriginalLine,
+			a.CommitSha,
+			a.DiffHunk,
+			a.Body,
+			a.GithubCreatedAt,
+			a.GithubUpdatedAt,
+			a.RawPayload,
+		}
+		batch.Queue(upsertPullRequestReviewComment, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &UpsertPullRequestReviewCommentBatchResults{br, len(arg), false}
+}
+
+func (b *UpsertPullRequestReviewCommentBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *UpsertPullRequestReviewCommentBatchResults) Close() error {
 	b.closed = true
 	return b.br.Close()
 }

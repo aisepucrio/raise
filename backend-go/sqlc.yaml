@@ -57,3 +57,5 @@ sql:
       go:
         <<: *go_defaults
         out: internal/platform/github/sqlc
+        rename:
+          homepage_url: HomepageURL

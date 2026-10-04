@@ -14,10 +14,16 @@ import (
 	"raise/internal/platform/git"
 )
 
-// Resources that StartEnrichment accepts.
-const ResourceIssues = "issues"
+// Resources that StartEnrichment accepts. Issues and pull requests include
+// their comments and timeline events; pull requests also include commits,
+// reviews and review comments.
+const (
+	ResourceMetadata     = "metadata"
+	ResourceIssues       = "issues"
+	ResourcePullRequests = "pull_requests"
+)
 
-var supportedResources = []string{ResourceIssues}
+var supportedResources = []string{ResourceMetadata, ResourceIssues, ResourcePullRequests}
 
 func (p *Platform) MatchRemote(host, path string) (git.RepoRef, bool) {
 	if !slices.Contains(p.cfg.Hosts, host) {
@@ -45,8 +51,12 @@ func (p *Platform) StartEnrichment(ctx context.Context, tx pgx.Tx, enq jobkit.En
 	var jobs []river.InsertManyParams
 	for _, r := range req.Resources {
 		switch r {
+		case ResourceMetadata:
+			jobs = append(jobs, jobkit.Job(FetchRepositoryArgs{RepositoryID: repo.ID, Owner: ref.Owner, Name: ref.Name}))
 		case ResourceIssues:
-			jobs = append(jobs, jobkit.Job(PlanIssuesArgs{RepositoryID: repo.ID, Owner: ref.Owner, Name: ref.Name, Since: req.Since}))
+			jobs = append(jobs, jobkit.Job(ListIssuesArgs{RepositoryID: repo.ID, Owner: ref.Owner, Name: ref.Name, Since: req.Since}))
+		case ResourcePullRequests:
+			jobs = append(jobs, jobkit.Job(ListPullRequestsArgs{RepositoryID: repo.ID, Owner: ref.Owner, Name: ref.Name, Since: req.Since}))
 		default:
 			return fmt.Errorf("%w: github: unknown resource %q (supported: %s)", apperr.ErrInvalid, r, strings.Join(supportedResources, ", "))
 		}
