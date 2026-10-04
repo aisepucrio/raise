@@ -20,16 +20,16 @@ func (s *Service) RegisterRoutes(api huma.API) {
 	huma.Register(api, huma.Operation{
 		OperationID: "start-collection", Method: http.MethodPost, Path: "/api/collections",
 		Summary:     "Start a collection",
-		Description: "params are platform specific; e.g. for git: {\"repository_id\": 1, \"commits\": true, \"enrich\": {\"github\": {\"resources\": [\"issues\"]}}}",
+		Description: "parameters are platform specific; e.g. for git: {\"repository_id\": 1, \"commits\": true, \"enrich\": {\"github\": {\"resources\": [\"issues\"]}}}",
 		Tags:        tags, Metadata: access.Require(access.Researcher), DefaultStatus: http.StatusAccepted,
 	}, func(ctx context.Context, in *struct {
 		Body struct {
-			Platform platform.ID     `json:"platform"`
-			Params   json.RawMessage `json:"params,omitempty"`
+			Platform   platform.ID     `json:"platform"`
+			Parameters json.RawMessage `json:"parameters,omitempty"`
 		}
 	}) (*collectionOutput, error) {
 		p, _ := access.FromContext(ctx)
-		c, err := s.Start(ctx, p.UserID, in.Body.Platform, in.Body.Params)
+		c, err := s.Start(ctx, p.UserID, in.Body.Platform, in.Body.Parameters)
 		if err != nil {
 			return nil, httpapi.Error(err)
 		}

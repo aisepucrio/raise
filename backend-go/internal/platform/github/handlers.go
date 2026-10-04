@@ -12,18 +12,20 @@ import (
 )
 
 type Issue struct {
-	Number        int32      `json:"number"`
-	GithubID      int64      `json:"github_id"`
-	Title         string     `json:"title"`
-	State         string     `json:"state"`
-	AuthorLogin   *string    `json:"author_login"`
-	Labels        []string   `json:"labels"`
-	Assignees     []string   `json:"assignees"`
-	CommentsCount int32      `json:"comments_count"`
-	IsPullRequest bool       `json:"is_pull_request"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
-	ClosedAt      *time.Time `json:"closed_at,omitempty"`
+	Number          int32      `json:"number"`
+	GithubID        int64      `json:"github_id"`
+	Title           string     `json:"title"`
+	State           string     `json:"state"`
+	AuthorLogin     *string    `json:"author_login"`
+	LabelNames      []string   `json:"label_names"`
+	AssigneeLogins  []string   `json:"assignee_logins"`
+	CommentCount    int32      `json:"comment_count"`
+	IsPullRequest   bool       `json:"is_pull_request"`
+	GithubCreatedAt time.Time  `json:"github_created_at"`
+	GithubUpdatedAt time.Time  `json:"github_updated_at"`
+	GithubClosedAt  *time.Time `json:"github_closed_at,omitempty"`
+	FirstMinedAt    time.Time  `json:"first_mined_at"`
+	LastMinedAt     time.Time  `json:"last_mined_at"`
 }
 
 func (p *Platform) registerRoutes(api huma.API) {
@@ -52,9 +54,10 @@ func (p *Platform) registerRoutes(api huma.API) {
 		for i, r := range rows {
 			out[i] = Issue{
 				Number: r.Number, GithubID: r.GithubID, Title: r.Title, State: r.State,
-				AuthorLogin: r.AuthorLogin, Labels: r.Labels, Assignees: r.Assignees,
-				CommentsCount: r.CommentsCount, IsPullRequest: r.IsPullRequest,
-				CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt, ClosedAt: r.ClosedAt,
+				AuthorLogin: r.AuthorLogin, LabelNames: r.LabelNames, AssigneeLogins: r.AssigneeLogins,
+				CommentCount: r.CommentCount, IsPullRequest: r.IsPullRequest,
+				GithubCreatedAt: r.GithubCreatedAt, GithubUpdatedAt: r.GithubUpdatedAt, GithubClosedAt: r.GithubClosedAt,
+				FirstMinedAt: r.FirstMinedAt, LastMinedAt: r.LastMinedAt,
 			}
 		}
 		return &struct{ Body []Issue }{out}, nil

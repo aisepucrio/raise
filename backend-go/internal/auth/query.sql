@@ -15,7 +15,7 @@ SELECT * FROM users ORDER BY username;
 -- name: UpdateUser :one
 UPDATE users SET
     role          = coalesce(sqlc.narg(role), role),
-    disabled      = coalesce(sqlc.narg(disabled), disabled),
+    is_disabled   = coalesce(sqlc.narg(is_disabled), is_disabled),
     password_hash = coalesce(sqlc.narg(password_hash), password_hash),
     updated_at    = now()
 WHERE id = sqlc.arg(id)
@@ -23,7 +23,7 @@ RETURNING *;
 
 
 -- name: CreateAPIKey :one
-INSERT INTO api_keys (user_id, label, prefix, token_hash, expires_at)
+INSERT INTO api_keys (user_id, label, token_prefix, token_hash, expires_at)
 VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
 
@@ -42,5 +42,5 @@ WHERE k.token_hash = $1
   AND k.revoked_at IS NULL
   AND (k.expires_at IS NULL OR k.expires_at > now())
   AND u.id = k.user_id
-  AND NOT u.disabled
+  AND NOT u.is_disabled
 RETURNING u.id, u.username, u.role;

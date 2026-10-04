@@ -1,6 +1,7 @@
 # Raise backend (Go): architecture
 
-This is the rewrite of the Django/Celery backend. Raise is a data repository and
+This is the rewrite of the Django/Celery backend. The database schema and its
+naming conventions are described separately in [database.md](database.md). Raise is a data repository and
 mining tool, deployed once per research lab. It mines large amounts of data from
 software-engineering platforms (git repositories, GitHub, GitLab, Jira, Stack
 Overflow) and stores it for analysis.
@@ -201,14 +202,16 @@ the repository then **enrich** it with platform data.
 
 ### 5.1 Data model
 
+Summary only; column-level detail is in [database.md](database.md).
+
 | Table | Owner | Notes |
 |---|---|---|
 | `repositories` | git | canonical `https://host/path` URL (normalised from https/ssh/scp forms) |
 | `repository_remotes` | git | forges hosting the repo, filled by `MatchRemote` at registration |
 | `commits` | git | keyed by **SHA only**: content-addressed and shared between forks |
 | `repository_commits` | git | which repositories contain which commits |
-| `commit_files` | git | per-file status (A/M/D/R/C/T), rename source, similarity, +/- (NULL = binary) |
-| `refs` | git | branch and tag tips seen at the last plan |
+| `commit_files` | git | per-file `change_type` (added, renamed, …), previous path, similarity, lines added/deleted (NULL = binary) |
+| `repository_refs` | git | branch and tag tips seen at the last plan |
 | `github_*`, `gitlab_*` | forge | keyed by `repository_id` (+ `sha` for commit enrichment) |
 
 Forges **never write to git's tables.** Analyses join the core tables with the
@@ -217,8 +220,8 @@ forge tables.
 ### 5.2 Mining pipeline
 
 ```
-POST /api/collections {platform:"git", params:{url|repository_id, commits:true,
-                                               enrich:{github:{resources:["issues"]}}}}
+POST /api/collections {platform:"git", parameters:{url|repository_id, commits:true,
+                                                   enrich:{github:{resources:["issues"]}}}}
  ├─ git.sync_mirror{repo}               unique while in flight; clone or fetch under an advisory lock
  │   └─ git.plan_commits{repo}          rev-list --branches --tags, minus commits already in repository_commits
  │       └─ git.mine_commit_batch{repo, shas[≤500]} × N    (parallel)
@@ -292,14 +295,14 @@ A **collection** is the user-facing request ("mine X"). Its jobs carry
 `collection_id` in River metadata, which `Enqueuer` copies to every child job.
 Progress is tracked in `collection_progress`:
 
-- `expected` grows as jobs fan out. Jobs skipped as unique duplicates are not
-  counted.
-- `done` and `failed` grow as jobs settle.
+- `jobs_expected` grows as jobs fan out. Jobs skipped as unique duplicates are
+  not counted.
+- `jobs_done` and `jobs_failed` grow as jobs settle.
 - The counters are **sharded (16 rows per collection)** so that hundreds of
   concurrent jobs don't contend on a single row.
 
 The periodic `collection.reconcile` job (every 15s) marks a running collection
-as `completed` or `partial` once `done + failed >= expected`. It runs
+as `completed` or `partial` once `jobs_done + jobs_failed >= jobs_expected`. It runs
 periodically because two jobs that finish at the same moment can't each reliably
 detect that they were the last one.
 
@@ -339,8 +342,9 @@ Credentials are a **lab-wide pool** managed by admins: they are not per-user.
     remaining quota in that scope (e.g. GitHub's `core` and `search`), breaking
     ties randomly. Selection takes no row locks, so many workers can lease
     concurrently.
-  - The quota count is decremented optimistically, then overwritten with the
-    real value the API reports (`lease.Report`).
+  - The quota count (`credential_quotas.requests_remaining`) is decremented
+    optimistically, then overwritten with the real value the API reports
+    (`lease.Report`).
   - On a 401 the client calls `lease.Invalidate`, which takes the credential
     out of rotation, and retries with the next one (up to 3).
   - When every credential is exhausted, `Lease` returns a `RateLimitedError`
@@ -436,6 +440,9 @@ status codes:
 - Bulk writes use sqlc `:batchexec` (pipelined) or `unnest()` arrays.
 - Migrations are embedded in the binaries. `raisectl migrate up` applies River's
   migrations first, then the app's goose migrations.
+- Table and column naming conventions, every implemented table, and the planned
+  tables for platforms not built yet are documented in
+  [database.md](database.md).
 
 ---
 

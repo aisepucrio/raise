@@ -62,7 +62,7 @@ func (p *Platform) TestCredential(ctx context.Context, c platform.Credential) (p
 		for _, scope := range []string{ScopeCore, ScopeSearch, "graphql"} {
 			if r, ok := limits.Resources[scope]; ok {
 				result.Quotas = append(result.Quotas, platform.Quota{
-					Scope: scope, Limit: r.Limit, Remaining: r.Remaining, ResetAt: time.Unix(r.Reset, 0),
+					Scope: scope, RequestLimit: r.Limit, RequestsRemaining: r.Remaining, ResetsAt: time.Unix(r.Reset, 0),
 				})
 			}
 		}

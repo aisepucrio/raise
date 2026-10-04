@@ -97,14 +97,14 @@ func TestParseLog(t *testing.T) {
 	if initial.AuthorEmail != "ada@example.com" || initial.CommitterName != "Bob" {
 		t.Errorf("identities = %q / %q", initial.AuthorEmail, initial.CommitterName)
 	}
-	if len(initial.Parents) != 0 || len(initial.Files) != 2 {
-		t.Fatalf("initial: parents=%v files=%+v", initial.Parents, initial.Files)
+	if len(initial.ParentSHAs) != 0 || len(initial.Files) != 2 {
+		t.Fatalf("initial: parents=%v files=%+v", initial.ParentSHAs, initial.Files)
 	}
 	for _, f := range initial.Files {
-		if f.Path == "b.bin" && f.Additions != nil {
-			t.Errorf("binary file should have nil additions, got %d", *f.Additions)
+		if f.Path == "b.bin" && f.LinesAdded != nil {
+			t.Errorf("binary file should have nil lines added, got %d", *f.LinesAdded)
 		}
-		if f.Path == "a.txt" && (f.Status != "A" || f.Additions == nil || *f.Additions != 6) {
+		if f.Path == "a.txt" && (f.ChangeType != "added" || f.LinesAdded == nil || *f.LinesAdded != 6) {
 			t.Errorf("a.txt = %+v", f)
 		}
 	}
@@ -112,10 +112,11 @@ func TestParseLog(t *testing.T) {
 	rename := byMsg["rename and delete"]
 	var sawRename, sawDelete bool
 	for _, f := range rename.Files {
-		switch f.Status {
-		case "R":
-			sawRename = f.OldPath == "a.txt" && f.Path == "c.txt" && f.Additions != nil && *f.Additions == 1
-		case "D":
+		switch f.ChangeType {
+		case "renamed":
+			sawRename = f.PreviousPath == "a.txt" && f.Path == "c.txt" && f.LinesAdded != nil && *f.LinesAdded == 1 &&
+				f.SimilarityPercent != nil && *f.SimilarityPercent > 50
+		case "deleted":
 			sawDelete = f.Path == "b.bin"
 		}
 	}
@@ -127,7 +128,7 @@ func TestParseLog(t *testing.T) {
 	}
 
 	merge := byMsg["merge feature"]
-	if len(merge.Parents) != 2 || len(merge.Files) != 0 {
-		t.Errorf("merge: parents=%v files=%v", merge.Parents, merge.Files)
+	if len(merge.ParentSHAs) != 2 || len(merge.Files) != 0 {
+		t.Errorf("merge: parents=%v files=%v", merge.ParentSHAs, merge.Files)
 	}
 }

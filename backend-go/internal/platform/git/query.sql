@@ -19,13 +19,13 @@ SELECT * FROM repositories ORDER BY id DESC LIMIT $1 OFFSET $2;
 SELECT * FROM repository_remotes WHERE repository_id = ANY(sqlc.arg(repository_ids)::bigint[]);
 
 -- name: MarkMirrorSynced :exec
-UPDATE repositories SET mirror_synced_at = now() WHERE id = $1;
+UPDATE repositories SET mirror_last_synced_at = now() WHERE id = $1;
 
 -- name: DeleteRefs :exec
-DELETE FROM refs WHERE repository_id = $1;
+DELETE FROM repository_refs WHERE repository_id = $1;
 
 -- name: InsertRefs :exec
-INSERT INTO refs (repository_id, name, sha)
+INSERT INTO repository_refs (repository_id, name, commit_sha)
 SELECT sqlc.arg(repository_id), unnest(sqlc.arg(names)::text[]), unnest(sqlc.arg(shas)::text[]);
 
 -- name: FilterUnminedCommits :many
@@ -37,14 +37,14 @@ WHERE NOT EXISTS (
 
 -- name: InsertCommit :batchexec
 INSERT INTO commits (
-    sha, parents, author_name, author_email, authored_at,
+    sha, parent_shas, author_name, author_email, authored_at,
     committer_name, committer_email, committed_at, message,
-    additions, deletions, files_changed
+    lines_added, lines_deleted, files_changed
 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 ON CONFLICT (sha) DO NOTHING;
 
 -- name: InsertCommitFile :batchexec
-INSERT INTO commit_files (sha, path, old_path, status, similarity, additions, deletions)
+INSERT INTO commit_files (sha, path, previous_path, change_type, similarity_percent, lines_added, lines_deleted)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
 ON CONFLICT (sha, path) DO NOTHING;
 

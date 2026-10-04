@@ -10,19 +10,19 @@ import (
 )
 
 type Credential struct {
-	ID               int64           `json:"id"`
-	Platform         string          `json:"platform"`
-	Kind             string          `json:"kind"`
-	Label            string          `json:"label"`
-	PublicFields     json.RawMessage `json:"public_fields"`
-	SecretHints      json.RawMessage `json:"secret_hints"`
-	SecretCiphertext []byte          `json:"secret_ciphertext"`
-	SecretNonce      []byte          `json:"secret_nonce"`
-	KeyVersion       int32           `json:"key_version"`
-	Status           string          `json:"status"`
-	LastTestedAt     *time.Time      `json:"last_tested_at"`
-	LastTestResult   json.RawMessage `json:"last_test_result"`
-	CreatedBy        *int64          `json:"created_by"`
-	CreatedAt        time.Time       `json:"created_at"`
-	DeletedAt        *time.Time      `json:"deleted_at"`
+	ID                   int64           `json:"id"`
+	Platform             string          `json:"platform"`
+	Kind                 string          `json:"kind"`
+	Label                string          `json:"label"`
+	PublicFields         json.RawMessage `json:"public_fields"`
+	SecretHints          json.RawMessage `json:"secret_hints"`
+	SecretCiphertext     []byte          `json:"secret_ciphertext"`
+	SecretNonce          []byte          `json:"secret_nonce"`
+	EncryptionKeyVersion int32           `json:"encryption_key_version"`
+	Status               string          `json:"status"`
+	LastTestedAt         *time.Time      `json:"last_tested_at"`
+	LastTestResult       json.RawMessage `json:"last_test_result"`
+	CreatedBy            *int64          `json:"created_by"`
+	CreatedAt            time.Time       `json:"created_at"`
+	DeletedAt            *time.Time      `json:"deleted_at"`
 }

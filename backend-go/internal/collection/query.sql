@@ -1,13 +1,13 @@
 -- name: CreateCollection :one
-INSERT INTO collections (platform, params, created_by)
+INSERT INTO collections (platform, parameters, created_by)
 VALUES ($1, $2, $3)
 RETURNING *;
 
 -- name: GetCollection :one
 SELECT c.*,
-       coalesce(sum(p.expected), 0)::bigint AS expected,
-       coalesce(sum(p.done), 0)::bigint     AS done,
-       coalesce(sum(p.failed), 0)::bigint   AS failed
+       coalesce(sum(p.jobs_expected), 0)::bigint AS jobs_expected,
+       coalesce(sum(p.jobs_done), 0)::bigint     AS jobs_done,
+       coalesce(sum(p.jobs_failed), 0)::bigint   AS jobs_failed
 FROM collections c
 LEFT JOIN collection_progress p ON p.collection_id = c.id
 WHERE c.id = $1
@@ -15,9 +15,9 @@ GROUP BY c.id;
 
 -- name: ListCollections :many
 SELECT c.*,
-       coalesce(sum(p.expected), 0)::bigint AS expected,
-       coalesce(sum(p.done), 0)::bigint     AS done,
-       coalesce(sum(p.failed), 0)::bigint   AS failed
+       coalesce(sum(p.jobs_expected), 0)::bigint AS jobs_expected,
+       coalesce(sum(p.jobs_done), 0)::bigint     AS jobs_done,
+       coalesce(sum(p.jobs_failed), 0)::bigint   AS jobs_failed
 FROM collections c
 LEFT JOIN collection_progress p ON p.collection_id = c.id
 GROUP BY c.id
@@ -34,18 +34,18 @@ WHERE id = $1 AND status = 'running';
 WITH totals AS (
     SELECT c.id,
            c.created_at,
-           coalesce(sum(p.expected), 0) AS expected,
-           coalesce(sum(p.done), 0)     AS done,
-           coalesce(sum(p.failed), 0)   AS failed
+           coalesce(sum(p.jobs_expected), 0) AS jobs_expected,
+           coalesce(sum(p.jobs_done), 0)     AS jobs_done,
+           coalesce(sum(p.jobs_failed), 0)   AS jobs_failed
     FROM collections c
     LEFT JOIN collection_progress p ON p.collection_id = c.id
     WHERE c.status = 'running'
     GROUP BY c.id
 )
 UPDATE collections c
-SET status      = CASE WHEN t.failed > 0 THEN 'partial' ELSE 'completed' END,
+SET status      = CASE WHEN t.jobs_failed > 0 THEN 'partial' ELSE 'completed' END,
     finished_at = now()
 FROM totals t
 WHERE c.id = t.id
-  AND ((t.expected > 0 AND t.done + t.failed >= t.expected)
-       OR (t.expected = 0 AND t.created_at < now() - interval '1 minute'));
+  AND ((t.jobs_expected > 0 AND t.jobs_done + t.jobs_failed >= t.jobs_expected)
+       OR (t.jobs_expected = 0 AND t.created_at < now() - interval '1 minute'));

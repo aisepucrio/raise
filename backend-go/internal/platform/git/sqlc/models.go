@@ -10,7 +10,7 @@ import (
 
 type Commit struct {
 	Sha            string    `json:"sha"`
-	Parents        []string  `json:"parents"`
+	ParentShas     []string  `json:"parent_shas"`
 	AuthorName     string    `json:"author_name"`
 	AuthorEmail    string    `json:"author_email"`
 	AuthoredAt     time.Time `json:"authored_at"`
@@ -18,29 +18,29 @@ type Commit struct {
 	CommitterEmail string    `json:"committer_email"`
 	CommittedAt    time.Time `json:"committed_at"`
 	Message        string    `json:"message"`
-	Additions      int32     `json:"additions"`
-	Deletions      int32     `json:"deletions"`
+	LinesAdded     int32     `json:"lines_added"`
+	LinesDeleted   int32     `json:"lines_deleted"`
 	FilesChanged   int32     `json:"files_changed"`
-	MinedAt        time.Time `json:"mined_at"`
+	FirstMinedAt   time.Time `json:"first_mined_at"`
 }
 
 type CommitFile struct {
-	Sha        string  `json:"sha"`
-	Path       string  `json:"path"`
-	OldPath    *string `json:"old_path"`
-	Status     string  `json:"status"`
-	Similarity *int32  `json:"similarity"`
-	Additions  *int32  `json:"additions"`
-	Deletions  *int32  `json:"deletions"`
+	Sha               string  `json:"sha"`
+	Path              string  `json:"path"`
+	PreviousPath      *string `json:"previous_path"`
+	ChangeType        string  `json:"change_type"`
+	SimilarityPercent *int32  `json:"similarity_percent"`
+	LinesAdded        *int32  `json:"lines_added"`
+	LinesDeleted      *int32  `json:"lines_deleted"`
 }
 
 type Repository struct {
-	ID             int64      `json:"id"`
-	Url            string     `json:"url"`
-	Host           string     `json:"host"`
-	Path           string     `json:"path"`
-	MirrorSyncedAt *time.Time `json:"mirror_synced_at"`
-	CreatedAt      time.Time  `json:"created_at"`
+	ID                 int64      `json:"id"`
+	Url                string     `json:"url"`
+	Host               string     `json:"host"`
+	Path               string     `json:"path"`
+	MirrorLastSyncedAt *time.Time `json:"mirror_last_synced_at"`
+	CreatedAt          time.Time  `json:"created_at"`
 }
 
 type RepositoryRemote struct {

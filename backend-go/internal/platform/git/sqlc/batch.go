@@ -19,9 +19,9 @@ var (
 
 const insertCommit = `-- name: InsertCommit :batchexec
 INSERT INTO commits (
-    sha, parents, author_name, author_email, authored_at,
+    sha, parent_shas, author_name, author_email, authored_at,
     committer_name, committer_email, committed_at, message,
-    additions, deletions, files_changed
+    lines_added, lines_deleted, files_changed
 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 ON CONFLICT (sha) DO NOTHING
 `
@@ -34,7 +34,7 @@ type InsertCommitBatchResults struct {
 
 type InsertCommitParams struct {
 	Sha            string    `json:"sha"`
-	Parents        []string  `json:"parents"`
+	ParentShas     []string  `json:"parent_shas"`
 	AuthorName     string    `json:"author_name"`
 	AuthorEmail    string    `json:"author_email"`
 	AuthoredAt     time.Time `json:"authored_at"`
@@ -42,8 +42,8 @@ type InsertCommitParams struct {
 	CommitterEmail string    `json:"committer_email"`
 	CommittedAt    time.Time `json:"committed_at"`
 	Message        string    `json:"message"`
-	Additions      int32     `json:"additions"`
-	Deletions      int32     `json:"deletions"`
+	LinesAdded     int32     `json:"lines_added"`
+	LinesDeleted   int32     `json:"lines_deleted"`
 	FilesChanged   int32     `json:"files_changed"`
 }
 
@@ -52,7 +52,7 @@ func (q *Queries) InsertCommit(ctx context.Context, arg []InsertCommitParams) *I
 	for _, a := range arg {
 		vals := []interface{}{
 			a.Sha,
-			a.Parents,
+			a.ParentShas,
 			a.AuthorName,
 			a.AuthorEmail,
 			a.AuthoredAt,
@@ -60,8 +60,8 @@ func (q *Queries) InsertCommit(ctx context.Context, arg []InsertCommitParams) *I
 			a.CommitterEmail,
 			a.CommittedAt,
 			a.Message,
-			a.Additions,
-			a.Deletions,
+			a.LinesAdded,
+			a.LinesDeleted,
 			a.FilesChanged,
 		}
 		batch.Queue(insertCommit, vals...)
@@ -92,7 +92,7 @@ func (b *InsertCommitBatchResults) Close() error {
 }
 
 const insertCommitFile = `-- name: InsertCommitFile :batchexec
-INSERT INTO commit_files (sha, path, old_path, status, similarity, additions, deletions)
+INSERT INTO commit_files (sha, path, previous_path, change_type, similarity_percent, lines_added, lines_deleted)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
 ON CONFLICT (sha, path) DO NOTHING
 `
@@ -104,13 +104,13 @@ type InsertCommitFileBatchResults struct {
 }
 
 type InsertCommitFileParams struct {
-	Sha        string  `json:"sha"`
-	Path       string  `json:"path"`
-	OldPath    *string `json:"old_path"`
-	Status     string  `json:"status"`
-	Similarity *int32  `json:"similarity"`
-	Additions  *int32  `json:"additions"`
-	Deletions  *int32  `json:"deletions"`
+	Sha               string  `json:"sha"`
+	Path              string  `json:"path"`
+	PreviousPath      *string `json:"previous_path"`
+	ChangeType        string  `json:"change_type"`
+	SimilarityPercent *int32  `json:"similarity_percent"`
+	LinesAdded        *int32  `json:"lines_added"`
+	LinesDeleted      *int32  `json:"lines_deleted"`
 }
 
 func (q *Queries) InsertCommitFile(ctx context.Context, arg []InsertCommitFileParams) *InsertCommitFileBatchResults {
@@ -119,11 +119,11 @@ func (q *Queries) InsertCommitFile(ctx context.Context, arg []InsertCommitFilePa
 		vals := []interface{}{
 			a.Sha,
 			a.Path,
-			a.OldPath,
-			a.Status,
-			a.Similarity,
-			a.Additions,
-			a.Deletions,
+			a.PreviousPath,
+			a.ChangeType,
+			a.SimilarityPercent,
+			a.LinesAdded,
+			a.LinesDeleted,
 		}
 		batch.Queue(insertCommitFile, vals...)
 	}

@@ -12,8 +12,8 @@ import (
 )
 
 const consumeQuota = `-- name: ConsumeQuota :exec
-UPDATE credential_quota SET remaining = remaining - 1
-WHERE credential_id = $1 AND scope = $2 AND remaining > 0 AND reset_at > now()
+UPDATE credential_quotas SET requests_remaining = requests_remaining - 1
+WHERE credential_id = $1 AND scope = $2 AND requests_remaining > 0 AND resets_at > now()
 `
 
 type ConsumeQuotaParams struct {
@@ -40,7 +40,7 @@ func (q *Queries) CountActiveCredentials(ctx context.Context, platform string) (
 }
 
 const getCredential = `-- name: GetCredential :one
-SELECT id, platform, kind, label, public_fields, secret_hints, secret_ciphertext, secret_nonce, key_version, status, last_tested_at, last_test_result, created_by, created_at, deleted_at FROM credentials WHERE id = $1 AND deleted_at IS NULL
+SELECT id, platform, kind, label, public_fields, secret_hints, secret_ciphertext, secret_nonce, encryption_key_version, status, last_tested_at, last_test_result, created_by, created_at, deleted_at FROM credentials WHERE id = $1 AND deleted_at IS NULL
 `
 
 func (q *Queries) GetCredential(ctx context.Context, id int64) (Credential, error) {
@@ -55,7 +55,7 @@ func (q *Queries) GetCredential(ctx context.Context, id int64) (Credential, erro
 		&i.SecretHints,
 		&i.SecretCiphertext,
 		&i.SecretNonce,
-		&i.KeyVersion,
+		&i.EncryptionKeyVersion,
 		&i.Status,
 		&i.LastTestedAt,
 		&i.LastTestResult,
@@ -69,24 +69,24 @@ func (q *Queries) GetCredential(ctx context.Context, id int64) (Credential, erro
 const insertCredential = `-- name: InsertCredential :one
 INSERT INTO credentials (
     platform, kind, label, public_fields, secret_hints,
-    secret_ciphertext, secret_nonce, key_version, status,
+    secret_ciphertext, secret_nonce, encryption_key_version, status,
     last_tested_at, last_test_result, created_by
 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now(), $10, $11)
-RETURNING id, platform, kind, label, public_fields, secret_hints, secret_ciphertext, secret_nonce, key_version, status, last_tested_at, last_test_result, created_by, created_at, deleted_at
+RETURNING id, platform, kind, label, public_fields, secret_hints, secret_ciphertext, secret_nonce, encryption_key_version, status, last_tested_at, last_test_result, created_by, created_at, deleted_at
 `
 
 type InsertCredentialParams struct {
-	Platform         string          `json:"platform"`
-	Kind             string          `json:"kind"`
-	Label            string          `json:"label"`
-	PublicFields     json.RawMessage `json:"public_fields"`
-	SecretHints      json.RawMessage `json:"secret_hints"`
-	SecretCiphertext []byte          `json:"secret_ciphertext"`
-	SecretNonce      []byte          `json:"secret_nonce"`
-	KeyVersion       int32           `json:"key_version"`
-	Status           string          `json:"status"`
-	LastTestResult   json.RawMessage `json:"last_test_result"`
-	CreatedBy        *int64          `json:"created_by"`
+	Platform             string          `json:"platform"`
+	Kind                 string          `json:"kind"`
+	Label                string          `json:"label"`
+	PublicFields         json.RawMessage `json:"public_fields"`
+	SecretHints          json.RawMessage `json:"secret_hints"`
+	SecretCiphertext     []byte          `json:"secret_ciphertext"`
+	SecretNonce          []byte          `json:"secret_nonce"`
+	EncryptionKeyVersion int32           `json:"encryption_key_version"`
+	Status               string          `json:"status"`
+	LastTestResult       json.RawMessage `json:"last_test_result"`
+	CreatedBy            *int64          `json:"created_by"`
 }
 
 func (q *Queries) InsertCredential(ctx context.Context, arg InsertCredentialParams) (Credential, error) {
@@ -98,7 +98,7 @@ func (q *Queries) InsertCredential(ctx context.Context, arg InsertCredentialPara
 		arg.SecretHints,
 		arg.SecretCiphertext,
 		arg.SecretNonce,
-		arg.KeyVersion,
+		arg.EncryptionKeyVersion,
 		arg.Status,
 		arg.LastTestResult,
 		arg.CreatedBy,
@@ -113,7 +113,7 @@ func (q *Queries) InsertCredential(ctx context.Context, arg InsertCredentialPara
 		&i.SecretHints,
 		&i.SecretCiphertext,
 		&i.SecretNonce,
-		&i.KeyVersion,
+		&i.EncryptionKeyVersion,
 		&i.Status,
 		&i.LastTestedAt,
 		&i.LastTestResult,
@@ -125,7 +125,7 @@ func (q *Queries) InsertCredential(ctx context.Context, arg InsertCredentialPara
 }
 
 const listCredentials = `-- name: ListCredentials :many
-SELECT id, platform, kind, label, public_fields, secret_hints, secret_ciphertext, secret_nonce, key_version, status, last_tested_at, last_test_result, created_by, created_at, deleted_at FROM credentials
+SELECT id, platform, kind, label, public_fields, secret_hints, secret_ciphertext, secret_nonce, encryption_key_version, status, last_tested_at, last_test_result, created_by, created_at, deleted_at FROM credentials
 WHERE deleted_at IS NULL
   AND ($1::text IS NULL OR platform = $1)
 ORDER BY platform, id
@@ -149,7 +149,7 @@ func (q *Queries) ListCredentials(ctx context.Context, platform *string) ([]Cred
 			&i.SecretHints,
 			&i.SecretCiphertext,
 			&i.SecretNonce,
-			&i.KeyVersion,
+			&i.EncryptionKeyVersion,
 			&i.Status,
 			&i.LastTestedAt,
 			&i.LastTestResult,
@@ -184,12 +184,12 @@ func (q *Queries) MarkCredentialInvalid(ctx context.Context, arg MarkCredentialI
 }
 
 const nextQuotaReset = `-- name: NextQuotaReset :one
-SELECT q.reset_at FROM credential_quota q
+SELECT q.resets_at FROM credential_quotas q
 JOIN credentials c ON c.id = q.credential_id
 WHERE c.platform = $1 AND q.scope = $2
   AND c.status = 'active' AND c.deleted_at IS NULL
-  AND q.reset_at > now()
-ORDER BY q.reset_at
+  AND q.resets_at > now()
+ORDER BY q.resets_at
 LIMIT 1
 `
 
@@ -200,19 +200,19 @@ type NextQuotaResetParams struct {
 
 func (q *Queries) NextQuotaReset(ctx context.Context, arg NextQuotaResetParams) (time.Time, error) {
 	row := q.db.QueryRow(ctx, nextQuotaReset, arg.Platform, arg.Scope)
-	var reset_at time.Time
-	err := row.Scan(&reset_at)
-	return reset_at, err
+	var resets_at time.Time
+	err := row.Scan(&resets_at)
+	return resets_at, err
 }
 
 const pickCredential = `-- name: PickCredential :one
-SELECT c.id, c.platform, c.kind, c.label, c.public_fields, c.secret_hints, c.secret_ciphertext, c.secret_nonce, c.key_version, c.status, c.last_tested_at, c.last_test_result, c.created_by, c.created_at, c.deleted_at FROM credentials c
-LEFT JOIN credential_quota q ON q.credential_id = c.id AND q.scope = $1
+SELECT c.id, c.platform, c.kind, c.label, c.public_fields, c.secret_hints, c.secret_ciphertext, c.secret_nonce, c.encryption_key_version, c.status, c.last_tested_at, c.last_test_result, c.created_by, c.created_at, c.deleted_at FROM credentials c
+LEFT JOIN credential_quotas q ON q.credential_id = c.id AND q.scope = $1
 WHERE c.platform = $2
   AND c.status = 'active'
   AND c.deleted_at IS NULL
-  AND (q.credential_id IS NULL OR q.remaining > 0 OR q.reset_at <= now())
-ORDER BY CASE WHEN q.credential_id IS NULL OR q.reset_at <= now() THEN 2147483647 ELSE q.remaining END DESC,
+  AND (q.credential_id IS NULL OR q.requests_remaining > 0 OR q.resets_at <= now())
+ORDER BY CASE WHEN q.credential_id IS NULL OR q.resets_at <= now() THEN 2147483647 ELSE q.requests_remaining END DESC,
          random()
 LIMIT 1
 `
@@ -237,7 +237,7 @@ func (q *Queries) PickCredential(ctx context.Context, arg PickCredentialParams) 
 		&i.SecretHints,
 		&i.SecretCiphertext,
 		&i.SecretNonce,
-		&i.KeyVersion,
+		&i.EncryptionKeyVersion,
 		&i.Status,
 		&i.LastTestedAt,
 		&i.LastTestResult,
@@ -252,7 +252,7 @@ const recordTestResult = `-- name: RecordTestResult :one
 UPDATE credentials
 SET status = $2, last_tested_at = now(), last_test_result = $3
 WHERE id = $1
-RETURNING id, platform, kind, label, public_fields, secret_hints, secret_ciphertext, secret_nonce, key_version, status, last_tested_at, last_test_result, created_by, created_at, deleted_at
+RETURNING id, platform, kind, label, public_fields, secret_hints, secret_ciphertext, secret_nonce, encryption_key_version, status, last_tested_at, last_test_result, created_by, created_at, deleted_at
 `
 
 type RecordTestResultParams struct {
@@ -273,7 +273,7 @@ func (q *Queries) RecordTestResult(ctx context.Context, arg RecordTestResultPara
 		&i.SecretHints,
 		&i.SecretCiphertext,
 		&i.SecretNonce,
-		&i.KeyVersion,
+		&i.EncryptionKeyVersion,
 		&i.Status,
 		&i.LastTestedAt,
 		&i.LastTestResult,
@@ -297,30 +297,30 @@ func (q *Queries) SoftDeleteCredential(ctx context.Context, id int64) (int64, er
 }
 
 const upsertQuota = `-- name: UpsertQuota :exec
-INSERT INTO credential_quota (credential_id, scope, quota_limit, remaining, reset_at, updated_at)
+INSERT INTO credential_quotas (credential_id, scope, request_limit, requests_remaining, resets_at, observed_at)
 VALUES ($1, $2, $3, $4, $5, now())
 ON CONFLICT (credential_id, scope) DO UPDATE SET
-    quota_limit = EXCLUDED.quota_limit,
-    remaining   = EXCLUDED.remaining,
-    reset_at    = EXCLUDED.reset_at,
-    updated_at  = now()
+    request_limit      = EXCLUDED.request_limit,
+    requests_remaining = EXCLUDED.requests_remaining,
+    resets_at          = EXCLUDED.resets_at,
+    observed_at        = now()
 `
 
 type UpsertQuotaParams struct {
-	CredentialID int64     `json:"credential_id"`
-	Scope        string    `json:"scope"`
-	QuotaLimit   int32     `json:"quota_limit"`
-	Remaining    int32     `json:"remaining"`
-	ResetAt      time.Time `json:"reset_at"`
+	CredentialID      int64     `json:"credential_id"`
+	Scope             string    `json:"scope"`
+	RequestLimit      int32     `json:"request_limit"`
+	RequestsRemaining int32     `json:"requests_remaining"`
+	ResetsAt          time.Time `json:"resets_at"`
 }
 
 func (q *Queries) UpsertQuota(ctx context.Context, arg UpsertQuotaParams) error {
 	_, err := q.db.Exec(ctx, upsertQuota,
 		arg.CredentialID,
 		arg.Scope,
-		arg.QuotaLimit,
-		arg.Remaining,
-		arg.ResetAt,
+		arg.RequestLimit,
+		arg.RequestsRemaining,
+		arg.ResetsAt,
 	)
 	return err
 }

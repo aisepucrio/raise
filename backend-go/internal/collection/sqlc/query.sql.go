@@ -25,24 +25,24 @@ func (q *Queries) CancelCollection(ctx context.Context, id int64) (int64, error)
 }
 
 const createCollection = `-- name: CreateCollection :one
-INSERT INTO collections (platform, params, created_by)
+INSERT INTO collections (platform, parameters, created_by)
 VALUES ($1, $2, $3)
-RETURNING id, platform, params, status, created_by, created_at, finished_at
+RETURNING id, platform, parameters, status, created_by, created_at, finished_at
 `
 
 type CreateCollectionParams struct {
-	Platform  string          `json:"platform"`
-	Params    json.RawMessage `json:"params"`
-	CreatedBy *int64          `json:"created_by"`
+	Platform   string          `json:"platform"`
+	Parameters json.RawMessage `json:"parameters"`
+	CreatedBy  *int64          `json:"created_by"`
 }
 
 func (q *Queries) CreateCollection(ctx context.Context, arg CreateCollectionParams) (Collection, error) {
-	row := q.db.QueryRow(ctx, createCollection, arg.Platform, arg.Params, arg.CreatedBy)
+	row := q.db.QueryRow(ctx, createCollection, arg.Platform, arg.Parameters, arg.CreatedBy)
 	var i Collection
 	err := row.Scan(
 		&i.ID,
 		&i.Platform,
-		&i.Params,
+		&i.Parameters,
 		&i.Status,
 		&i.CreatedBy,
 		&i.CreatedAt,
@@ -55,21 +55,21 @@ const finishSettledCollections = `-- name: FinishSettledCollections :execrows
 WITH totals AS (
     SELECT c.id,
            c.created_at,
-           coalesce(sum(p.expected), 0) AS expected,
-           coalesce(sum(p.done), 0)     AS done,
-           coalesce(sum(p.failed), 0)   AS failed
+           coalesce(sum(p.jobs_expected), 0) AS jobs_expected,
+           coalesce(sum(p.jobs_done), 0)     AS jobs_done,
+           coalesce(sum(p.jobs_failed), 0)   AS jobs_failed
     FROM collections c
     LEFT JOIN collection_progress p ON p.collection_id = c.id
     WHERE c.status = 'running'
     GROUP BY c.id
 )
 UPDATE collections c
-SET status      = CASE WHEN t.failed > 0 THEN 'partial' ELSE 'completed' END,
+SET status      = CASE WHEN t.jobs_failed > 0 THEN 'partial' ELSE 'completed' END,
     finished_at = now()
 FROM totals t
 WHERE c.id = t.id
-  AND ((t.expected > 0 AND t.done + t.failed >= t.expected)
-       OR (t.expected = 0 AND t.created_at < now() - interval '1 minute'))
+  AND ((t.jobs_expected > 0 AND t.jobs_done + t.jobs_failed >= t.jobs_expected)
+       OR (t.jobs_expected = 0 AND t.created_at < now() - interval '1 minute'))
 `
 
 // Marks running collections whose jobs have all settled. Collections that never
@@ -83,10 +83,10 @@ func (q *Queries) FinishSettledCollections(ctx context.Context) (int64, error) {
 }
 
 const getCollection = `-- name: GetCollection :one
-SELECT c.id, c.platform, c.params, c.status, c.created_by, c.created_at, c.finished_at,
-       coalesce(sum(p.expected), 0)::bigint AS expected,
-       coalesce(sum(p.done), 0)::bigint     AS done,
-       coalesce(sum(p.failed), 0)::bigint   AS failed
+SELECT c.id, c.platform, c.parameters, c.status, c.created_by, c.created_at, c.finished_at,
+       coalesce(sum(p.jobs_expected), 0)::bigint AS jobs_expected,
+       coalesce(sum(p.jobs_done), 0)::bigint     AS jobs_done,
+       coalesce(sum(p.jobs_failed), 0)::bigint   AS jobs_failed
 FROM collections c
 LEFT JOIN collection_progress p ON p.collection_id = c.id
 WHERE c.id = $1
@@ -94,16 +94,16 @@ GROUP BY c.id
 `
 
 type GetCollectionRow struct {
-	ID         int64           `json:"id"`
-	Platform   string          `json:"platform"`
-	Params     json.RawMessage `json:"params"`
-	Status     string          `json:"status"`
-	CreatedBy  *int64          `json:"created_by"`
-	CreatedAt  time.Time       `json:"created_at"`
-	FinishedAt *time.Time      `json:"finished_at"`
-	Expected   int64           `json:"expected"`
-	Done       int64           `json:"done"`
-	Failed     int64           `json:"failed"`
+	ID           int64           `json:"id"`
+	Platform     string          `json:"platform"`
+	Parameters   json.RawMessage `json:"parameters"`
+	Status       string          `json:"status"`
+	CreatedBy    *int64          `json:"created_by"`
+	CreatedAt    time.Time       `json:"created_at"`
+	FinishedAt   *time.Time      `json:"finished_at"`
+	JobsExpected int64           `json:"jobs_expected"`
+	JobsDone     int64           `json:"jobs_done"`
+	JobsFailed   int64           `json:"jobs_failed"`
 }
 
 func (q *Queries) GetCollection(ctx context.Context, id int64) (GetCollectionRow, error) {
@@ -112,23 +112,23 @@ func (q *Queries) GetCollection(ctx context.Context, id int64) (GetCollectionRow
 	err := row.Scan(
 		&i.ID,
 		&i.Platform,
-		&i.Params,
+		&i.Parameters,
 		&i.Status,
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.FinishedAt,
-		&i.Expected,
-		&i.Done,
-		&i.Failed,
+		&i.JobsExpected,
+		&i.JobsDone,
+		&i.JobsFailed,
 	)
 	return i, err
 }
 
 const listCollections = `-- name: ListCollections :many
-SELECT c.id, c.platform, c.params, c.status, c.created_by, c.created_at, c.finished_at,
-       coalesce(sum(p.expected), 0)::bigint AS expected,
-       coalesce(sum(p.done), 0)::bigint     AS done,
-       coalesce(sum(p.failed), 0)::bigint   AS failed
+SELECT c.id, c.platform, c.parameters, c.status, c.created_by, c.created_at, c.finished_at,
+       coalesce(sum(p.jobs_expected), 0)::bigint AS jobs_expected,
+       coalesce(sum(p.jobs_done), 0)::bigint     AS jobs_done,
+       coalesce(sum(p.jobs_failed), 0)::bigint   AS jobs_failed
 FROM collections c
 LEFT JOIN collection_progress p ON p.collection_id = c.id
 GROUP BY c.id
@@ -142,16 +142,16 @@ type ListCollectionsParams struct {
 }
 
 type ListCollectionsRow struct {
-	ID         int64           `json:"id"`
-	Platform   string          `json:"platform"`
-	Params     json.RawMessage `json:"params"`
-	Status     string          `json:"status"`
-	CreatedBy  *int64          `json:"created_by"`
-	CreatedAt  time.Time       `json:"created_at"`
-	FinishedAt *time.Time      `json:"finished_at"`
-	Expected   int64           `json:"expected"`
-	Done       int64           `json:"done"`
-	Failed     int64           `json:"failed"`
+	ID           int64           `json:"id"`
+	Platform     string          `json:"platform"`
+	Parameters   json.RawMessage `json:"parameters"`
+	Status       string          `json:"status"`
+	CreatedBy    *int64          `json:"created_by"`
+	CreatedAt    time.Time       `json:"created_at"`
+	FinishedAt   *time.Time      `json:"finished_at"`
+	JobsExpected int64           `json:"jobs_expected"`
+	JobsDone     int64           `json:"jobs_done"`
+	JobsFailed   int64           `json:"jobs_failed"`
 }
 
 func (q *Queries) ListCollections(ctx context.Context, arg ListCollectionsParams) ([]ListCollectionsRow, error) {
@@ -166,14 +166,14 @@ func (q *Queries) ListCollections(ctx context.Context, arg ListCollectionsParams
 		if err := rows.Scan(
 			&i.ID,
 			&i.Platform,
-			&i.Params,
+			&i.Parameters,
 			&i.Status,
 			&i.CreatedBy,
 			&i.CreatedAt,
 			&i.FinishedAt,
-			&i.Expected,
-			&i.Done,
-			&i.Failed,
+			&i.JobsExpected,
+			&i.JobsDone,
+			&i.JobsFailed,
 		); err != nil {
 			return nil, err
 		}

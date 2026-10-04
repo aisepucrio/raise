@@ -11,8 +11,9 @@ import (
 )
 
 const listIssues = `-- name: ListIssues :many
-SELECT repository_id, number, github_id, title, state, author_login, labels, assignees,
-       comments_count, is_pull_request, created_at, updated_at, closed_at
+SELECT repository_id, number, github_id, title, state, author_login, label_names, assignee_logins,
+       comment_count, is_pull_request, github_created_at, github_updated_at, github_closed_at,
+       first_mined_at, last_mined_at
 FROM github_issues
 WHERE repository_id = $1
   AND ($4::text IS NULL OR state = $4)
@@ -30,19 +31,21 @@ type ListIssuesParams struct {
 }
 
 type ListIssuesRow struct {
-	RepositoryID  int64      `json:"repository_id"`
-	Number        int32      `json:"number"`
-	GithubID      int64      `json:"github_id"`
-	Title         string     `json:"title"`
-	State         string     `json:"state"`
-	AuthorLogin   *string    `json:"author_login"`
-	Labels        []string   `json:"labels"`
-	Assignees     []string   `json:"assignees"`
-	CommentsCount int32      `json:"comments_count"`
-	IsPullRequest bool       `json:"is_pull_request"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
-	ClosedAt      *time.Time `json:"closed_at"`
+	RepositoryID    int64      `json:"repository_id"`
+	Number          int32      `json:"number"`
+	GithubID        int64      `json:"github_id"`
+	Title           string     `json:"title"`
+	State           string     `json:"state"`
+	AuthorLogin     *string    `json:"author_login"`
+	LabelNames      []string   `json:"label_names"`
+	AssigneeLogins  []string   `json:"assignee_logins"`
+	CommentCount    int32      `json:"comment_count"`
+	IsPullRequest   bool       `json:"is_pull_request"`
+	GithubCreatedAt time.Time  `json:"github_created_at"`
+	GithubUpdatedAt time.Time  `json:"github_updated_at"`
+	GithubClosedAt  *time.Time `json:"github_closed_at"`
+	FirstMinedAt    time.Time  `json:"first_mined_at"`
+	LastMinedAt     time.Time  `json:"last_mined_at"`
 }
 
 func (q *Queries) ListIssues(ctx context.Context, arg ListIssuesParams) ([]ListIssuesRow, error) {
@@ -67,13 +70,15 @@ func (q *Queries) ListIssues(ctx context.Context, arg ListIssuesParams) ([]ListI
 			&i.Title,
 			&i.State,
 			&i.AuthorLogin,
-			&i.Labels,
-			&i.Assignees,
-			&i.CommentsCount,
+			&i.LabelNames,
+			&i.AssigneeLogins,
+			&i.CommentCount,
 			&i.IsPullRequest,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.ClosedAt,
+			&i.GithubCreatedAt,
+			&i.GithubUpdatedAt,
+			&i.GithubClosedAt,
+			&i.FirstMinedAt,
+			&i.LastMinedAt,
 		); err != nil {
 			return nil, err
 		}

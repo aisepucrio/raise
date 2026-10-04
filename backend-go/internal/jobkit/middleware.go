@@ -49,8 +49,8 @@ func (m *Middleware) Work(ctx context.Context, job *rivertype.JobRow, doInner fu
 		perr := sqlc.New(m.pool).AddProgress(ctx, sqlc.AddProgressParams{
 			CollectionID: id,
 			Shard:        int16(rand.IntN(progressShards)),
-			Done:         done,
-			Failed:       failed,
+			JobsDone:     done,
+			JobsFailed:   failed,
 		})
 		if perr != nil {
 			// Progress is best-effort; never fail a job because of it.

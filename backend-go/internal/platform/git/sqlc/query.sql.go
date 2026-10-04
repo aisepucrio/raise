@@ -10,7 +10,7 @@ import (
 )
 
 const deleteRefs = `-- name: DeleteRefs :exec
-DELETE FROM refs WHERE repository_id = $1
+DELETE FROM repository_refs WHERE repository_id = $1
 `
 
 func (q *Queries) DeleteRefs(ctx context.Context, repositoryID int64) error {
@@ -52,7 +52,7 @@ func (q *Queries) FilterUnminedCommits(ctx context.Context, arg FilterUnminedCom
 }
 
 const getRepository = `-- name: GetRepository :one
-SELECT id, url, host, path, mirror_synced_at, created_at FROM repositories WHERE id = $1
+SELECT id, url, host, path, mirror_last_synced_at, created_at FROM repositories WHERE id = $1
 `
 
 func (q *Queries) GetRepository(ctx context.Context, id int64) (Repository, error) {
@@ -63,14 +63,14 @@ func (q *Queries) GetRepository(ctx context.Context, id int64) (Repository, erro
 		&i.Url,
 		&i.Host,
 		&i.Path,
-		&i.MirrorSyncedAt,
+		&i.MirrorLastSyncedAt,
 		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const getRepositoryCommit = `-- name: GetRepositoryCommit :one
-SELECT c.sha, c.parents, c.author_name, c.author_email, c.authored_at, c.committer_name, c.committer_email, c.committed_at, c.message, c.additions, c.deletions, c.files_changed, c.mined_at FROM repository_commits rc
+SELECT c.sha, c.parent_shas, c.author_name, c.author_email, c.authored_at, c.committer_name, c.committer_email, c.committed_at, c.message, c.lines_added, c.lines_deleted, c.files_changed, c.first_mined_at FROM repository_commits rc
 JOIN commits c ON c.sha = rc.sha
 WHERE rc.repository_id = $1 AND rc.sha = $2
 `
@@ -85,7 +85,7 @@ func (q *Queries) GetRepositoryCommit(ctx context.Context, arg GetRepositoryComm
 	var i Commit
 	err := row.Scan(
 		&i.Sha,
-		&i.Parents,
+		&i.ParentShas,
 		&i.AuthorName,
 		&i.AuthorEmail,
 		&i.AuthoredAt,
@@ -93,16 +93,16 @@ func (q *Queries) GetRepositoryCommit(ctx context.Context, arg GetRepositoryComm
 		&i.CommitterEmail,
 		&i.CommittedAt,
 		&i.Message,
-		&i.Additions,
-		&i.Deletions,
+		&i.LinesAdded,
+		&i.LinesDeleted,
 		&i.FilesChanged,
-		&i.MinedAt,
+		&i.FirstMinedAt,
 	)
 	return i, err
 }
 
 const insertRefs = `-- name: InsertRefs :exec
-INSERT INTO refs (repository_id, name, sha)
+INSERT INTO repository_refs (repository_id, name, commit_sha)
 SELECT $1, unnest($2::text[]), unnest($3::text[])
 `
 
@@ -134,7 +134,7 @@ func (q *Queries) LinkCommits(ctx context.Context, arg LinkCommitsParams) error 
 }
 
 const listCommitFiles = `-- name: ListCommitFiles :many
-SELECT sha, path, old_path, status, similarity, additions, deletions FROM commit_files WHERE sha = $1 ORDER BY path
+SELECT sha, path, previous_path, change_type, similarity_percent, lines_added, lines_deleted FROM commit_files WHERE sha = $1 ORDER BY path
 `
 
 func (q *Queries) ListCommitFiles(ctx context.Context, sha string) ([]CommitFile, error) {
@@ -149,11 +149,11 @@ func (q *Queries) ListCommitFiles(ctx context.Context, sha string) ([]CommitFile
 		if err := rows.Scan(
 			&i.Sha,
 			&i.Path,
-			&i.OldPath,
-			&i.Status,
-			&i.Similarity,
-			&i.Additions,
-			&i.Deletions,
+			&i.PreviousPath,
+			&i.ChangeType,
+			&i.SimilarityPercent,
+			&i.LinesAdded,
+			&i.LinesDeleted,
 		); err != nil {
 			return nil, err
 		}
@@ -166,7 +166,7 @@ func (q *Queries) ListCommitFiles(ctx context.Context, sha string) ([]CommitFile
 }
 
 const listCommits = `-- name: ListCommits :many
-SELECT c.sha, c.parents, c.author_name, c.author_email, c.authored_at, c.committer_name, c.committer_email, c.committed_at, c.message, c.additions, c.deletions, c.files_changed, c.mined_at FROM repository_commits rc
+SELECT c.sha, c.parent_shas, c.author_name, c.author_email, c.authored_at, c.committer_name, c.committer_email, c.committed_at, c.message, c.lines_added, c.lines_deleted, c.files_changed, c.first_mined_at FROM repository_commits rc
 JOIN commits c ON c.sha = rc.sha
 WHERE rc.repository_id = $1
 ORDER BY c.committed_at DESC, c.sha
@@ -190,7 +190,7 @@ func (q *Queries) ListCommits(ctx context.Context, arg ListCommitsParams) ([]Com
 		var i Commit
 		if err := rows.Scan(
 			&i.Sha,
-			&i.Parents,
+			&i.ParentShas,
 			&i.AuthorName,
 			&i.AuthorEmail,
 			&i.AuthoredAt,
@@ -198,10 +198,10 @@ func (q *Queries) ListCommits(ctx context.Context, arg ListCommitsParams) ([]Com
 			&i.CommitterEmail,
 			&i.CommittedAt,
 			&i.Message,
-			&i.Additions,
-			&i.Deletions,
+			&i.LinesAdded,
+			&i.LinesDeleted,
 			&i.FilesChanged,
-			&i.MinedAt,
+			&i.FirstMinedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -243,7 +243,7 @@ func (q *Queries) ListRemotes(ctx context.Context, repositoryIds []int64) ([]Rep
 }
 
 const listRepositories = `-- name: ListRepositories :many
-SELECT id, url, host, path, mirror_synced_at, created_at FROM repositories ORDER BY id DESC LIMIT $1 OFFSET $2
+SELECT id, url, host, path, mirror_last_synced_at, created_at FROM repositories ORDER BY id DESC LIMIT $1 OFFSET $2
 `
 
 type ListRepositoriesParams struct {
@@ -265,7 +265,7 @@ func (q *Queries) ListRepositories(ctx context.Context, arg ListRepositoriesPara
 			&i.Url,
 			&i.Host,
 			&i.Path,
-			&i.MirrorSyncedAt,
+			&i.MirrorLastSyncedAt,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -279,7 +279,7 @@ func (q *Queries) ListRepositories(ctx context.Context, arg ListRepositoriesPara
 }
 
 const markMirrorSynced = `-- name: MarkMirrorSynced :exec
-UPDATE repositories SET mirror_synced_at = now() WHERE id = $1
+UPDATE repositories SET mirror_last_synced_at = now() WHERE id = $1
 `
 
 func (q *Queries) MarkMirrorSynced(ctx context.Context, id int64) error {
@@ -314,7 +314,7 @@ const upsertRepository = `-- name: UpsertRepository :one
 INSERT INTO repositories (url, host, path)
 VALUES ($1, $2, $3)
 ON CONFLICT (url) DO UPDATE SET url = EXCLUDED.url
-RETURNING id, url, host, path, mirror_synced_at, created_at
+RETURNING id, url, host, path, mirror_last_synced_at, created_at
 `
 
 type UpsertRepositoryParams struct {
@@ -331,7 +331,7 @@ func (q *Queries) UpsertRepository(ctx context.Context, arg UpsertRepositoryPara
 		&i.Url,
 		&i.Host,
 		&i.Path,
-		&i.MirrorSyncedAt,
+		&i.MirrorLastSyncedAt,
 		&i.CreatedAt,
 	)
 	return i, err

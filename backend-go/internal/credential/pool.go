@@ -67,11 +67,11 @@ func (l *lease) Credential() platform.Credential { return l.cred }
 
 func (l *lease) Report(ctx context.Context, q platform.Quota) error {
 	return l.q.UpsertQuota(ctx, sqlc.UpsertQuotaParams{
-		CredentialID: l.cred.ID,
-		Scope:        q.Scope,
-		QuotaLimit:   int32(q.Limit),
-		Remaining:    int32(q.Remaining),
-		ResetAt:      q.ResetAt,
+		CredentialID:      l.cred.ID,
+		Scope:             q.Scope,
+		RequestLimit:      int32(q.RequestLimit),
+		RequestsRemaining: int32(q.RequestsRemaining),
+		ResetsAt:          q.ResetsAt,
 	})
 }
 

@@ -12,7 +12,7 @@ import (
 type Collection struct {
 	ID         int64           `json:"id"`
 	Platform   string          `json:"platform"`
-	Params     json.RawMessage `json:"params"`
+	Parameters json.RawMessage `json:"parameters"`
 	Status     string          `json:"status"`
 	CreatedBy  *int64          `json:"created_by"`
 	CreatedAt  time.Time       `json:"created_at"`

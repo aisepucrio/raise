@@ -16,7 +16,7 @@ import (
 // Commit and CommitFile are the API representations of mined history.
 type Commit struct {
 	SHA            string       `json:"sha"`
-	Parents        []string     `json:"parents"`
+	ParentSHAs     []string     `json:"parent_shas"`
 	AuthorName     string       `json:"author_name"`
 	AuthorEmail    string       `json:"author_email"`
 	AuthoredAt     time.Time    `json:"authored_at"`
@@ -24,27 +24,29 @@ type Commit struct {
 	CommitterEmail string       `json:"committer_email"`
 	CommittedAt    time.Time    `json:"committed_at"`
 	Message        string       `json:"message"`
-	Additions      int32        `json:"additions"`
-	Deletions      int32        `json:"deletions"`
+	LinesAdded     int32        `json:"lines_added"`
+	LinesDeleted   int32        `json:"lines_deleted"`
 	FilesChanged   int32        `json:"files_changed"`
+	FirstMinedAt   time.Time    `json:"first_mined_at"`
 	Files          []CommitFile `json:"files,omitempty"`
 }
 
 type CommitFile struct {
-	Path       string  `json:"path"`
-	OldPath    *string `json:"old_path,omitempty"`
-	Status     string  `json:"status" enum:"A,M,D,R,C,T,U"`
-	Similarity *int32  `json:"similarity,omitempty"`
-	Additions  *int32  `json:"additions" doc:"null for binary files"`
-	Deletions  *int32  `json:"deletions"`
+	Path              string  `json:"path"`
+	PreviousPath      *string `json:"previous_path,omitempty"`
+	ChangeType        string  `json:"change_type" enum:"added,modified,deleted,renamed,copied,type_changed,unmerged"`
+	SimilarityPercent *int32  `json:"similarity_percent,omitempty"`
+	LinesAdded        *int32  `json:"lines_added" doc:"null for binary files"`
+	LinesDeleted      *int32  `json:"lines_deleted"`
 }
 
 func toCommit(c sqlc.Commit) Commit {
 	return Commit{
-		SHA: c.Sha, Parents: c.Parents,
+		SHA: c.Sha, ParentSHAs: c.ParentShas,
 		AuthorName: c.AuthorName, AuthorEmail: c.AuthorEmail, AuthoredAt: c.AuthoredAt,
 		CommitterName: c.CommitterName, CommitterEmail: c.CommitterEmail, CommittedAt: c.CommittedAt,
-		Message: c.Message, Additions: c.Additions, Deletions: c.Deletions, FilesChanged: c.FilesChanged,
+		Message: c.Message, LinesAdded: c.LinesAdded, LinesDeleted: c.LinesDeleted, FilesChanged: c.FilesChanged,
+		FirstMinedAt: c.FirstMinedAt,
 	}
 }
 
@@ -129,7 +131,7 @@ func (p *Platform) withRemotes(ctx context.Context, q *sqlc.Queries, rows []sqlc
 	for i, r := range rows {
 		out[i] = Repository{
 			ID: r.ID, URL: r.Url, Host: r.Host, Path: r.Path,
-			MirrorSyncedAt: r.MirrorSyncedAt, CreatedAt: r.CreatedAt,
+			MirrorLastSyncedAt: r.MirrorLastSyncedAt, CreatedAt: r.CreatedAt,
 			Remotes: byRepo[r.ID],
 		}
 		if out[i].Remotes == nil {
@@ -166,7 +168,10 @@ func (p *Platform) GetCommit(ctx context.Context, repoID int64, sha string) (Com
 	c := toCommit(row)
 	c.Files = make([]CommitFile, len(files))
 	for i, f := range files {
-		c.Files[i] = CommitFile{Path: f.Path, OldPath: f.OldPath, Status: f.Status, Similarity: f.Similarity, Additions: f.Additions, Deletions: f.Deletions}
+		c.Files[i] = CommitFile{
+			Path: f.Path, PreviousPath: f.PreviousPath, ChangeType: f.ChangeType,
+			SimilarityPercent: f.SimilarityPercent, LinesAdded: f.LinesAdded, LinesDeleted: f.LinesDeleted,
+		}
 	}
 	return c, nil
 }
@@ -177,25 +182,25 @@ func storeBatch(ctx context.Context, q *sqlc.Queries, repoID int64, entries []Lo
 	var files []sqlc.InsertCommitFileParams
 	shas := make([]string, len(entries))
 	for i, e := range entries {
-		add, del := e.Totals()
+		added, deleted := e.Totals()
 		commits[i] = sqlc.InsertCommitParams{
-			Sha: e.SHA, Parents: e.Parents,
+			Sha: e.SHA, ParentShas: e.ParentSHAs,
 			AuthorName: e.AuthorName, AuthorEmail: e.AuthorEmail, AuthoredAt: e.AuthoredAt,
 			CommitterName: e.CommitterName, CommitterEmail: e.CommitterEmail, CommittedAt: e.CommittedAt,
-			Message: e.Message, Additions: add, Deletions: del, FilesChanged: int32(len(e.Files)),
+			Message: e.Message, LinesAdded: added, LinesDeleted: deleted, FilesChanged: int32(len(e.Files)),
 		}
-		if commits[i].Parents == nil {
-			commits[i].Parents = []string{}
+		if commits[i].ParentShas == nil {
+			commits[i].ParentShas = []string{}
 		}
 		shas[i] = e.SHA
 		for _, f := range e.Files {
 			fp := sqlc.InsertCommitFileParams{
-				Sha: e.SHA, Path: f.Path, Status: f.Status,
-				Similarity: f.Similarity, Additions: f.Additions, Deletions: f.Deletions,
+				Sha: e.SHA, Path: f.Path, ChangeType: f.ChangeType,
+				SimilarityPercent: f.SimilarityPercent, LinesAdded: f.LinesAdded, LinesDeleted: f.LinesDeleted,
 			}
-			if f.OldPath != "" {
-				old := f.OldPath
-				fp.OldPath = &old
+			if f.PreviousPath != "" {
+				previous := f.PreviousPath
+				fp.PreviousPath = &previous
 			}
 			files = append(files, fp)
 		}

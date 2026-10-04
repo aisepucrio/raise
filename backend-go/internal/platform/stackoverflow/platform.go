@@ -86,7 +86,7 @@ func (p *Platform) TestCredential(ctx context.Context, c platform.Credential) (p
 	reset := time.Now().UTC().Truncate(24 * time.Hour).Add(24 * time.Hour)
 	return platform.TestResult{
 		OK:     true,
-		Quotas: []platform.Quota{{Scope: "api", Limit: body.QuotaMax, Remaining: body.QuotaRemaining, ResetAt: reset}},
+		Quotas: []platform.Quota{{Scope: "api", RequestLimit: body.QuotaMax, RequestsRemaining: body.QuotaRemaining, ResetsAt: reset}},
 	}, nil
 }
 

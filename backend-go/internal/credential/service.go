@@ -102,17 +102,17 @@ func (s *Service) Add(ctx context.Context, createdBy int64, pid platform.ID, kin
 	hintsJSON, _ := json.Marshal(hints)
 	resultJSON, _ := json.Marshal(result)
 	row, err := s.q.InsertCredential(ctx, sqlc.InsertCredentialParams{
-		Platform:         string(pid),
-		Kind:             kind,
-		Label:            label,
-		PublicFields:     publicJSON,
-		SecretHints:      hintsJSON,
-		SecretCiphertext: ct,
-		SecretNonce:      nonce,
-		KeyVersion:       ver,
-		Status:           statusFor(result),
-		LastTestResult:   resultJSON,
-		CreatedBy:        &createdBy,
+		Platform:             string(pid),
+		Kind:                 kind,
+		Label:                label,
+		PublicFields:         publicJSON,
+		SecretHints:          hintsJSON,
+		SecretCiphertext:     ct,
+		SecretNonce:          nonce,
+		EncryptionKeyVersion: ver,
+		Status:               statusFor(result),
+		LastTestResult:       resultJSON,
+		CreatedBy:            &createdBy,
 	})
 	if err != nil {
 		return View{}, err
@@ -165,7 +165,7 @@ func decrypt(keys *Keyring, row sqlc.Credential) (platform.Credential, error) {
 	if err := json.Unmarshal(row.PublicFields, &c.Public); err != nil {
 		return c, fmt.Errorf("decode public fields: %w", err)
 	}
-	pt, err := keys.Open(row.KeyVersion, row.SecretNonce, row.SecretCiphertext, aad(c.Platform, c.Kind))
+	pt, err := keys.Open(row.EncryptionKeyVersion, row.SecretNonce, row.SecretCiphertext, aad(c.Platform, c.Kind))
 	if err != nil {
 		return c, fmt.Errorf("decrypt credential %d: %w", row.ID, err)
 	}

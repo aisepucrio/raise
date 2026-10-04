@@ -9,7 +9,7 @@ import (
 )
 
 // apiIssue is the subset of GitHub's issue payload modelled in columns; the
-// full payload is kept in the raw column.
+// full payload is kept in the raw_payload column.
 type apiIssue struct {
 	ID     int64  `json:"id"`
 	Number int32  `json:"number"`
@@ -52,19 +52,19 @@ func storeIssues(ctx context.Context, q *sqlc.Queries, repoID int64, issues []ap
 		p := sqlc.UpsertIssueParams{
 			RepositoryID: repoID, Number: is.Number, GithubID: is.ID,
 			Title: is.Title, State: is.State,
-			Labels: []string{}, Assignees: []string{},
-			CommentsCount: is.Comments, IsPullRequest: len(is.PullRequest) > 0 && string(is.PullRequest) != "null",
-			Body: is.Body, CreatedAt: is.CreatedAt, UpdatedAt: is.UpdatedAt, ClosedAt: is.ClosedAt,
-			Raw: is.raw,
+			LabelNames: []string{}, AssigneeLogins: []string{},
+			CommentCount: is.Comments, IsPullRequest: len(is.PullRequest) > 0 && string(is.PullRequest) != "null",
+			Body: is.Body, GithubCreatedAt: is.CreatedAt, GithubUpdatedAt: is.UpdatedAt, GithubClosedAt: is.ClosedAt,
+			RawPayload: is.raw,
 		}
 		if is.User != nil {
 			p.AuthorLogin = &is.User.Login
 		}
 		for _, l := range is.Labels {
-			p.Labels = append(p.Labels, l.Name)
+			p.LabelNames = append(p.LabelNames, l.Name)
 		}
 		for _, a := range is.Assignees {
-			p.Assignees = append(p.Assignees, a.Login)
+			p.AssigneeLogins = append(p.AssigneeLogins, a.Login)
 		}
 		params[i] = p
 	}

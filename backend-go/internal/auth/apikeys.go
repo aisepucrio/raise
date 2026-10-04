@@ -15,16 +15,16 @@ import (
 const apiKeyPrefix = "rk_"
 
 type APIKey struct {
-	ID         int64      `json:"id"`
-	Label      string     `json:"label"`
-	Prefix     string     `json:"prefix"`
-	CreatedAt  time.Time  `json:"created_at"`
-	LastUsedAt *time.Time `json:"last_used_at,omitempty"`
-	ExpiresAt  *time.Time `json:"expires_at,omitempty"`
+	ID          int64      `json:"id"`
+	Label       string     `json:"label"`
+	TokenPrefix string     `json:"token_prefix"`
+	CreatedAt   time.Time  `json:"created_at"`
+	LastUsedAt  *time.Time `json:"last_used_at,omitempty"`
+	ExpiresAt   *time.Time `json:"expires_at,omitempty"`
 }
 
 func toAPIKey(k sqlc.ApiKey) APIKey {
-	return APIKey{ID: k.ID, Label: k.Label, Prefix: k.Prefix, CreatedAt: k.CreatedAt, LastUsedAt: k.LastUsedAt, ExpiresAt: k.ExpiresAt}
+	return APIKey{ID: k.ID, Label: k.Label, TokenPrefix: k.TokenPrefix, CreatedAt: k.CreatedAt, LastUsedAt: k.LastUsedAt, ExpiresAt: k.ExpiresAt}
 }
 
 // CreateAPIKey returns the plaintext token, which is shown to the user once
@@ -37,11 +37,11 @@ func (s *Service) CreateAPIKey(ctx context.Context, userID int64, label string, 
 	}
 	token := apiKeyPrefix + base64.RawURLEncoding.EncodeToString(buf)
 	k, err := s.q.CreateAPIKey(ctx, sqlc.CreateAPIKeyParams{
-		UserID:    userID,
-		Label:     label,
-		Prefix:    token[:len(apiKeyPrefix)+6],
-		TokenHash: hashToken(token),
-		ExpiresAt: expiresAt,
+		UserID:      userID,
+		Label:       label,
+		TokenPrefix: token[:len(apiKeyPrefix)+6],
+		TokenHash:   hashToken(token),
+		ExpiresAt:   expiresAt,
 	})
 	if err != nil {
 		return "", APIKey{}, err

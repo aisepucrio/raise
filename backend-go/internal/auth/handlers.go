@@ -170,15 +170,15 @@ func (s *Service) registerUserAdminRoutes(api huma.API) {
 	}, func(ctx context.Context, in *struct {
 		ID   int64 `path:"id"`
 		Body struct {
-			Role     *access.Role `json:"role,omitempty" enum:"viewer,researcher,admin"`
-			Disabled *bool        `json:"disabled,omitempty"`
-			Password *string      `json:"password,omitempty"`
+			Role       *access.Role `json:"role,omitempty" enum:"viewer,researcher,admin"`
+			IsDisabled *bool        `json:"is_disabled,omitempty"`
+			Password   *string      `json:"password,omitempty"`
 		}
 	}) (*userOutput, error) {
-		if in.ID == principal(ctx).UserID && (in.Body.Role != nil || in.Body.Disabled != nil) {
+		if in.ID == principal(ctx).UserID && (in.Body.Role != nil || in.Body.IsDisabled != nil) {
 			return nil, huma.Error422UnprocessableEntity("admins can't change their own role or disable themselves")
 		}
-		u, err := s.UpdateUser(ctx, in.ID, UserUpdate{Role: in.Body.Role, Disabled: in.Body.Disabled, Password: in.Body.Password})
+		u, err := s.UpdateUser(ctx, in.ID, UserUpdate{Role: in.Body.Role, IsDisabled: in.Body.IsDisabled, Password: in.Body.Password})
 		if err != nil {
 			return nil, httpapi.Error(err)
 		}

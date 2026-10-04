@@ -20,25 +20,25 @@ var (
 
 const upsertIssue = `-- name: UpsertIssue :batchexec
 INSERT INTO github_issues (
-    repository_id, number, github_id, title, state, author_login, labels, assignees,
-    comments_count, is_pull_request, body, created_at, updated_at, closed_at, raw, mined_at
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, now())
+    repository_id, number, github_id, title, state, author_login, label_names, assignee_logins,
+    comment_count, is_pull_request, body, github_created_at, github_updated_at, github_closed_at, raw_payload
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 ON CONFLICT (repository_id, number) DO UPDATE SET
-    github_id       = EXCLUDED.github_id,
-    title           = EXCLUDED.title,
-    state           = EXCLUDED.state,
-    author_login    = EXCLUDED.author_login,
-    labels          = EXCLUDED.labels,
-    assignees       = EXCLUDED.assignees,
-    comments_count  = EXCLUDED.comments_count,
-    is_pull_request = EXCLUDED.is_pull_request,
-    body            = EXCLUDED.body,
-    created_at      = EXCLUDED.created_at,
-    updated_at      = EXCLUDED.updated_at,
-    closed_at       = EXCLUDED.closed_at,
-    raw             = EXCLUDED.raw,
-    mined_at        = now()
-WHERE github_issues.updated_at <= EXCLUDED.updated_at
+    github_id         = EXCLUDED.github_id,
+    title             = EXCLUDED.title,
+    state             = EXCLUDED.state,
+    author_login      = EXCLUDED.author_login,
+    label_names       = EXCLUDED.label_names,
+    assignee_logins   = EXCLUDED.assignee_logins,
+    comment_count     = EXCLUDED.comment_count,
+    is_pull_request   = EXCLUDED.is_pull_request,
+    body              = EXCLUDED.body,
+    github_created_at = EXCLUDED.github_created_at,
+    github_updated_at = EXCLUDED.github_updated_at,
+    github_closed_at  = EXCLUDED.github_closed_at,
+    raw_payload       = EXCLUDED.raw_payload,
+    last_mined_at     = now()
+WHERE github_issues.github_updated_at <= EXCLUDED.github_updated_at
 `
 
 type UpsertIssueBatchResults struct {
@@ -48,23 +48,24 @@ type UpsertIssueBatchResults struct {
 }
 
 type UpsertIssueParams struct {
-	RepositoryID  int64           `json:"repository_id"`
-	Number        int32           `json:"number"`
-	GithubID      int64           `json:"github_id"`
-	Title         string          `json:"title"`
-	State         string          `json:"state"`
-	AuthorLogin   *string         `json:"author_login"`
-	Labels        []string        `json:"labels"`
-	Assignees     []string        `json:"assignees"`
-	CommentsCount int32           `json:"comments_count"`
-	IsPullRequest bool            `json:"is_pull_request"`
-	Body          *string         `json:"body"`
-	CreatedAt     time.Time       `json:"created_at"`
-	UpdatedAt     time.Time       `json:"updated_at"`
-	ClosedAt      *time.Time      `json:"closed_at"`
-	Raw           json.RawMessage `json:"raw"`
+	RepositoryID    int64           `json:"repository_id"`
+	Number          int32           `json:"number"`
+	GithubID        int64           `json:"github_id"`
+	Title           string          `json:"title"`
+	State           string          `json:"state"`
+	AuthorLogin     *string         `json:"author_login"`
+	LabelNames      []string        `json:"label_names"`
+	AssigneeLogins  []string        `json:"assignee_logins"`
+	CommentCount    int32           `json:"comment_count"`
+	IsPullRequest   bool            `json:"is_pull_request"`
+	Body            *string         `json:"body"`
+	GithubCreatedAt time.Time       `json:"github_created_at"`
+	GithubUpdatedAt time.Time       `json:"github_updated_at"`
+	GithubClosedAt  *time.Time      `json:"github_closed_at"`
+	RawPayload      json.RawMessage `json:"raw_payload"`
 }
 
+// Never overwrite newer data with an older snapshot (pages can be fetched out of order).
 func (q *Queries) UpsertIssue(ctx context.Context, arg []UpsertIssueParams) *UpsertIssueBatchResults {
 	batch := &pgx.Batch{}
 	for _, a := range arg {
@@ -75,15 +76,15 @@ func (q *Queries) UpsertIssue(ctx context.Context, arg []UpsertIssueParams) *Ups
 			a.Title,
 			a.State,
 			a.AuthorLogin,
-			a.Labels,
-			a.Assignees,
-			a.CommentsCount,
+			a.LabelNames,
+			a.AssigneeLogins,
+			a.CommentCount,
 			a.IsPullRequest,
 			a.Body,
-			a.CreatedAt,
-			a.UpdatedAt,
-			a.ClosedAt,
-			a.Raw,
+			a.GithubCreatedAt,
+			a.GithubUpdatedAt,
+			a.GithubClosedAt,
+			a.RawPayload,
 		}
 		batch.Queue(upsertIssue, vals...)
 	}

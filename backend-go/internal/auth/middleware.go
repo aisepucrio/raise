@@ -37,7 +37,7 @@ func (s *Service) ResolvePrincipal(next http.Handler) http.Handler {
 		// Users are re-read on every request so that disabling an account or
 		// changing a role takes effect immediately for existing sessions.
 		if id := s.sessions.GetInt64(ctx, sessionUserKey); id != 0 {
-			if u, err := s.q.GetUser(ctx, id); err == nil && !u.Disabled {
+			if u, err := s.q.GetUser(ctx, id); err == nil && !u.IsDisabled {
 				p := access.Principal{UserID: u.ID, Username: u.Username, Role: access.Role(u.Role), Via: "session"}
 				ctx = access.WithPrincipal(ctx, p)
 			}

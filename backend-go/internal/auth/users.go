@@ -27,15 +27,15 @@ const minPasswordLength = 12
 var usernameRE = regexp.MustCompile(`^[a-zA-Z0-9._-]{2,64}$`)
 
 type User struct {
-	ID        int64       `json:"id"`
-	Username  string      `json:"username"`
-	Role      access.Role `json:"role" enum:"viewer,researcher,admin"`
-	Disabled  bool        `json:"disabled"`
-	CreatedAt time.Time   `json:"created_at"`
+	ID         int64       `json:"id"`
+	Username   string      `json:"username"`
+	Role       access.Role `json:"role" enum:"viewer,researcher,admin"`
+	IsDisabled bool        `json:"is_disabled"`
+	CreatedAt  time.Time   `json:"created_at"`
 }
 
 func toUser(u sqlc.User) User {
-	return User{ID: u.ID, Username: u.Username, Role: access.Role(u.Role), Disabled: u.Disabled, CreatedAt: u.CreatedAt}
+	return User{ID: u.ID, Username: u.Username, Role: access.Role(u.Role), IsDisabled: u.IsDisabled, CreatedAt: u.CreatedAt}
 }
 
 type Service struct {
@@ -110,20 +110,20 @@ func (s *Service) Authenticate(ctx context.Context, username, password string) (
 	if err != nil {
 		return User{}, err
 	}
-	if !ok || u.Disabled {
+	if !ok || u.IsDisabled {
 		return User{}, apperr.ErrUnauthorized
 	}
 	return toUser(u), nil
 }
 
 type UserUpdate struct {
-	Role     *access.Role
-	Disabled *bool
-	Password *string
+	Role       *access.Role
+	IsDisabled *bool
+	Password   *string
 }
 
 func (s *Service) UpdateUser(ctx context.Context, id int64, upd UserUpdate) (User, error) {
-	params := sqlc.UpdateUserParams{ID: id, Disabled: upd.Disabled}
+	params := sqlc.UpdateUserParams{ID: id, IsDisabled: upd.IsDisabled}
 	if upd.Role != nil {
 		r := string(*upd.Role)
 		params.Role = &r

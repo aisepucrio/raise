@@ -24,7 +24,7 @@ import (
 type Collection struct {
 	ID         int64           `json:"id"`
 	Platform   platform.ID     `json:"platform"`
-	Params     json.RawMessage `json:"params"`
+	Parameters json.RawMessage `json:"parameters"`
 	Status     string          `json:"status" enum:"running,completed,partial,canceled"`
 	CreatedBy  *int64          `json:"created_by,omitempty"`
 	CreatedAt  time.Time       `json:"created_at"`
@@ -33,9 +33,9 @@ type Collection struct {
 }
 
 type Progress struct {
-	Expected int64 `json:"expected" doc:"Jobs enqueued so far (grows as jobs fan out)"`
-	Done     int64 `json:"done"`
-	Failed   int64 `json:"failed"`
+	JobsExpected int64 `json:"jobs_expected" doc:"Jobs enqueued so far (grows as jobs fan out)"`
+	JobsDone     int64 `json:"jobs_done"`
+	JobsFailed   int64 `json:"jobs_failed"`
 }
 
 type Service struct {
@@ -51,24 +51,24 @@ func NewService(pool *pgxpool.Pool, client *jobkit.Client, registry *platform.Re
 
 // Start creates the collection and enqueues its root jobs in one transaction,
 // so a collection never exists without its jobs (or vice versa).
-func (s *Service) Start(ctx context.Context, createdBy int64, pid platform.ID, params json.RawMessage) (Collection, error) {
+func (s *Service) Start(ctx context.Context, createdBy int64, pid platform.ID, parameters json.RawMessage) (Collection, error) {
 	src, ok := s.registry.Source(pid)
 	if !ok {
 		return Collection{}, fmt.Errorf("%w: platform %q can't start collections", apperr.ErrInvalid, pid)
 	}
-	if len(params) == 0 {
-		params = json.RawMessage("{}")
+	if len(parameters) == 0 {
+		parameters = json.RawMessage("{}")
 	}
 	var id int64
 	err := pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
 		c, err := s.q.WithTx(tx).CreateCollection(ctx, sqlc.CreateCollectionParams{
-			Platform: string(pid), Params: params, CreatedBy: &createdBy,
+			Platform: string(pid), Parameters: parameters, CreatedBy: &createdBy,
 		})
 		if err != nil {
 			return err
 		}
 		id = c.ID
-		return src.StartCollection(ctx, tx, jobkit.NewEnqueuer(s.client, c.ID), params)
+		return src.StartCollection(ctx, tx, jobkit.NewEnqueuer(s.client, c.ID), parameters)
 	})
 	if err != nil {
 		return Collection{}, err
@@ -85,9 +85,9 @@ func (s *Service) Get(ctx context.Context, id int64) (Collection, error) {
 		return Collection{}, err
 	}
 	return Collection{
-		ID: r.ID, Platform: platform.ID(r.Platform), Params: r.Params, Status: r.Status,
+		ID: r.ID, Platform: platform.ID(r.Platform), Parameters: r.Parameters, Status: r.Status,
 		CreatedBy: r.CreatedBy, CreatedAt: r.CreatedAt, FinishedAt: r.FinishedAt,
-		Progress: Progress{Expected: r.Expected, Done: r.Done, Failed: r.Failed},
+		Progress: Progress{JobsExpected: r.JobsExpected, JobsDone: r.JobsDone, JobsFailed: r.JobsFailed},
 	}, nil
 }
 
@@ -99,9 +99,9 @@ func (s *Service) List(ctx context.Context, limit, offset int32) ([]Collection, 
 	out := make([]Collection, len(rows))
 	for i, r := range rows {
 		out[i] = Collection{
-			ID: r.ID, Platform: platform.ID(r.Platform), Params: r.Params, Status: r.Status,
+			ID: r.ID, Platform: platform.ID(r.Platform), Parameters: r.Parameters, Status: r.Status,
 			CreatedBy: r.CreatedBy, CreatedAt: r.CreatedAt, FinishedAt: r.FinishedAt,
-			Progress: Progress{Expected: r.Expected, Done: r.Done, Failed: r.Failed},
+			Progress: Progress{JobsExpected: r.JobsExpected, JobsDone: r.JobsDone, JobsFailed: r.JobsFailed},
 		}
 	}
 	return out, nil

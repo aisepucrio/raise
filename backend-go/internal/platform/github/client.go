@@ -84,7 +84,7 @@ func (c *Client) get(ctx context.Context, lease platform.Lease, scope, path stri
 			secs, _ := strconv.Atoi(ra)
 			return Page{}, &jobkit.RateLimitedError{Platform: string(ID), ResetAt: time.Now().Add(time.Duration(secs) * time.Second)}
 		}
-		if hasQuota && quota.Remaining == 0 {
+		if hasQuota && quota.RequestsRemaining == 0 {
 			return Page{}, fmt.Errorf("credential %d exhausted: %w", lease.Credential().ID, errRetryCredential)
 		}
 		return Page{}, fmt.Errorf("%w: GitHub returned %s for %s", jobkit.ErrPermanent, resp.Status, path)
@@ -129,7 +129,7 @@ func parseQuota(h http.Header, fallbackScope string) (platform.Quota, bool) {
 	if scope == "" {
 		scope = fallbackScope
 	}
-	return platform.Quota{Scope: scope, Limit: limit, Remaining: remaining, ResetAt: time.Unix(reset, 0)}, true
+	return platform.Quota{Scope: scope, RequestLimit: limit, RequestsRemaining: remaining, ResetsAt: time.Unix(reset, 0)}, true
 }
 
 var linkRE = regexp.MustCompile(`<([^>]+)>;\s*rel="(\w+)"`)

@@ -76,7 +76,7 @@ func (e Enqueuer) Enqueue(ctx context.Context, tx pgx.Tx, params ...river.Insert
 		err := sqlc.New(tx).AddProgress(ctx, sqlc.AddProgressParams{
 			CollectionID: e.collectionID,
 			Shard:        int16(rand.IntN(progressShards)),
-			Expected:     int64(inserted),
+			JobsExpected: int64(inserted),
 		})
 		if err != nil {
 			return 0, fmt.Errorf("record expected jobs: %w", err)

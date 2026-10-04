@@ -31,7 +31,7 @@ func logArgs() []string {
 
 type LogEntry struct {
 	SHA            string
-	Parents        []string
+	ParentSHAs     []string
 	AuthorName     string
 	AuthorEmail    string
 	AuthoredAt     time.Time
@@ -43,12 +43,24 @@ type LogEntry struct {
 }
 
 type FileChange struct {
-	Path       string
-	OldPath    string // set for renames and copies
-	Status     string // A, M, D, R, C, T, U
-	Similarity *int32
-	Additions  *int32 // nil for binary files
-	Deletions  *int32
+	Path              string
+	PreviousPath      string // set for renamed and copied files
+	ChangeType        string // see changeTypes
+	SimilarityPercent *int32
+	LinesAdded        *int32 // nil for binary files
+	LinesDeleted      *int32
+}
+
+// changeTypes maps git's --raw status letters to the values stored in
+// commit_files.change_type.
+var changeTypes = map[byte]string{
+	'A': "added",
+	'M': "modified",
+	'D': "deleted",
+	'R': "renamed",
+	'C': "copied",
+	'T': "type_changed",
+	'U': "unmerged",
 }
 
 // ParseLog streams commits from `git log` output produced with logArgs.
@@ -96,7 +108,7 @@ func parseRecord(rec []byte) (LogEntry, error) {
 	}
 	e := LogEntry{
 		SHA:            string(tok[0]),
-		Parents:        strings.Fields(string(tok[1])),
+		ParentSHAs:     strings.Fields(string(tok[1])),
 		AuthorName:     string(tok[2]),
 		AuthorEmail:    string(tok[3]),
 		CommitterName:  string(tok[5]),
@@ -129,14 +141,18 @@ func parseRecord(rec []byte) (LogEntry, error) {
 			// ":<mode> <mode> <sha> <sha> <status>" NUL <path> [NUL <new path>]
 			fields := strings.Fields(string(t))
 			status := fields[len(fields)-1]
-			fc := FileChange{Status: status[:1], Path: next(i + 1)}
+			changeType, ok := changeTypes[status[0]]
+			if !ok {
+				return e, fmt.Errorf("commit %s: unknown change status %q", e.SHA, status)
+			}
+			fc := FileChange{ChangeType: changeType, Path: next(i + 1)}
 			i++
 			if n, err := strconv.ParseInt(status[1:], 10, 32); err == nil {
 				sim := int32(n)
-				fc.Similarity = &sim
+				fc.SimilarityPercent = &sim
 			}
-			if fc.Status == "R" || fc.Status == "C" {
-				fc.OldPath, fc.Path = fc.Path, next(i+1)
+			if status[0] == 'R' || status[0] == 'C' {
+				fc.PreviousPath, fc.Path = fc.Path, next(i+1)
 				i++
 			}
 			byPath[fc.Path] = len(e.Files)
@@ -153,8 +169,8 @@ func parseRecord(rec []byte) (LogEntry, error) {
 				i += 2
 			}
 			if idx, ok := byPath[path]; ok {
-				e.Files[idx].Additions = parseCount(parts[0])
-				e.Files[idx].Deletions = parseCount(parts[1])
+				e.Files[idx].LinesAdded = parseCount(parts[0])
+				e.Files[idx].LinesDeleted = parseCount(parts[1])
 			}
 		default:
 			return e, fmt.Errorf("commit %s: unexpected token %q", e.SHA, t)
@@ -173,14 +189,14 @@ func parseCount(s string) *int32 {
 }
 
 // Totals sums line changes over all non-binary files.
-func (e LogEntry) Totals() (additions, deletions int32) {
+func (e LogEntry) Totals() (linesAdded, linesDeleted int32) {
 	for _, f := range e.Files {
-		if f.Additions != nil {
-			additions += *f.Additions
+		if f.LinesAdded != nil {
+			linesAdded += *f.LinesAdded
 		}
-		if f.Deletions != nil {
-			deletions += *f.Deletions
+		if f.LinesDeleted != nil {
+			linesDeleted += *f.LinesDeleted
 		}
 	}
-	return additions, deletions
+	return linesAdded, linesDeleted
 }

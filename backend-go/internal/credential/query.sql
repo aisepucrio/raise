@@ -1,7 +1,7 @@
 -- name: InsertCredential :one
 INSERT INTO credentials (
     platform, kind, label, public_fields, secret_hints,
-    secret_ciphertext, secret_nonce, key_version, status,
+    secret_ciphertext, secret_nonce, encryption_key_version, status,
     last_tested_at, last_test_result, created_by
 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now(), $10, $11)
 RETURNING *;
@@ -34,36 +34,36 @@ WHERE id = $1 AND status = 'active';
 -- Credentials without known quota (never used) or whose window has reset are
 -- preferred; random() spreads load between equally good candidates.
 SELECT c.* FROM credentials c
-LEFT JOIN credential_quota q ON q.credential_id = c.id AND q.scope = sqlc.arg(scope)
+LEFT JOIN credential_quotas q ON q.credential_id = c.id AND q.scope = sqlc.arg(scope)
 WHERE c.platform = sqlc.arg(platform)
   AND c.status = 'active'
   AND c.deleted_at IS NULL
-  AND (q.credential_id IS NULL OR q.remaining > 0 OR q.reset_at <= now())
-ORDER BY CASE WHEN q.credential_id IS NULL OR q.reset_at <= now() THEN 2147483647 ELSE q.remaining END DESC,
+  AND (q.credential_id IS NULL OR q.requests_remaining > 0 OR q.resets_at <= now())
+ORDER BY CASE WHEN q.credential_id IS NULL OR q.resets_at <= now() THEN 2147483647 ELSE q.requests_remaining END DESC,
          random()
 LIMIT 1;
 
 -- name: ConsumeQuota :exec
 -- Optimistic local decrement; the next API response overwrites it with the real value.
-UPDATE credential_quota SET remaining = remaining - 1
-WHERE credential_id = $1 AND scope = $2 AND remaining > 0 AND reset_at > now();
+UPDATE credential_quotas SET requests_remaining = requests_remaining - 1
+WHERE credential_id = $1 AND scope = $2 AND requests_remaining > 0 AND resets_at > now();
 
 -- name: UpsertQuota :exec
-INSERT INTO credential_quota (credential_id, scope, quota_limit, remaining, reset_at, updated_at)
+INSERT INTO credential_quotas (credential_id, scope, request_limit, requests_remaining, resets_at, observed_at)
 VALUES ($1, $2, $3, $4, $5, now())
 ON CONFLICT (credential_id, scope) DO UPDATE SET
-    quota_limit = EXCLUDED.quota_limit,
-    remaining   = EXCLUDED.remaining,
-    reset_at    = EXCLUDED.reset_at,
-    updated_at  = now();
+    request_limit      = EXCLUDED.request_limit,
+    requests_remaining = EXCLUDED.requests_remaining,
+    resets_at          = EXCLUDED.resets_at,
+    observed_at        = now();
 
 -- name: NextQuotaReset :one
-SELECT q.reset_at FROM credential_quota q
+SELECT q.resets_at FROM credential_quotas q
 JOIN credentials c ON c.id = q.credential_id
 WHERE c.platform = $1 AND q.scope = $2
   AND c.status = 'active' AND c.deleted_at IS NULL
-  AND q.reset_at > now()
-ORDER BY q.reset_at
+  AND q.resets_at > now()
+ORDER BY q.resets_at
 LIMIT 1;
 
 -- name: CountActiveCredentials :one

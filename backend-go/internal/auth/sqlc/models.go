@@ -9,15 +9,15 @@ import (
 )
 
 type ApiKey struct {
-	ID         int64      `json:"id"`
-	UserID     int64      `json:"user_id"`
-	Label      string     `json:"label"`
-	Prefix     string     `json:"prefix"`
-	TokenHash  []byte     `json:"token_hash"`
-	CreatedAt  time.Time  `json:"created_at"`
-	LastUsedAt *time.Time `json:"last_used_at"`
-	ExpiresAt  *time.Time `json:"expires_at"`
-	RevokedAt  *time.Time `json:"revoked_at"`
+	ID          int64      `json:"id"`
+	UserID      int64      `json:"user_id"`
+	Label       string     `json:"label"`
+	TokenPrefix string     `json:"token_prefix"`
+	TokenHash   []byte     `json:"token_hash"`
+	CreatedAt   time.Time  `json:"created_at"`
+	LastUsedAt  *time.Time `json:"last_used_at"`
+	ExpiresAt   *time.Time `json:"expires_at"`
+	RevokedAt   *time.Time `json:"revoked_at"`
 }
 
 type User struct {
@@ -25,7 +25,7 @@ type User struct {
 	Username     string    `json:"username"`
 	PasswordHash string    `json:"password_hash"`
 	Role         string    `json:"role"`
-	Disabled     bool      `json:"disabled"`
+	IsDisabled   bool      `json:"is_disabled"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
 }

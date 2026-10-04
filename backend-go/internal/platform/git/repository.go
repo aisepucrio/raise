@@ -15,13 +15,13 @@ import (
 // locally from a mirror; forges attached through Remotes enrich it with
 // platform data (issues, pull requests, …).
 type Repository struct {
-	ID             int64      `json:"id"`
-	URL            string     `json:"url"`
-	Host           string     `json:"host"`
-	Path           string     `json:"path"`
-	MirrorSyncedAt *time.Time `json:"mirror_synced_at,omitempty"`
-	CreatedAt      time.Time  `json:"created_at"`
-	Remotes        []RepoRef  `json:"remotes"`
+	ID                 int64      `json:"id"`
+	URL                string     `json:"url"`
+	Host               string     `json:"host"`
+	Path               string     `json:"path"`
+	MirrorLastSyncedAt *time.Time `json:"mirror_last_synced_at,omitempty"`
+	CreatedAt          time.Time  `json:"created_at"`
+	Remotes            []RepoRef  `json:"remotes"`
 }
 
 // RepoRef identifies a repository on a forge.

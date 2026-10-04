@@ -70,7 +70,7 @@ func TestClientRotatesOnRejectedAndExhaustedTokens(t *testing.T) {
 	if len(leaser.leases) != 3 || !leaser.leases[0].invalidated || leaser.leases[1].invalidated {
 		t.Fatalf("unexpected lease usage: %+v", leaser.leases)
 	}
-	if q := leaser.leases[2].reported[0]; q.Remaining != 4999 || q.Scope != "core" {
+	if q := leaser.leases[2].reported[0]; q.RequestsRemaining != 4999 || q.Scope != "core" {
 		t.Fatalf("reported quota = %+v", q)
 	}
 }

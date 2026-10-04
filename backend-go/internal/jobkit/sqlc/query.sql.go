@@ -10,29 +10,29 @@ import (
 )
 
 const addProgress = `-- name: AddProgress :exec
-INSERT INTO collection_progress (collection_id, shard, expected, done, failed)
+INSERT INTO collection_progress (collection_id, shard, jobs_expected, jobs_done, jobs_failed)
 VALUES ($1, $2, $3, $4, $5)
 ON CONFLICT (collection_id, shard) DO UPDATE SET
-    expected = collection_progress.expected + EXCLUDED.expected,
-    done     = collection_progress.done + EXCLUDED.done,
-    failed   = collection_progress.failed + EXCLUDED.failed
+    jobs_expected = collection_progress.jobs_expected + EXCLUDED.jobs_expected,
+    jobs_done     = collection_progress.jobs_done + EXCLUDED.jobs_done,
+    jobs_failed   = collection_progress.jobs_failed + EXCLUDED.jobs_failed
 `
 
 type AddProgressParams struct {
 	CollectionID int64 `json:"collection_id"`
 	Shard        int16 `json:"shard"`
-	Expected     int64 `json:"expected"`
-	Done         int64 `json:"done"`
-	Failed       int64 `json:"failed"`
+	JobsExpected int64 `json:"jobs_expected"`
+	JobsDone     int64 `json:"jobs_done"`
+	JobsFailed   int64 `json:"jobs_failed"`
 }
 
 func (q *Queries) AddProgress(ctx context.Context, arg AddProgressParams) error {
 	_, err := q.db.Exec(ctx, addProgress,
 		arg.CollectionID,
 		arg.Shard,
-		arg.Expected,
-		arg.Done,
-		arg.Failed,
+		arg.JobsExpected,
+		arg.JobsDone,
+		arg.JobsFailed,
 	)
 	return err
 }

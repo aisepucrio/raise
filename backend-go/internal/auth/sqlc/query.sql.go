@@ -11,24 +11,24 @@ import (
 )
 
 const createAPIKey = `-- name: CreateAPIKey :one
-INSERT INTO api_keys (user_id, label, prefix, token_hash, expires_at)
+INSERT INTO api_keys (user_id, label, token_prefix, token_hash, expires_at)
 VALUES ($1, $2, $3, $4, $5)
-RETURNING id, user_id, label, prefix, token_hash, created_at, last_used_at, expires_at, revoked_at
+RETURNING id, user_id, label, token_prefix, token_hash, created_at, last_used_at, expires_at, revoked_at
 `
 
 type CreateAPIKeyParams struct {
-	UserID    int64      `json:"user_id"`
-	Label     string     `json:"label"`
-	Prefix    string     `json:"prefix"`
-	TokenHash []byte     `json:"token_hash"`
-	ExpiresAt *time.Time `json:"expires_at"`
+	UserID      int64      `json:"user_id"`
+	Label       string     `json:"label"`
+	TokenPrefix string     `json:"token_prefix"`
+	TokenHash   []byte     `json:"token_hash"`
+	ExpiresAt   *time.Time `json:"expires_at"`
 }
 
 func (q *Queries) CreateAPIKey(ctx context.Context, arg CreateAPIKeyParams) (ApiKey, error) {
 	row := q.db.QueryRow(ctx, createAPIKey,
 		arg.UserID,
 		arg.Label,
-		arg.Prefix,
+		arg.TokenPrefix,
 		arg.TokenHash,
 		arg.ExpiresAt,
 	)
@@ -37,7 +37,7 @@ func (q *Queries) CreateAPIKey(ctx context.Context, arg CreateAPIKeyParams) (Api
 		&i.ID,
 		&i.UserID,
 		&i.Label,
-		&i.Prefix,
+		&i.TokenPrefix,
 		&i.TokenHash,
 		&i.CreatedAt,
 		&i.LastUsedAt,
@@ -50,7 +50,7 @@ func (q *Queries) CreateAPIKey(ctx context.Context, arg CreateAPIKeyParams) (Api
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (username, password_hash, role)
 VALUES ($1, $2, $3)
-RETURNING id, username, password_hash, role, disabled, created_at, updated_at
+RETURNING id, username, password_hash, role, is_disabled, created_at, updated_at
 `
 
 type CreateUserParams struct {
@@ -67,7 +67,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Username,
 		&i.PasswordHash,
 		&i.Role,
-		&i.Disabled,
+		&i.IsDisabled,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -75,7 +75,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, username, password_hash, role, disabled, created_at, updated_at FROM users WHERE id = $1
+SELECT id, username, password_hash, role, is_disabled, created_at, updated_at FROM users WHERE id = $1
 `
 
 func (q *Queries) GetUser(ctx context.Context, id int64) (User, error) {
@@ -86,7 +86,7 @@ func (q *Queries) GetUser(ctx context.Context, id int64) (User, error) {
 		&i.Username,
 		&i.PasswordHash,
 		&i.Role,
-		&i.Disabled,
+		&i.IsDisabled,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -94,7 +94,7 @@ func (q *Queries) GetUser(ctx context.Context, id int64) (User, error) {
 }
 
 const getUserByUsername = `-- name: GetUserByUsername :one
-SELECT id, username, password_hash, role, disabled, created_at, updated_at FROM users WHERE lower(username) = lower($1)
+SELECT id, username, password_hash, role, is_disabled, created_at, updated_at FROM users WHERE lower(username) = lower($1)
 `
 
 func (q *Queries) GetUserByUsername(ctx context.Context, lower string) (User, error) {
@@ -105,7 +105,7 @@ func (q *Queries) GetUserByUsername(ctx context.Context, lower string) (User, er
 		&i.Username,
 		&i.PasswordHash,
 		&i.Role,
-		&i.Disabled,
+		&i.IsDisabled,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -113,7 +113,7 @@ func (q *Queries) GetUserByUsername(ctx context.Context, lower string) (User, er
 }
 
 const listAPIKeys = `-- name: ListAPIKeys :many
-SELECT id, user_id, label, prefix, token_hash, created_at, last_used_at, expires_at, revoked_at FROM api_keys WHERE user_id = $1 AND revoked_at IS NULL ORDER BY created_at DESC
+SELECT id, user_id, label, token_prefix, token_hash, created_at, last_used_at, expires_at, revoked_at FROM api_keys WHERE user_id = $1 AND revoked_at IS NULL ORDER BY created_at DESC
 `
 
 func (q *Queries) ListAPIKeys(ctx context.Context, userID int64) ([]ApiKey, error) {
@@ -129,7 +129,7 @@ func (q *Queries) ListAPIKeys(ctx context.Context, userID int64) ([]ApiKey, erro
 			&i.ID,
 			&i.UserID,
 			&i.Label,
-			&i.Prefix,
+			&i.TokenPrefix,
 			&i.TokenHash,
 			&i.CreatedAt,
 			&i.LastUsedAt,
@@ -147,7 +147,7 @@ func (q *Queries) ListAPIKeys(ctx context.Context, userID int64) ([]ApiKey, erro
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, username, password_hash, role, disabled, created_at, updated_at FROM users ORDER BY username
+SELECT id, username, password_hash, role, is_disabled, created_at, updated_at FROM users ORDER BY username
 `
 
 func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
@@ -164,7 +164,7 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 			&i.Username,
 			&i.PasswordHash,
 			&i.Role,
-			&i.Disabled,
+			&i.IsDisabled,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -199,16 +199,16 @@ func (q *Queries) RevokeAPIKey(ctx context.Context, arg RevokeAPIKeyParams) (int
 const updateUser = `-- name: UpdateUser :one
 UPDATE users SET
     role          = coalesce($1, role),
-    disabled      = coalesce($2, disabled),
+    is_disabled   = coalesce($2, is_disabled),
     password_hash = coalesce($3, password_hash),
     updated_at    = now()
 WHERE id = $4
-RETURNING id, username, password_hash, role, disabled, created_at, updated_at
+RETURNING id, username, password_hash, role, is_disabled, created_at, updated_at
 `
 
 type UpdateUserParams struct {
 	Role         *string `json:"role"`
-	Disabled     *bool   `json:"disabled"`
+	IsDisabled   *bool   `json:"is_disabled"`
 	PasswordHash *string `json:"password_hash"`
 	ID           int64   `json:"id"`
 }
@@ -216,7 +216,7 @@ type UpdateUserParams struct {
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
 	row := q.db.QueryRow(ctx, updateUser,
 		arg.Role,
-		arg.Disabled,
+		arg.IsDisabled,
 		arg.PasswordHash,
 		arg.ID,
 	)
@@ -226,7 +226,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.Username,
 		&i.PasswordHash,
 		&i.Role,
-		&i.Disabled,
+		&i.IsDisabled,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -240,7 +240,7 @@ WHERE k.token_hash = $1
   AND k.revoked_at IS NULL
   AND (k.expires_at IS NULL OR k.expires_at > now())
   AND u.id = k.user_id
-  AND NOT u.disabled
+  AND NOT u.is_disabled
 RETURNING u.id, u.username, u.role
 `
 

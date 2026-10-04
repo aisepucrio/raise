@@ -90,10 +90,10 @@ func (c Credential) Field(name string) string {
 }
 
 type Quota struct {
-	Scope     string    `json:"scope"`
-	Limit     int       `json:"limit"`
-	Remaining int       `json:"remaining"`
-	ResetAt   time.Time `json:"reset_at"`
+	Scope             string    `json:"scope"`
+	RequestLimit      int       `json:"request_limit"`
+	RequestsRemaining int       `json:"requests_remaining"`
+	ResetsAt          time.Time `json:"resets_at"`
 }
 
 type TestResult struct {

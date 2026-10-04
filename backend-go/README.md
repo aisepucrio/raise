@@ -7,6 +7,8 @@ Overflow). Written in Go, using [River](https://riverqueue.com) for jobs and
 datastore.
 
 For how the code is organised and why, see [architecture.md](architecture.md).
+For the database schema (every table and column, naming conventions, and the
+planned tables for platforms not built yet), see [database.md](database.md).
 
 - [Components](#components)
 - [Requirements](#requirements)
@@ -97,12 +99,16 @@ git ignores.
 
 ### Database changes
 
-1. Add a migration to `internal/db/migrations/`, numbered after the latest
+1. Follow the naming conventions in [database.md](database.md#naming-conventions).
+   If the table is listed there as planned, implement that design.
+2. Add a migration to `internal/db/migrations/`, numbered after the latest
    (e.g. `00006_github_pull_requests.sql`), with `-- +goose Up` and
    `-- +goose Down` sections.
-2. Put queries in the owning package's `query.sql`. A new package also needs an
+3. Put queries in the owning package's `query.sql`. A new package also needs an
    entry in `sqlc.yaml`.
-3. Run `make generate`, then `make migrate`.
+4. Run `make generate`, then `make migrate`.
+5. Update database.md: mark the table ✅ implemented (it may be 📝 planned), or edit
+   its columns.
 
 Migrations are embedded in the binaries, so a deployed `raisectl` always carries
 the migrations that match its code.
@@ -308,7 +314,7 @@ requests across tokens based on remaining quota.
 ```sh
 curl -b cookies -H 'Content-Type: application/json' -d '{
   "platform": "git",
-  "params": {
+  "parameters": {
     "url": "https://github.com/spf13/cobra",
     "commits": true,
     "enrich": {"github": {"resources": ["issues"]}}
@@ -326,10 +332,10 @@ To track progress:
 
 ```sh
 curl -b cookies http://localhost:8000/api/collections/1
-# {"status": "running", "progress": {"expected": 5, "done": 3, "failed": 0}, …}
+# {"status": "running", "progress": {"jobs_expected": 5, "jobs_done": 3, "jobs_failed": 0}, …}
 ```
 
-`expected` grows as jobs fan out. When everything settles, the status becomes
+`jobs_expected` grows as jobs fan out. When everything settles, the status becomes
 `completed`, or `partial` if some jobs failed. Cancel with
 `POST /api/collections/{id}/cancel`.
 
@@ -341,6 +347,12 @@ curl -b cookies http://localhost:8000/api/collections/1
 | `GET /api/repositories/{id}/commits?limit=&offset=` | Commits, newest first |
 | `GET /api/repositories/{id}/commits/{sha}` | One commit with its changed files |
 | `GET /api/github/repositories/{id}/issues?state=&kind=` | GitHub issues and pull requests |
+
+Response fields use the same names as the database columns described in
+[database.md](database.md). For example, `github_created_at` is when an issue
+was opened on GitHub, while `first_mined_at` is when Raise first fetched it.
+For analyses that the API doesn't cover, query PostgreSQL directly with the
+same names.
 
 ### What works today
 
