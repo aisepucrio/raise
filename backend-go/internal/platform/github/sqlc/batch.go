@@ -135,6 +135,73 @@ func (b *TrimPullRequestCommitsBatchResults) Close() error {
 	return b.br.Close()
 }
 
+const upsertCommit = `-- name: UpsertCommit :batchexec
+INSERT INTO github_commits (sha, github_node_id, author_login, committer_login, is_signature_verified, raw_payload)
+VALUES ($1, $2, $3, $4, $5, $6)
+ON CONFLICT (sha) DO UPDATE SET
+    github_node_id        = EXCLUDED.github_node_id,
+    author_login          = EXCLUDED.author_login,
+    committer_login       = EXCLUDED.committer_login,
+    is_signature_verified = EXCLUDED.is_signature_verified,
+    raw_payload           = EXCLUDED.raw_payload,
+    last_mined_at         = now()
+`
+
+type UpsertCommitBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type UpsertCommitParams struct {
+	Sha                 string          `json:"sha"`
+	GithubNodeID        string          `json:"github_node_id"`
+	AuthorLogin         *string         `json:"author_login"`
+	CommitterLogin      *string         `json:"committer_login"`
+	IsSignatureVerified bool            `json:"is_signature_verified"`
+	RawPayload          json.RawMessage `json:"raw_payload"`
+}
+
+// GitHub's view of a commit has no update timestamp (an email can be linked
+// to an account at any time), so the latest fetch always wins.
+func (q *Queries) UpsertCommit(ctx context.Context, arg []UpsertCommitParams) *UpsertCommitBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.Sha,
+			a.GithubNodeID,
+			a.AuthorLogin,
+			a.CommitterLogin,
+			a.IsSignatureVerified,
+			a.RawPayload,
+		}
+		batch.Queue(upsertCommit, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &UpsertCommitBatchResults{br, len(arg), false}
+}
+
+func (b *UpsertCommitBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *UpsertCommitBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
 const upsertIssue = `-- name: UpsertIssue :batchexec
 INSERT INTO github_issues (
     repository_id, number, github_id, github_node_id, title, state, state_reason, author_login,

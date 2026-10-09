@@ -11,6 +11,97 @@ import (
 	"time"
 )
 
+const countContributors = `-- name: CountContributors :one
+SELECT count(*)::integer AS commit_count,
+       count(DISTINCT coalesce(g.author_login, lower(c.author_email)))::integer AS contributor_count
+FROM repository_commits rc
+JOIN commits c ON c.sha = rc.sha
+LEFT JOIN github_commits g ON g.sha = rc.sha
+WHERE rc.repository_id = $1
+`
+
+type CountContributorsRow struct {
+	CommitCount      int32 `json:"commit_count"`
+	ContributorCount int32 `json:"contributor_count"`
+}
+
+// GraphQL has no contributor count, so it is computed from the mined commits:
+// distinct GitHub logins, plus the emails of authors without one (GitHub
+// counts those as anonymous contributors).
+func (q *Queries) CountContributors(ctx context.Context, repositoryID int64) (CountContributorsRow, error) {
+	row := q.db.QueryRow(ctx, countContributors, repositoryID)
+	var i CountContributorsRow
+	err := row.Scan(&i.CommitCount, &i.ContributorCount)
+	return i, err
+}
+
+const deleteStaleCommitPullRequests = `-- name: DeleteStaleCommitPullRequests :exec
+DELETE FROM github_commit_pull_requests g
+WHERE g.repository_id = $1
+  AND g.sha = ANY($2::text[])
+  AND NOT EXISTS (
+      SELECT 1
+      FROM (SELECT unnest($3::text[]) AS sha, unnest($4::integer[]) AS number) n
+      WHERE n.sha = g.sha AND n.number = g.pull_request_number
+  )
+`
+
+type DeleteStaleCommitPullRequestsParams struct {
+	RepositoryID       int64    `json:"repository_id"`
+	FetchedShas        []string `json:"fetched_shas"`
+	Shas               []string `json:"shas"`
+	PullRequestNumbers []int32  `json:"pull_request_numbers"`
+}
+
+// Drops links of the fetched commits that GitHub no longer reports.
+func (q *Queries) DeleteStaleCommitPullRequests(ctx context.Context, arg DeleteStaleCommitPullRequestsParams) error {
+	_, err := q.db.Exec(ctx, deleteStaleCommitPullRequests,
+		arg.RepositoryID,
+		arg.FetchedShas,
+		arg.Shas,
+		arg.PullRequestNumbers,
+	)
+	return err
+}
+
+const getCommit = `-- name: GetCommit :one
+SELECT g.sha, g.github_node_id, g.author_login, g.committer_login, g.is_signature_verified,
+       g.first_mined_at, g.last_mined_at
+FROM github_commits g
+JOIN repository_commits rc ON rc.sha = g.sha
+WHERE rc.repository_id = $1 AND g.sha = $2
+`
+
+type GetCommitParams struct {
+	RepositoryID int64  `json:"repository_id"`
+	Sha          string `json:"sha"`
+}
+
+type GetCommitRow struct {
+	Sha                 string    `json:"sha"`
+	GithubNodeID        string    `json:"github_node_id"`
+	AuthorLogin         *string   `json:"author_login"`
+	CommitterLogin      *string   `json:"committer_login"`
+	IsSignatureVerified bool      `json:"is_signature_verified"`
+	FirstMinedAt        time.Time `json:"first_mined_at"`
+	LastMinedAt         time.Time `json:"last_mined_at"`
+}
+
+func (q *Queries) GetCommit(ctx context.Context, arg GetCommitParams) (GetCommitRow, error) {
+	row := q.db.QueryRow(ctx, getCommit, arg.RepositoryID, arg.Sha)
+	var i GetCommitRow
+	err := row.Scan(
+		&i.Sha,
+		&i.GithubNodeID,
+		&i.AuthorLogin,
+		&i.CommitterLogin,
+		&i.IsSignatureVerified,
+		&i.FirstMinedAt,
+		&i.LastMinedAt,
+	)
+	return i, err
+}
+
 const getIssue = `-- name: GetIssue :one
 SELECT repository_id, number, github_id, title, state, state_reason, author_login, author_association,
        label_names, assignee_logins, milestone_title, is_locked, comment_count, reaction_counts,
@@ -165,8 +256,8 @@ const getRepository = `-- name: GetRepository :one
 SELECT repository_id, github_id, github_node_id, full_name, description, homepage_url, default_branch,
        primary_language, language_bytes, topic_names, license_spdx_id, visibility, is_fork, is_archived,
        is_template, parent_full_name, star_count, watcher_count, fork_count, open_issue_count,
-       open_pull_request_count, github_created_at, github_updated_at, github_pushed_at,
-       first_mined_at, last_mined_at
+       open_pull_request_count, owner_login, owner_type, label_count, release_count,
+       github_created_at, github_updated_at, github_pushed_at, first_mined_at, last_mined_at
 FROM github_repositories
 WHERE repository_id = $1
 `
@@ -193,6 +284,10 @@ type GetRepositoryRow struct {
 	ForkCount            int32           `json:"fork_count"`
 	OpenIssueCount       int32           `json:"open_issue_count"`
 	OpenPullRequestCount int32           `json:"open_pull_request_count"`
+	OwnerLogin           string          `json:"owner_login"`
+	OwnerType            string          `json:"owner_type"`
+	LabelCount           int32           `json:"label_count"`
+	ReleaseCount         int32           `json:"release_count"`
 	GithubCreatedAt      time.Time       `json:"github_created_at"`
 	GithubUpdatedAt      time.Time       `json:"github_updated_at"`
 	GithubPushedAt       *time.Time      `json:"github_pushed_at"`
@@ -225,6 +320,10 @@ func (q *Queries) GetRepository(ctx context.Context, repositoryID int64) (GetRep
 		&i.ForkCount,
 		&i.OpenIssueCount,
 		&i.OpenPullRequestCount,
+		&i.OwnerLogin,
+		&i.OwnerType,
+		&i.LabelCount,
+		&i.ReleaseCount,
 		&i.GithubCreatedAt,
 		&i.GithubUpdatedAt,
 		&i.GithubPushedAt,
@@ -232,6 +331,55 @@ func (q *Queries) GetRepository(ctx context.Context, repositoryID int64) (GetRep
 		&i.LastMinedAt,
 	)
 	return i, err
+}
+
+const insertCommitPullRequests = `-- name: InsertCommitPullRequests :exec
+INSERT INTO github_commit_pull_requests (repository_id, sha, pull_request_number)
+SELECT $1, unnest($2::text[]), unnest($3::integer[])
+ON CONFLICT DO NOTHING
+`
+
+type InsertCommitPullRequestsParams struct {
+	RepositoryID       int64    `json:"repository_id"`
+	Shas               []string `json:"shas"`
+	PullRequestNumbers []int32  `json:"pull_request_numbers"`
+}
+
+func (q *Queries) InsertCommitPullRequests(ctx context.Context, arg InsertCommitPullRequestsParams) error {
+	_, err := q.db.Exec(ctx, insertCommitPullRequests, arg.RepositoryID, arg.Shas, arg.PullRequestNumbers)
+	return err
+}
+
+const listCommitPullRequestNumbers = `-- name: ListCommitPullRequestNumbers :many
+SELECT pull_request_number
+FROM github_commit_pull_requests
+WHERE repository_id = $1 AND sha = $2
+ORDER BY pull_request_number
+`
+
+type ListCommitPullRequestNumbersParams struct {
+	RepositoryID int64  `json:"repository_id"`
+	Sha          string `json:"sha"`
+}
+
+func (q *Queries) ListCommitPullRequestNumbers(ctx context.Context, arg ListCommitPullRequestNumbersParams) ([]int32, error) {
+	rows, err := q.db.Query(ctx, listCommitPullRequestNumbers, arg.RepositoryID, arg.Sha)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int32
+	for rows.Next() {
+		var pull_request_number int32
+		if err := rows.Scan(&pull_request_number); err != nil {
+			return nil, err
+		}
+		items = append(items, pull_request_number)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listIssueComments = `-- name: ListIssueComments :many
@@ -711,13 +859,44 @@ func (q *Queries) ListPullRequests(ctx context.Context, arg ListPullRequestsPara
 	return items, nil
 }
 
+const listUnenrichedCommits = `-- name: ListUnenrichedCommits :many
+SELECT rc.sha
+FROM repository_commits rc
+WHERE rc.repository_id = $1
+  AND NOT EXISTS (SELECT 1 FROM github_commits g WHERE g.sha = rc.sha)
+ORDER BY rc.sha
+`
+
+// Mined commits of the repository that have no GitHub view yet.
+func (q *Queries) ListUnenrichedCommits(ctx context.Context, repositoryID int64) ([]string, error) {
+	rows, err := q.db.Query(ctx, listUnenrichedCommits, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var sha string
+		if err := rows.Scan(&sha); err != nil {
+			return nil, err
+		}
+		items = append(items, sha)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const upsertRepository = `-- name: UpsertRepository :exec
 INSERT INTO github_repositories (
     repository_id, github_id, github_node_id, full_name, description, homepage_url, default_branch,
     primary_language, language_bytes, topic_names, license_spdx_id, visibility, is_fork, is_archived,
     is_template, parent_full_name, star_count, watcher_count, fork_count, open_issue_count,
-    open_pull_request_count, github_created_at, github_updated_at, github_pushed_at, raw_payload
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
+    open_pull_request_count, owner_login, owner_type, label_count, release_count, github_created_at,
+    github_updated_at, github_pushed_at, raw_payload
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22,
+          $23, $24, $25, $26, $27, $28, $29)
 ON CONFLICT (repository_id) DO UPDATE SET
     github_id               = EXCLUDED.github_id,
     github_node_id          = EXCLUDED.github_node_id,
@@ -739,6 +918,10 @@ ON CONFLICT (repository_id) DO UPDATE SET
     fork_count              = EXCLUDED.fork_count,
     open_issue_count        = EXCLUDED.open_issue_count,
     open_pull_request_count = EXCLUDED.open_pull_request_count,
+    owner_login             = EXCLUDED.owner_login,
+    owner_type              = EXCLUDED.owner_type,
+    label_count             = EXCLUDED.label_count,
+    release_count           = EXCLUDED.release_count,
     github_created_at       = EXCLUDED.github_created_at,
     github_updated_at       = EXCLUDED.github_updated_at,
     github_pushed_at        = EXCLUDED.github_pushed_at,
@@ -769,6 +952,10 @@ type UpsertRepositoryParams struct {
 	ForkCount            int32           `json:"fork_count"`
 	OpenIssueCount       int32           `json:"open_issue_count"`
 	OpenPullRequestCount int32           `json:"open_pull_request_count"`
+	OwnerLogin           string          `json:"owner_login"`
+	OwnerType            string          `json:"owner_type"`
+	LabelCount           int32           `json:"label_count"`
+	ReleaseCount         int32           `json:"release_count"`
 	GithubCreatedAt      time.Time       `json:"github_created_at"`
 	GithubUpdatedAt      time.Time       `json:"github_updated_at"`
 	GithubPushedAt       *time.Time      `json:"github_pushed_at"`
@@ -799,6 +986,10 @@ func (q *Queries) UpsertRepository(ctx context.Context, arg UpsertRepositoryPara
 		arg.ForkCount,
 		arg.OpenIssueCount,
 		arg.OpenPullRequestCount,
+		arg.OwnerLogin,
+		arg.OwnerType,
+		arg.LabelCount,
+		arg.ReleaseCount,
 		arg.GithubCreatedAt,
 		arg.GithubUpdatedAt,
 		arg.GithubPushedAt,

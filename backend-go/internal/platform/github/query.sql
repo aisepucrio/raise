@@ -3,8 +3,10 @@ INSERT INTO github_repositories (
     repository_id, github_id, github_node_id, full_name, description, homepage_url, default_branch,
     primary_language, language_bytes, topic_names, license_spdx_id, visibility, is_fork, is_archived,
     is_template, parent_full_name, star_count, watcher_count, fork_count, open_issue_count,
-    open_pull_request_count, github_created_at, github_updated_at, github_pushed_at, raw_payload
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
+    open_pull_request_count, owner_login, owner_type, label_count, release_count, github_created_at,
+    github_updated_at, github_pushed_at, raw_payload
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22,
+          $23, $24, $25, $26, $27, $28, $29)
 ON CONFLICT (repository_id) DO UPDATE SET
     github_id               = EXCLUDED.github_id,
     github_node_id          = EXCLUDED.github_node_id,
@@ -26,6 +28,10 @@ ON CONFLICT (repository_id) DO UPDATE SET
     fork_count              = EXCLUDED.fork_count,
     open_issue_count        = EXCLUDED.open_issue_count,
     open_pull_request_count = EXCLUDED.open_pull_request_count,
+    owner_login             = EXCLUDED.owner_login,
+    owner_type              = EXCLUDED.owner_type,
+    label_count             = EXCLUDED.label_count,
+    release_count           = EXCLUDED.release_count,
     github_created_at       = EXCLUDED.github_created_at,
     github_updated_at       = EXCLUDED.github_updated_at,
     github_pushed_at        = EXCLUDED.github_pushed_at,
@@ -188,10 +194,21 @@ ON CONFLICT (github_node_id) DO NOTHING;
 SELECT repository_id, github_id, github_node_id, full_name, description, homepage_url, default_branch,
        primary_language, language_bytes, topic_names, license_spdx_id, visibility, is_fork, is_archived,
        is_template, parent_full_name, star_count, watcher_count, fork_count, open_issue_count,
-       open_pull_request_count, github_created_at, github_updated_at, github_pushed_at,
-       first_mined_at, last_mined_at
+       open_pull_request_count, owner_login, owner_type, label_count, release_count,
+       github_created_at, github_updated_at, github_pushed_at, first_mined_at, last_mined_at
 FROM github_repositories
 WHERE repository_id = $1;
+
+-- name: CountContributors :one
+-- GraphQL has no contributor count, so it is computed from the mined commits:
+-- distinct GitHub logins, plus the emails of authors without one (GitHub
+-- counts those as anonymous contributors).
+SELECT count(*)::integer AS commit_count,
+       count(DISTINCT coalesce(g.author_login, lower(c.author_email)))::integer AS contributor_count
+FROM repository_commits rc
+JOIN commits c ON c.sha = rc.sha
+LEFT JOIN github_commits g ON g.sha = rc.sha
+WHERE rc.repository_id = $1;
 
 -- name: ListIssues :many
 SELECT repository_id, number, github_id, title, state, state_reason, author_login, author_association,
@@ -270,3 +287,53 @@ SELECT github_id, pull_request_number, review_github_id, in_reply_to_github_id, 
 FROM github_pull_request_review_comments
 WHERE repository_id = $1 AND pull_request_number = $2
 ORDER BY github_created_at, github_id;
+
+-- name: ListUnenrichedCommits :many
+-- Mined commits of the repository that have no GitHub view yet.
+SELECT rc.sha
+FROM repository_commits rc
+WHERE rc.repository_id = $1
+  AND NOT EXISTS (SELECT 1 FROM github_commits g WHERE g.sha = rc.sha)
+ORDER BY rc.sha;
+
+-- name: UpsertCommit :batchexec
+-- GitHub's view of a commit has no update timestamp (an email can be linked
+-- to an account at any time), so the latest fetch always wins.
+INSERT INTO github_commits (sha, github_node_id, author_login, committer_login, is_signature_verified, raw_payload)
+VALUES ($1, $2, $3, $4, $5, $6)
+ON CONFLICT (sha) DO UPDATE SET
+    github_node_id        = EXCLUDED.github_node_id,
+    author_login          = EXCLUDED.author_login,
+    committer_login       = EXCLUDED.committer_login,
+    is_signature_verified = EXCLUDED.is_signature_verified,
+    raw_payload           = EXCLUDED.raw_payload,
+    last_mined_at         = now();
+
+-- name: DeleteStaleCommitPullRequests :exec
+-- Drops links of the fetched commits that GitHub no longer reports.
+DELETE FROM github_commit_pull_requests g
+WHERE g.repository_id = sqlc.arg(repository_id)
+  AND g.sha = ANY(sqlc.arg(fetched_shas)::text[])
+  AND NOT EXISTS (
+      SELECT 1
+      FROM (SELECT unnest(sqlc.arg(shas)::text[]) AS sha, unnest(sqlc.arg(pull_request_numbers)::integer[]) AS number) n
+      WHERE n.sha = g.sha AND n.number = g.pull_request_number
+  );
+
+-- name: InsertCommitPullRequests :exec
+INSERT INTO github_commit_pull_requests (repository_id, sha, pull_request_number)
+SELECT sqlc.arg(repository_id), unnest(sqlc.arg(shas)::text[]), unnest(sqlc.arg(pull_request_numbers)::integer[])
+ON CONFLICT DO NOTHING;
+
+-- name: GetCommit :one
+SELECT g.sha, g.github_node_id, g.author_login, g.committer_login, g.is_signature_verified,
+       g.first_mined_at, g.last_mined_at
+FROM github_commits g
+JOIN repository_commits rc ON rc.sha = g.sha
+WHERE rc.repository_id = $1 AND g.sha = $2;
+
+-- name: ListCommitPullRequestNumbers :many
+SELECT pull_request_number
+FROM github_commit_pull_requests
+WHERE repository_id = $1 AND sha = $2
+ORDER BY pull_request_number;

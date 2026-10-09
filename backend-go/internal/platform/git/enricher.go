@@ -29,10 +29,11 @@ type Enricher interface {
 	StartEnrichment(ctx context.Context, tx pgx.Tx, enq jobkit.Enqueuer, repo Repository, ref RepoRef, req EnrichRequest) error
 
 	// OnCommitsMined is called in the transaction that stores each mined
-	// batch; the returned jobs are inserted in that same transaction. This is
-	// how commit-level enrichment (commit → login, commit → PR) is chained
-	// after local mining without a workflow engine.
-	OnCommitsMined(repo Repository, ref RepoRef, shas []string) []river.InsertManyParams
+	// batch, for every forge the collection asked to enrich (req is that
+	// forge's request); the returned jobs are inserted in that same
+	// transaction. This is how commit-level enrichment (commit → login,
+	// commit → PR) is chained after local mining without a workflow engine.
+	OnCommitsMined(repo Repository, ref RepoRef, req EnrichRequest, shas []string) []river.InsertManyParams
 }
 
 type CloneAuth struct {

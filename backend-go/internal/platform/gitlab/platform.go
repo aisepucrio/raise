@@ -123,6 +123,6 @@ func (p *Platform) StartEnrichment(context.Context, pgx.Tx, jobkit.Enqueuer, git
 	return fmt.Errorf("%w: gitlab enrichment", apperr.ErrNotImplemented)
 }
 
-func (p *Platform) OnCommitsMined(git.Repository, git.RepoRef, []string) []river.InsertManyParams {
+func (p *Platform) OnCommitsMined(git.Repository, git.RepoRef, git.EnrichRequest, []string) []river.InsertManyParams {
 	return nil
 }

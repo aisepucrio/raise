@@ -126,6 +126,8 @@ erDiagram
     github_pull_requests ||--o{ github_pull_request_commits : contains
     github_pull_requests ||--o{ github_pull_request_reviews : has
     github_pull_requests ||--o{ github_pull_request_review_comments : has
+    commits ||--o| github_commits : "enriched by"
+    repositories ||--o{ github_commit_pull_requests : "enriched by"
     repositories ||--o{ gitlab_issues : "enriched by"
     jira_sites ||--o{ jira_issues : hosts
     stackoverflow_questions ||--o{ stackoverflow_answers : has
@@ -344,8 +346,8 @@ commits were last planned.
 ## GitHub
 
 GitHub data is mined through the GraphQL API. Every GitHub table except
-`github_users` is keyed by `repository_id` (directly or through a GitHub ID),
-and all of them follow the mined-data conventions (`github_*_at`,
+`github_commits` (keyed by SHA, like `commits`) and `github_users` is keyed by
+`repository_id` (directly or through a GitHub ID), and all of them follow the mined-data conventions (`github_*_at`,
 `first_mined_at`, `last_mined_at`, `raw_payload`). People are referenced by
 `*_login`.
 
@@ -364,8 +366,20 @@ and all of them follow the mined-data conventions (`github_*_at`,
 
 ### `github_repositories` ✅
 
-Migration: `00005_github.sql`. Repository metadata, with one row per
-repository. Re-mining overwrites it with the current snapshot.
+Migrations: `00005_github.sql`, `00007_github_repository_metadata.sql`.
+Repository metadata, with one row per repository. Re-mining overwrites it with
+the current snapshot.
+
+Not stored here:
+
+- **Contributor count.** GraphQL doesn't expose it. The API computes
+  `contributor_count` from the mined commits instead (see
+  `GET /api/github/repositories/{id}` in the README).
+- **"Used by" (dependents) count.** No GitHub API exposes it, and it can't be
+  derived from the repository, so it is not mined.
+- **README.** Its content belongs to a commit, and the mirror has it at
+  every commit.
+- **Branches.** The git platform stores them in `repository_refs`.
 
 | Column | Type | Null | Description |
 |---|---|:-:|---|
@@ -386,6 +400,9 @@ repository. Re-mining overwrites it with the current snapshot.
 | `star_count`, `watcher_count`, `fork_count` | `integer` | | |
 | `open_issue_count` | `integer` | | Open issues, **excluding** pull requests (unlike the REST field of the same name) |
 | `open_pull_request_count` | `integer` | | |
+| `owner_login` | `text` | | Owning user or organization |
+| `owner_type` | `text` | | `User` or `Organization` |
+| `label_count`, `release_count` | `integer` | | |
 | `github_created_at`, `github_updated_at` | `timestamptz` | | |
 | `github_pushed_at` | `timestamptz` | ✓ | |
 | `raw_payload` | `jsonb` | | Includes mirror, lock and feature flags (`hasWikiEnabled`, …), `diskUsage`, template repository |
@@ -539,26 +556,38 @@ project-board moves) are not mined. The mined types are listed in
 | `raw_payload` | `jsonb` | | The full timeline item: label, assignee, source issue, previous title, … depending on `event_type` |
 | `first_mined_at` | `timestamptz` | | |
 
-### `github_commits` 📝
+### `github_commits` ✅
 
-GitHub's view of a commit: links git identities to GitHub accounts. Filled
-through `OnCommitsMined` after git mining.
+Migration: `00006_github_commits.sql`. GitHub's view of a mined commit: links
+git identities to GitHub accounts. Like `commits`, rows are keyed by SHA and
+shared between forks. Filled by the `commits` resource, either right after
+each mined batch (`OnCommitsMined`) or for commits mined earlier. GitHub
+reports no update time for this view (an email can be linked to an account at
+any time), so every fetch overwrites the row.
 
-| Column | Type | Description |
-|---|---|---|
-| `sha` | `text` | Primary key, → `commits.sha` |
-| `author_login`, `committer_login` | `text` | `NULL` when the email isn't linked to an account |
-| `is_signature_verified` | `boolean` | |
-| `first_mined_at`, `last_mined_at` | `timestamptz` | |
+| Column | Type | Null | Description |
+|---|---|:-:|---|
+| `sha` | `text` | | Primary key, → `commits.sha` |
+| `github_node_id` | `text` | | |
+| `author_login`, `committer_login` | `text` | ✓ | `NULL` when the email isn't linked to an account |
+| `is_signature_verified` | `boolean` | | `false` for unsigned commits |
+| `raw_payload` | `jsonb` | | The `Commit` node without its pull requests; includes `url` and the signature's `state`, `wasSignedByGitHub` and signer |
+| `first_mined_at`, `last_mined_at` | `timestamptz` | | |
 
-### `github_commit_pull_requests` 📝
+### `github_commit_pull_requests` ✅
 
-Which PRs introduced each commit.
+Migration: `00006_github_commits.sql`. The pull requests that introduced each
+commit into the repository (GraphQL `associatedPullRequests`). For a commit on
+the default branch that is the pull request that merged it; for other commits
+GitHub also lists open pull requests containing them. Pull requests of other
+repositories in the fork network are not stored, and at most 25 are read per
+commit. Re-fetching a commit replaces its set of links. `sha` is not a foreign
+key, as in `github_pull_request_commits`.
 
-| Column | Type | Description |
-|---|---|---|
-| `repository_id`, `sha`, `pull_request_number` | | Primary key |
-| `first_mined_at` | `timestamptz` | |
+| Column | Type | Null | Description |
+|---|---|:-:|---|
+| `repository_id`, `sha`, `pull_request_number` | `bigint`, `text`, `integer` | | Primary key; also indexed on (`repository_id`, `pull_request_number`) |
+| `first_mined_at` | `timestamptz` | | |
 
 ### `github_releases` 📝
 
@@ -957,6 +986,19 @@ SELECT number, title,
 FROM github_issues
 WHERE repository_id = 1 AND NOT is_pull_request AND github_closed_at IS NOT NULL
 ORDER BY time_to_close DESC;
+```
+
+Commits per GitHub account, with how many came through a pull request:
+
+```sql
+SELECT g.author_login, count(*) AS commits,
+       count(*) FILTER (WHERE EXISTS (
+           SELECT 1 FROM github_commit_pull_requests p
+           WHERE p.repository_id = rc.repository_id AND p.sha = rc.sha)) AS via_pull_request
+FROM repository_commits rc
+JOIN github_commits g ON g.sha = rc.sha
+WHERE rc.repository_id = 1 AND g.author_login IS NOT NULL
+GROUP BY g.author_login ORDER BY commits DESC;
 ```
 
 Time from opening a merged pull request to its first approval:

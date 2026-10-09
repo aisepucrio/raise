@@ -118,7 +118,7 @@ func (p *Platform) StartCollection(ctx context.Context, tx pgx.Tx, enq jobkit.En
 	}
 
 	if params.Commits {
-		if _, err := enq.Enqueue(ctx, tx, jobkit.Job(SyncMirrorArgs{RepositoryID: repo.ID})); err != nil {
+		if _, err := enq.Enqueue(ctx, tx, jobkit.Job(SyncMirrorArgs{RepositoryID: repo.ID, Enrich: params.Enrich})); err != nil {
 			return err
 		}
 	}

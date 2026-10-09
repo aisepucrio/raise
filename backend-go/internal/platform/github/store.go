@@ -3,6 +3,7 @@ package github
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -70,11 +71,15 @@ type gqlReactionGroup struct {
 }
 
 type gqlRepository struct {
-	ID               string  `json:"id"`
-	DatabaseID       int64   `json:"databaseId"`
-	NameWithOwner    string  `json:"nameWithOwner"`
-	Description      *string `json:"description"`
-	HomepageURL      *string `json:"homepageUrl"`
+	ID            string  `json:"id"`
+	DatabaseID    int64   `json:"databaseId"`
+	NameWithOwner string  `json:"nameWithOwner"`
+	Description   *string `json:"description"`
+	HomepageURL   *string `json:"homepageUrl"`
+	Owner         struct {
+		Typename string `json:"__typename"`
+		Login    string `json:"login"`
+	} `json:"owner"`
 	DefaultBranchRef *struct {
 		Name string `json:"name"`
 	} `json:"defaultBranchRef"`
@@ -107,6 +112,8 @@ type gqlRepository struct {
 	StargazerCount   int32      `json:"stargazerCount"`
 	ForkCount        int32      `json:"forkCount"`
 	Watchers         conn[any]  `json:"watchers"`
+	Labels           conn[any]  `json:"labels"`
+	Releases         conn[any]  `json:"releases"`
 	OpenIssues       conn[any]  `json:"openIssues"`
 	OpenPullRequests conn[any]  `json:"openPullRequests"`
 	CreatedAt        time.Time  `json:"createdAt"`
@@ -236,6 +243,26 @@ type gqlReviewComment struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
+type gqlCommit struct {
+	ID     string `json:"id"`
+	Oid    string `json:"oid"`
+	Author *struct {
+		User *gqlActor `json:"user"`
+	} `json:"author"`
+	Committer *struct {
+		User *gqlActor `json:"user"`
+	} `json:"committer"`
+	Signature *struct {
+		IsValid bool `json:"isValid"`
+	} `json:"signature"`
+	AssociatedPullRequests conn[struct {
+		Number         int32 `json:"number"`
+		BaseRepository *struct {
+			DatabaseID int64 `json:"databaseId"`
+		} `json:"baseRepository"`
+	}] `json:"associatedPullRequests"`
+}
+
 // nestedConnections are stripped from raw_payload: they have their own tables.
 var nestedConnections = []string{"comments", "timelineItems", "commits", "reviews", "reviewThreads"}
 
@@ -256,6 +283,8 @@ func repositoryRow(repoID int64, r node[gqlRepository]) (sqlc.UpsertRepositoryPa
 		IsFork: v.IsFork, IsArchived: v.IsArchived, IsTemplate: v.IsTemplate,
 		StarCount: v.StargazerCount, WatcherCount: v.Watchers.TotalCount, ForkCount: v.ForkCount,
 		OpenIssueCount: v.OpenIssues.TotalCount, OpenPullRequestCount: v.OpenPullRequests.TotalCount,
+		OwnerLogin: v.Owner.Login, OwnerType: v.Owner.Typename,
+		LabelCount: v.Labels.TotalCount, ReleaseCount: v.Releases.TotalCount,
 		GithubCreatedAt: v.CreatedAt, GithubUpdatedAt: v.UpdatedAt, GithubPushedAt: v.PushedAt,
 		RawPayload: r.Raw,
 	}
@@ -477,20 +506,21 @@ func (b *batch) continueConnection(connection, nodeID string, pi gqlPageInfo, of
 
 // strip removes nested connections from a node's raw JSON.
 func (b *batch) strip(raw json.RawMessage) json.RawMessage {
+	out, err := stripKeys(raw, nestedConnections...)
+	b.fail(err)
+	return out
+}
+
+// stripKeys removes keys from a JSON object.
+func stripKeys(raw json.RawMessage, keys ...string) (json.RawMessage, error) {
 	var m map[string]json.RawMessage
 	if err := json.Unmarshal(raw, &m); err != nil {
-		b.fail(err)
-		return raw
+		return raw, err
 	}
-	for _, k := range nestedConnections {
+	for _, k := range keys {
 		delete(m, k)
 	}
-	out, err := json.Marshal(m)
-	if err != nil {
-		b.fail(err)
-		return raw
-	}
-	return out
+	return json.Marshal(m)
 }
 
 // reactionKeys maps GraphQL reaction contents to the REST names used in
@@ -545,6 +575,96 @@ func (b *batch) write(ctx context.Context, q *sqlc.Queries) error {
 		}
 	}
 	return nil
+}
+
+// commitBatch holds GitHub's view of a batch of commits: one github_commits
+// row per commit found, and the full set of pull requests that introduced
+// each of them into the repository.
+type commitBatch struct {
+	repoID  int64
+	commits []sqlc.UpsertCommitParams
+	// Parallel arrays of (sha, pull request number) links.
+	prShas    []string
+	prNumbers []int32
+}
+
+// commitBatchFrom maps the repository object of a queryFetchCommits response,
+// where the commit for shas[i] is aliased c<i>.
+func commitBatchFrom(repoID int64, repo map[string]json.RawMessage, shas []string) (*commitBatch, error) {
+	var ghRepoID int64
+	if err := json.Unmarshal(repo["databaseId"], &ghRepoID); err != nil {
+		return nil, fmt.Errorf("decode repository databaseId: %w", err)
+	}
+	b := &commitBatch{repoID: repoID}
+	for i, sha := range shas {
+		var n *node[gqlCommit]
+		if err := json.Unmarshal(repo["c"+strconv.Itoa(i)], &n); err != nil {
+			return nil, fmt.Errorf("decode commit %s: %w", sha, err)
+		}
+		// null when GitHub doesn't have the commit (e.g. history rewritten
+		// since the mirror was fetched).
+		if n == nil || n.V.Oid == "" {
+			continue
+		}
+		if err := b.addCommit(ghRepoID, *n); err != nil {
+			return nil, err
+		}
+	}
+	return b, nil
+}
+
+// addCommit maps one commit. ghRepoID is the repository's GitHub database ID:
+// associatedPullRequests also lists pull requests of other repositories in
+// the fork network, which are not this repository's.
+func (b *commitBatch) addCommit(ghRepoID int64, n node[gqlCommit]) error {
+	v := n.V
+	raw, err := stripKeys(n.Raw, "associatedPullRequests")
+	if err != nil {
+		return err
+	}
+	c := sqlc.UpsertCommitParams{
+		Sha: v.Oid, GithubNodeID: v.ID, IsSignatureVerified: v.Signature != nil && v.Signature.IsValid,
+		RawPayload: raw,
+	}
+	if v.Author != nil {
+		c.AuthorLogin = login(v.Author.User)
+	}
+	if v.Committer != nil {
+		c.CommitterLogin = login(v.Committer.User)
+	}
+	b.commits = append(b.commits, c)
+	for _, pr := range v.AssociatedPullRequests.Nodes {
+		if pr.BaseRepository != nil && pr.BaseRepository.DatabaseID == ghRepoID {
+			b.prShas = append(b.prShas, v.Oid)
+			b.prNumbers = append(b.prNumbers, pr.Number)
+		}
+	}
+	return nil
+}
+
+// write stores the commits and replaces their pull request links.
+func (b *commitBatch) write(ctx context.Context, q *sqlc.Queries) error {
+	if len(b.commits) == 0 {
+		return nil
+	}
+	if err := execBatch(ctx, q.UpsertCommit, b.commits); err != nil {
+		return err
+	}
+	fetched := make([]string, len(b.commits))
+	for i, c := range b.commits {
+		fetched[i] = c.Sha
+	}
+	if err := q.DeleteStaleCommitPullRequests(ctx, sqlc.DeleteStaleCommitPullRequestsParams{
+		RepositoryID: b.repoID, FetchedShas: fetched, Shas: b.prShas, PullRequestNumbers: b.prNumbers,
+	}); err != nil {
+		return err
+	}
+	if len(b.prShas) == 0 {
+		return nil
+	}
+	return q.InsertCommitPullRequests(ctx, sqlc.InsertCommitPullRequestsParams{
+		RepositoryID: b.repoID, Shas: b.prShas, PullRequestNumbers: b.prNumbers,
+	})
 }
 
 type batchResults interface {

@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -13,6 +15,7 @@ import (
 
 	"raise/internal/jobkit"
 	"raise/internal/platform"
+	"raise/internal/platform/git"
 )
 
 // ---- client.go ----
@@ -206,6 +209,28 @@ func TestMatchRemote(t *testing.T) {
 	}
 }
 
+func TestOnCommitsMinedOnlyWhenRequested(t *testing.T) {
+	p := &Platform{}
+	repo := git.Repository{ID: 3}
+	ref := git.RepoRef{Platform: ID, Owner: "o", Name: "r"}
+	shas := make([]string, commitBatchSize+1)
+	for i := range shas {
+		shas[i] = fmt.Sprintf("%040d", i)
+	}
+
+	if jobs := p.OnCommitsMined(repo, ref, git.EnrichRequest{Resources: []string{ResourceIssues}}, shas); len(jobs) != 0 {
+		t.Errorf("commits not requested, got %d jobs", len(jobs))
+	}
+	jobs := p.OnCommitsMined(repo, ref, git.EnrichRequest{Resources: []string{ResourceCommits}}, shas)
+	if len(jobs) != 2 {
+		t.Fatalf("jobs = %d, want 2", len(jobs))
+	}
+	a := jobs[1].Args.(FetchCommitsArgs)
+	if a.RepositoryID != 3 || a.Owner != "o" || a.Name != "r" || len(a.SHAs) != 1 || a.SHAs[0] != shas[commitBatchSize] {
+		t.Errorf("second batch = %+v", a)
+	}
+}
+
 // ---- store.go ----
 
 // A pull request as returned by queryFetchPullRequests, trimmed to the fields
@@ -362,6 +387,92 @@ func TestBatchMapsIssue(t *testing.T) {
 	}
 	if len(b.jobs) != 1 || b.jobs[0].Args.(FetchConnectionArgs).Connection != ConnTimelineItems {
 		t.Errorf("jobs = %+v", b.jobs)
+	}
+}
+
+func TestRepositoryRow(t *testing.T) {
+	var n node[gqlRepository]
+	err := json.Unmarshal([]byte(`{
+	  "id": "R_1", "databaseId": 100, "nameWithOwner": "spf13/cobra", "description": "",
+	  "owner": {"__typename": "User", "login": "spf13"},
+	  "defaultBranchRef": {"name": "main"}, "primaryLanguage": {"name": "Go"},
+	  "languages": {"edges": [{"size": 300, "node": {"name": "Go"}}, {"size": 5, "node": {"name": "Makefile"}}]},
+	  "repositoryTopics": {"nodes": [{"topic": {"name": "cli"}}]},
+	  "licenseInfo": {"spdxId": "Apache-2.0"}, "visibility": "PUBLIC", "parent": null,
+	  "stargazerCount": 40000, "forkCount": 3000, "watchers": {"totalCount": 350},
+	  "labels": {"totalCount": 27}, "releases": {"totalCount": 31},
+	  "openIssues": {"totalCount": 200}, "openPullRequests": {"totalCount": 90},
+	  "createdAt": "2013-09-03T00:00:00Z", "updatedAt": "2024-01-02T00:00:00Z", "pushedAt": null
+	}`), &n)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r, err := repositoryRow(1, n)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.OwnerLogin != "spf13" || r.OwnerType != "User" || r.LabelCount != 27 || r.ReleaseCount != 31 ||
+		r.WatcherCount != 350 || r.Visibility != "public" || r.Description != nil || *r.DefaultBranch != "main" ||
+		*r.LicenseSpdxID != "Apache-2.0" || len(r.TopicNames) != 1 || string(r.LanguageBytes) != `{"Go":300,"Makefile":5}` {
+		t.Errorf("repository row = %+v", r)
+	}
+}
+
+// The repository object of a queryFetchCommits response for three SHAs: the
+// second is unknown to GitHub, the third was also proposed by a fork's pull
+// request.
+const commitsFixture = `{
+  "databaseId": 100,
+  "c0": {"id": "C_1", "oid": "aaaa", "url": "https://github.com/o/r/commit/aaaa",
+         "author": {"user": {"login": "alice"}}, "committer": {"user": {"login": "web-flow"}},
+         "signature": {"isValid": true, "state": "VALID", "wasSignedByGitHub": true, "signer": {"login": "web-flow"}},
+         "associatedPullRequests": {"totalCount": 1, "nodes": [{"number": 42, "baseRepository": {"databaseId": 100}}]}},
+  "c1": null,
+  "c2": {"id": "C_3", "oid": "cccc", "url": "https://github.com/o/r/commit/cccc",
+         "author": {"user": null}, "committer": {"user": null}, "signature": null,
+         "associatedPullRequests": {"totalCount": 2, "nodes": [
+           {"number": 7, "baseRepository": {"databaseId": 100}},
+           {"number": 9, "baseRepository": {"databaseId": 200}}]}}
+}`
+
+func TestCommitBatchFrom(t *testing.T) {
+	var repo map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(commitsFixture), &repo); err != nil {
+		t.Fatal(err)
+	}
+	b, err := commitBatchFrom(5, repo, []string{"aaaa", "bbbb", "cccc"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(b.commits) != 2 {
+		t.Fatalf("commits = %+v (missing commits must be skipped)", b.commits)
+	}
+	if c := b.commits[0]; c.Sha != "aaaa" || c.GithubNodeID != "C_1" || *c.AuthorLogin != "alice" ||
+		*c.CommitterLogin != "web-flow" || !c.IsSignatureVerified {
+		t.Errorf("first commit = %+v", c)
+	}
+	if c := b.commits[1]; c.AuthorLogin != nil || c.CommitterLogin != nil || c.IsSignatureVerified {
+		t.Errorf("unlinked, unsigned commit = %+v", c)
+	}
+	raw := string(b.commits[0].RawPayload)
+	if strings.Contains(raw, "associatedPullRequests") || !strings.Contains(raw, `"url"`) {
+		t.Errorf("raw_payload = %s", raw)
+	}
+	// The fork's pull request (#9) is not this repository's.
+	if !slices.Equal(b.prShas, []string{"aaaa", "cccc"}) || !slices.Equal(b.prNumbers, []int32{42, 7}) {
+		t.Errorf("pull request links = %v %v", b.prShas, b.prNumbers)
+	}
+}
+
+func TestQueryFetchCommits(t *testing.T) {
+	q := queryFetchCommits(2)
+	for _, want := range []string{"$s0: GitObjectID!, $s1: GitObjectID!", "c0: object(oid: $s0)", "c1: object(oid: $s1)", "fragment commitFields on Commit"} {
+		if !strings.Contains(q, want) {
+			t.Errorf("query lacks %q:\n%s", want, q)
+		}
+	}
+	if strings.Contains(q, "c2:") {
+		t.Error("query has more aliases than SHAs")
 	}
 }
 

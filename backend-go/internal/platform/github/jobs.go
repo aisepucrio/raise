@@ -72,6 +72,29 @@ type FetchPullRequestsArgs struct {
 func (FetchPullRequestsArgs) Kind() string                 { return "github.fetch_pull_requests" }
 func (FetchPullRequestsArgs) InsertOpts() river.InsertOpts { return insertOpts() }
 
+// PlanCommitsArgs fans out FetchCommits batches for the repository's mined
+// commits that have no GitHub view yet (github_commits).
+type PlanCommitsArgs struct {
+	RepositoryID int64  `json:"repository_id"`
+	Owner        string `json:"owner"`
+	Name         string `json:"name"`
+}
+
+func (PlanCommitsArgs) Kind() string                 { return "github.plan_commits" }
+func (PlanCommitsArgs) InsertOpts() river.InsertOpts { return insertOpts() }
+
+// FetchCommitsArgs fetches GitHub's view of a batch of commits by SHA: author
+// and committer logins, signature and the pull requests that introduced them.
+type FetchCommitsArgs struct {
+	RepositoryID int64    `json:"repository_id"`
+	Owner        string   `json:"owner"`
+	Name         string   `json:"name"`
+	SHAs         []string `json:"shas"`
+}
+
+func (FetchCommitsArgs) Kind() string                 { return "github.fetch_commits" }
+func (FetchCommitsArgs) InsertOpts() river.InsertOpts { return insertOpts() }
+
 // Nested connections that FetchConnection continues.
 const (
 	ConnIssueComments      = "issue_comments"       // Issue or PullRequest .comments

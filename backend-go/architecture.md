@@ -171,7 +171,7 @@ type Enricher interface {                // forges
     MatchRemote(host, path string) (RepoRef, bool)
     CloneAuth(ctx, RepoRef) (*CloneAuth, error)
     StartEnrichment(ctx, pgx.Tx, jobkit.Enqueuer, Repository, RepoRef, EnrichRequest) error
-    OnCommitsMined(Repository, RepoRef, shas []string) []river.InsertManyParams
+    OnCommitsMined(Repository, RepoRef, EnrichRequest, shas []string) []river.InsertManyParams
 }
 ```
 
@@ -243,11 +243,12 @@ forge tables.
 ```
 POST /api/collections {platform:"git", parameters:{url|repository_id, commits:true,
                                                    enrich:{github:{resources:["issues"]}}}}
- ├─ git.sync_mirror{repo}               unique while in flight; clone or fetch under an advisory lock
- │   └─ git.plan_commits{repo}          rev-list --branches --tags, minus commits already in repository_commits
- │       └─ git.mine_commit_batch{repo, shas[≤500]} × N    (parallel)
+ ├─ git.sync_mirror{repo, enrich}       unique while in flight; clone or fetch under an advisory lock
+ │   └─ git.plan_commits{repo, enrich}  rev-list --branches --tags, minus commits already in repository_commits
+ │       └─ git.mine_commit_batch{repo, shas[≤500], enrich} × N    (parallel)
  │            ├─ upsert commits, commit_files, repository_commits   (ON CONFLICT DO NOTHING)
- │            └─ forge.OnCommitsMined(...) → enqueued in the same transaction
+ │            └─ forge.OnCommitsMined(..., enrich[forge], ...) → enqueued in the same transaction
+ │                 └─ github.fetch_commits{repo, shas[≤50]} × N    (when enrich.github has "commits")
  └─ github.list_issues{repo, cursor}    runs in parallel with git; no dependency on it
      ├─ github.fetch_issues{repo, node_ids[≤25]} × N        (parallel)
      │   └─ github.fetch_connection{node_id, cursor}        only for overflowing comments/timelines
@@ -272,7 +273,10 @@ Implementation details:
   are planned, so re-running a collection only mines new history.
 - **Commit-level enrichment is chained, not orchestrated.** `OnCommitsMined`
   returns follow-up jobs that are inserted in the same transaction that stores
-  the batch. This gives dependent work without a workflow engine.
+  the batch. This gives dependent work without a workflow engine. The git jobs
+  carry the collection's `enrich` map down to each batch, and git only calls
+  `OnCommitsMined` for forges in it, passing that forge's `EnrichRequest`. A
+  git-only collection therefore never spends forge quota.
 - **Locality.** Mirrors live on the worker's disk (`GIT_MIRROR_DIR`). For now,
   run the `git` queue on one host or on a shared volume. Scaling git across
   hosts later means per-host queues (e.g. `git@node-1`) plus a
@@ -292,6 +296,7 @@ about 700 points of the 5,000-point hourly quota.
 | `metadata` | `fetch_repository` (1 query) | `github_repositories` |
 | `issues` | `list_issues` → `fetch_issues` (25 per query) | `github_issues`, `github_issue_comments`, `github_issue_events` |
 | `pull_requests` | `list_pull_requests` → `fetch_pull_requests` (10 per query) | the above, plus `github_pull_requests`, `github_pull_request_commits`, `github_pull_request_reviews`, `github_pull_request_review_comments` |
+| `commits` | `fetch_commits` (50 per query) after each mined batch via `OnCommitsMined`; `plan_commits` → `fetch_commits` for commits mined earlier | `github_commits`, `github_commit_pull_requests` |
 
 - **List, then fetch in parallel.** GraphQL pages with opaque cursors, so pages
   can't be fanned out up front. A `list_*` job fetches one page of 100 node
@@ -307,6 +312,16 @@ about 700 points of the 5,000-point hourly quota.
   `fetch_connection{connection, node_id, cursor}` job, which chains itself
   until the connection is exhausted. Review threads nest two levels deep
   (threads → comments), so they use smaller first pages (30 × 20).
+- **Commits by SHA.** GraphQL has no batch lookup by object ID, so
+  `fetch_commits` aliases one `object(oid:)` per SHA (`c0`, `c1`, …) under
+  `repository(owner:, name:)`. `associatedPullRequests` also lists pull
+  requests of other repositories in the fork network; only those whose base
+  repository is this one are stored. `plan_commits` picks the repository's
+  mined commits that have no `github_commits` row yet. Commits are shared
+  between forks, so after the fact it skips commits already enriched through
+  another repository, and their pull request links for this repository are
+  not fetched. Enriching in the same collection that mines them avoids this.
+  All 1,118 spf13/cobra commits cost 23 queries.
 - **Timeouts split batches.** GitHub aborts queries after 10 seconds (HTTP
   502). When a batch times out, the worker replaces it with two half-size jobs
   instead of retrying the same query.
@@ -490,7 +505,7 @@ The API uses huma v2 on chi (`humachi`). The OpenAPI 3.1 spec is served at
 | credentials | `GET/POST /api/credentials`, `POST /api/credentials/{id}/test`, `DELETE /api/credentials/{id}` |
 | collections | `POST/GET /api/collections`, `GET /api/collections/{id}`, `POST /api/collections/{id}/cancel` |
 | git | `POST/GET /api/repositories`, `GET /api/repositories/{id}`, `GET /api/repositories/{id}/commits`, `GET /api/repositories/{id}/commits/{sha}` |
-| github | `GET /api/github/repositories/{id}`, `GET /api/github/repositories/{id}/issues`, `GET /api/github/repositories/{id}/issues/{number}`, `GET /api/github/repositories/{id}/pull-requests`, `GET /api/github/repositories/{id}/pull-requests/{number}` |
+| github | `GET /api/github/repositories/{id}`, `GET /api/github/repositories/{id}/issues`, `GET /api/github/repositories/{id}/issues/{number}`, `GET /api/github/repositories/{id}/pull-requests`, `GET /api/github/repositories/{id}/pull-requests/{number}`, `GET /api/github/repositories/{id}/commits/{sha}` |
 | health | `GET /healthz` |
 
 **Schema names.** huma names each OpenAPI schema after its Go type, and the
@@ -566,11 +581,15 @@ collection and one 1,118-commit spf13/cobra collection):
   Verified against spf13/cobra: every issue, PR, comment, PR commit, review
   and review thread matched GitHub's totals. An incremental (`since`) run
   re-mined only the updated items.
+- GitHub commit enrichment: author and committer logins, signature
+  verification and the pull requests that introduced each commit, both chained
+  after mining (`OnCommitsMined`) and for commits mined earlier. Verified
+  against spf13/cobra: all 1,118 commits were enriched, and 460 of the 462
+  squash-merge subjects ending in `(#N)` link to pull request N.
 
 TODO, in rough priority order:
 
-- GitHub: `EnrichCommits` (commit → login/PR via `OnCommitsMined`, filling
-  `github_commits` and `github_commit_pull_requests`), releases, users.
+- GitHub: releases, users.
 - Jira and Stack Overflow collection jobs: port from the Python miners using the
   plan → page pattern. Jira can split large ranges with `jobkit.SplitWindows`.
 - GitLab enrichment, plus scoping credentials by host for self-managed

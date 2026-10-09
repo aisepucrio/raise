@@ -34,7 +34,7 @@ func (w *syncMirrorWorker) Work(ctx context.Context, job *river.Job[SyncMirrorAr
 		if err := p.q.WithTx(tx).MarkMirrorSynced(ctx, repo.ID); err != nil {
 			return err
 		}
-		_, err := jobkit.FromJob(ctx, job.JobRow).Enqueue(ctx, tx, jobkit.Job(PlanCommitsArgs{RepositoryID: repo.ID}))
+		_, err := jobkit.FromJob(ctx, job.JobRow).Enqueue(ctx, tx, jobkit.Job(PlanCommitsArgs{RepositoryID: repo.ID, Enrich: job.Args.Enrich}))
 		return err
 	})
 }
@@ -87,7 +87,7 @@ func (w *planCommitsWorker) Work(ctx context.Context, job *river.Job[PlanCommits
 
 	var jobs []river.InsertManyParams
 	for batch := range chunks(pending, p.cfg.BatchSize) {
-		jobs = append(jobs, jobkit.Job(MineCommitBatchArgs{RepositoryID: repoID, SHAs: batch}))
+		jobs = append(jobs, jobkit.Job(MineCommitBatchArgs{RepositoryID: repoID, SHAs: batch, Enrich: job.Args.Enrich}))
 	}
 
 	names := make([]string, len(refs))
@@ -141,10 +141,11 @@ func (w *mineCommitBatchWorker) Work(ctx context.Context, job *river.Job[MineCom
 		}
 		for _, ref := range repo.Remotes {
 			e, ok := p.enrichers[ref.Platform]
-			if !ok {
+			req, requested := job.Args.Enrich[ref.Platform]
+			if !ok || !requested {
 				continue
 			}
-			if _, err := enq.Enqueue(ctx, tx, e.OnCommitsMined(repo, ref, mined)...); err != nil {
+			if _, err := enq.Enqueue(ctx, tx, e.OnCommitsMined(repo, ref, req, mined)...); err != nil {
 				return err
 			}
 		}

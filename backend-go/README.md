@@ -326,10 +326,16 @@ curl -b cookies -H 'Content-Type: application/json' -d '{
   locally. No token is needed for public repositories.
 - `enrich` fetches platform data from the forge hosting the repository. It needs
   credentials for that platform. GitHub resources:
-  - `metadata`: repository metadata (stars, languages, topics, license, …).
+  - `metadata`: repository metadata (owner, stars, watchers, languages,
+    topics, license, label and release counts, …).
   - `issues`: issues, with their comments and timeline events.
   - `pull_requests`: pull requests, with their comments, timeline events,
     commits, reviews and review comments.
+  - `commits`: GitHub's view of the mined commits: author and committer
+    logins, signature verification, and the pull requests that introduced
+    them. Commits mined by the same collection are enriched as each batch is
+    mined. Commits mined earlier, which have no GitHub data yet, are enriched
+    too, so `commits` also works without `commits: true`.
 
   Add `"since": "2024-01-01T00:00:00Z"` to fetch only issues and pull requests
   updated since then.
@@ -353,28 +359,35 @@ curl -b cookies http://localhost:8000/api/collections/1
 | `GET /api/repositories` | Registered repositories and the forges that host them |
 | `GET /api/repositories/{id}/commits?limit=&offset=` | Commits, newest first |
 | `GET /api/repositories/{id}/commits/{sha}` | One commit with its changed files |
-| `GET /api/github/repositories/{id}` | GitHub repository metadata |
+| `GET /api/github/repositories/{id}` | GitHub repository metadata, plus `contributor_count` computed from the mined commits (`null` until they are mined) |
 | `GET /api/github/repositories/{id}/issues?state=&kind=` | GitHub issues and pull requests (the conversation side) |
 | `GET /api/github/repositories/{id}/issues/{number}` | One issue or pull request with its comments and timeline events |
 | `GET /api/github/repositories/{id}/pull-requests?state=&merged=` | GitHub pull requests (the code side) |
 | `GET /api/github/repositories/{id}/pull-requests/{number}` | One pull request with its commits, reviews and review comments |
+| `GET /api/github/repositories/{id}/commits/{sha}` | GitHub's view of a commit: logins, signature and the pull requests that introduced it |
 
 Response fields use the same names as the database columns described in
 [database.md](database.md). For example, `github_created_at` is when an issue
 was opened on GitHub, while `first_mined_at` is when Raise first fetched it.
 For analyses that the API doesn't cover, query PostgreSQL directly with the
-same names.
+same names. The exceptions are values computed from other tables when
+requested, such as `contributor_count`: the distinct authors of the mined
+commits, by GitHub login, or by email for authors without one. It covers every
+mined branch, while GitHub counts only the default branch. Enrich `commits`
+for accurate counts, since without logins an author with several emails counts
+more than once.
 
 ### What works today
 
 - **Git:** commit mining.
-- **GitHub** (GraphQL API): repository metadata, plus issues and pull requests
-  with comments, timeline events, PR commits, reviews and review comments.
+- **GitHub** (GraphQL API): repository metadata, issues and pull requests
+  with comments, timeline events, PR commits, reviews and review comments, and
+  commit enrichment (logins, signatures, introducing pull requests).
 - **All platforms:** credential testing.
 
-GitHub commit enrichment, Jira, Stack Overflow and GitLab mining are still to
-be built; starting those collections returns `501 Not Implemented`. The roadmap is
-in architecture.md §12.
+Jira, Stack Overflow and GitLab mining are still to be built; starting those
+collections returns `501 Not Implemented`. The roadmap is in architecture.md
+§12.
 
 ---
 

@@ -1,6 +1,7 @@
 package github
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -21,11 +22,17 @@ const (
 	nestedPageSize       = 100
 	reviewThreadPageSize = 30
 	threadCommentSize    = 20
+	// Commits per FetchCommits query (one aliased object lookup each), and
+	// pull requests requested per commit. A commit on the default branch has
+	// one: the pull request that merged it.
+	commitBatchSize           = 50
+	commitPullRequestPageSize = 25
 )
 
 const queryRepository = `query($owner: String!, $name: String!) {
   repository(owner: $owner, name: $name) {
     id databaseId nameWithOwner url description homepageUrl
+    owner { __typename login }
     defaultBranchRef { name }
     primaryLanguage { name }
     languages(first: 100, orderBy: {field: SIZE, direction: DESC}) { edges { size node { name } } }
@@ -36,6 +43,8 @@ const queryRepository = `query($owner: String!, $name: String!) {
     templateRepository { nameWithOwner }
     stargazerCount forkCount
     watchers { totalCount }
+    labels { totalCount }
+    releases { totalCount }
     openIssues: issues(states: OPEN) { totalCount }
     openPullRequests: pullRequests(states: OPEN) { totalCount }
     hasIssuesEnabled hasWikiEnabled hasDiscussionsEnabled hasProjectsEnabled
@@ -257,4 +266,28 @@ var connectionQueries = map[string]string{
     ... on PullRequestReviewThread { pullRequest { number } reviewComments: comments(first: 100, after: $cursor) { ` + pageInfo + ` nodes { ...reviewCommentFields } } }
   }
 }` + fragmentReviewComment,
+}
+
+// queryFetchCommits looks up n commits by SHA ($s0, $s1, …) as aliases c0,
+// c1, … of the repository: GitHub has no batch lookup by object ID.
+// associatedPullRequests also returns pull requests of other repositories in
+// the fork network, so their base repository is selected for filtering.
+func queryFetchCommits(n int) string {
+	var vars, objects strings.Builder
+	for i := range n {
+		fmt.Fprintf(&vars, ", $s%d: GitObjectID!", i)
+		fmt.Fprintf(&objects, "\n    c%d: object(oid: $s%d) { ...commitFields }", i, i)
+	}
+	return `query($owner: String!, $name: String!` + vars.String() + `) {
+  repository(owner: $owner, name: $name) {
+    databaseId` + objects.String() + `
+  }
+}
+fragment commitFields on Commit {
+  id oid url
+  author { user { login } }
+  committer { user { login } }
+  signature { isValid state wasSignedByGitHub signer { login } }
+  associatedPullRequests(first: ` + strconv.Itoa(commitPullRequestPageSize) + `) { totalCount nodes { number baseRepository { databaseId } } }
+}`
 }

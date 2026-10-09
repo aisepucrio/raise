@@ -38,11 +38,22 @@ type GitHubRepository struct {
 	ForkCount            int32           `json:"fork_count"`
 	OpenIssueCount       int32           `json:"open_issue_count"`
 	OpenPullRequestCount int32           `json:"open_pull_request_count"`
+	OwnerLogin           string          `json:"owner_login"`
+	OwnerType            string          `json:"owner_type" doc:"User or Organization"`
+	LabelCount           int32           `json:"label_count"`
+	ReleaseCount         int32           `json:"release_count"`
 	GithubCreatedAt      time.Time       `json:"github_created_at"`
 	GithubUpdatedAt      time.Time       `json:"github_updated_at"`
 	GithubPushedAt       *time.Time      `json:"github_pushed_at"`
 	FirstMinedAt         time.Time       `json:"first_mined_at"`
 	LastMinedAt          time.Time       `json:"last_mined_at"`
+}
+
+// GitHubRepositoryDetail adds what GraphQL doesn't provide and is computed from
+// other tables when requested.
+type GitHubRepositoryDetail struct {
+	GitHubRepository
+	ContributorCount *int32 `json:"contributor_count" doc:"Distinct commit authors in the mined commits: GitHub logins, plus emails of authors without one. Null until the repository's commits are mined"`
 }
 
 type GitHubIssue struct {
@@ -174,6 +185,19 @@ type GitHubPullRequestDetail struct {
 	ReviewComments []GitHubPullRequestReviewComment `json:"review_comments"`
 }
 
+// GitHubCommit is GitHub's view of a mined commit; the commit itself is
+// served by GET /api/repositories/{id}/commits/{sha}.
+type GitHubCommit struct {
+	Sha                 string    `json:"sha"`
+	GithubNodeID        string    `json:"github_node_id"`
+	AuthorLogin         *string   `json:"author_login"`
+	CommitterLogin      *string   `json:"committer_login"`
+	IsSignatureVerified bool      `json:"is_signature_verified"`
+	PullRequestNumbers  []int32   `json:"pull_request_numbers" doc:"Pull requests of this repository that introduced the commit"`
+	FirstMinedAt        time.Time `json:"first_mined_at"`
+	LastMinedAt         time.Time `json:"last_mined_at"`
+}
+
 type itemPath struct {
 	ID     int64 `path:"id"`
 	Number int32 `path:"number"`
@@ -187,12 +211,20 @@ func (p *Platform) registerRoutes(api huma.API) {
 		Summary: "Get mined GitHub metadata of a repository", Tags: tags,
 	}, func(ctx context.Context, in *struct {
 		ID int64 `path:"id"`
-	}) (*struct{ Body GitHubRepository }, error) {
+	}) (*struct{ Body GitHubRepositoryDetail }, error) {
 		r, err := p.q.GetRepository(ctx, in.ID)
 		if err != nil {
 			return nil, httpapi.Error(lookupErr(err, "GitHub metadata for repository %d", in.ID))
 		}
-		return &struct{ Body GitHubRepository }{GitHubRepository(r)}, nil
+		c, err := p.q.CountContributors(ctx, in.ID)
+		if err != nil {
+			return nil, httpapi.Error(err)
+		}
+		out := GitHubRepositoryDetail{GitHubRepository: GitHubRepository(r)}
+		if c.CommitCount > 0 {
+			out.ContributorCount = &c.ContributorCount
+		}
+		return &struct{ Body GitHubRepositoryDetail }{out}, nil
 	})
 
 	huma.Register(api, huma.Operation{
@@ -277,6 +309,36 @@ func (p *Platform) registerRoutes(api huma.API) {
 		}
 		return &struct{ Body GitHubPullRequestDetail }{d}, nil
 	})
+
+	huma.Register(api, huma.Operation{
+		OperationID: "github-get-commit", Method: http.MethodGet, Path: "/api/github/repositories/{id}/commits/{sha}",
+		Summary: "Get GitHub's view of a mined commit: logins, signature and the pull requests that introduced it", Tags: tags,
+	}, func(ctx context.Context, in *struct {
+		ID  int64  `path:"id"`
+		Sha string `path:"sha"`
+	}) (*struct{ Body GitHubCommit }, error) {
+		c, err := p.commit(ctx, in.ID, in.Sha)
+		if err != nil {
+			return nil, httpapi.Error(err)
+		}
+		return &struct{ Body GitHubCommit }{c}, nil
+	})
+}
+
+func (p *Platform) commit(ctx context.Context, repoID int64, sha string) (GitHubCommit, error) {
+	c, err := p.q.GetCommit(ctx, sqlc.GetCommitParams{RepositoryID: repoID, Sha: sha})
+	if err != nil {
+		return GitHubCommit{}, lookupErr(err, "GitHub commit %s", sha)
+	}
+	numbers, err := p.q.ListCommitPullRequestNumbers(ctx, sqlc.ListCommitPullRequestNumbersParams{RepositoryID: repoID, Sha: sha})
+	if err != nil {
+		return GitHubCommit{}, err
+	}
+	return GitHubCommit{
+		Sha: c.Sha, GithubNodeID: c.GithubNodeID, AuthorLogin: c.AuthorLogin, CommitterLogin: c.CommitterLogin,
+		IsSignatureVerified: c.IsSignatureVerified, PullRequestNumbers: append([]int32{}, numbers...),
+		FirstMinedAt: c.FirstMinedAt, LastMinedAt: c.LastMinedAt,
+	}, nil
 }
 
 func (p *Platform) issueDetail(ctx context.Context, repoID int64, number int32) (GitHubIssueDetail, error) {

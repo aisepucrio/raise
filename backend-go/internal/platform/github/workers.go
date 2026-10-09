@@ -2,9 +2,11 @@ package github
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -235,6 +237,68 @@ func (w *fetchConnectionWorker) Work(ctx context.Context, job *river.Job[FetchCo
 		b.addThreadComments(a.NodeID, n.PullRequest.Number, n.ReviewComments)
 	}
 	return w.p.enqueue(ctx, job.JobRow, b, b.jobs)
+}
+
+// insertChunk bounds the jobs per InsertMany call when planning fans out
+// thousands of commit batches.
+const insertChunk = 1_000
+
+type planCommitsWorker struct {
+	river.WorkerDefaults[PlanCommitsArgs]
+	p *Platform
+}
+
+func (w *planCommitsWorker) Work(ctx context.Context, job *river.Job[PlanCommitsArgs]) error {
+	a := job.Args
+	shas, err := w.p.q.ListUnenrichedCommits(ctx, a.RepositoryID)
+	if err != nil {
+		return err
+	}
+	jobs := fetchCommitJobs(a.RepositoryID, a.Owner, a.Name, shas)
+	enq := jobkit.FromJob(ctx, job.JobRow)
+	return pgx.BeginFunc(ctx, w.p.deps.DB, func(tx pgx.Tx) error {
+		for chunk := range slices.Chunk(jobs, insertChunk) {
+			if _, err := enq.Enqueue(ctx, tx, chunk...); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+type fetchCommitsWorker struct {
+	river.WorkerDefaults[FetchCommitsArgs]
+	p *Platform
+}
+
+func (w *fetchCommitsWorker) Work(ctx context.Context, job *river.Job[FetchCommitsArgs]) error {
+	a := job.Args
+	vars := map[string]any{"owner": a.Owner, "name": a.Name}
+	for i, sha := range a.SHAs {
+		vars["s"+strconv.Itoa(i)] = sha
+	}
+	var out struct {
+		Repository map[string]json.RawMessage `json:"repository"`
+	}
+	err := w.p.client.Query(ctx, queryFetchCommits(len(a.SHAs)), vars, &out)
+	if errors.Is(err, ErrQueryTimeout) && len(a.SHAs) > 1 {
+		return w.p.split(ctx, job.JobRow, a.SHAs, func(shas []string) river.JobArgs {
+			return FetchCommitsArgs{RepositoryID: a.RepositoryID, Owner: a.Owner, Name: a.Name, SHAs: shas}
+		})
+	}
+	if err != nil {
+		return err
+	}
+	if out.Repository == nil {
+		return notFound(a.Owner, a.Name)
+	}
+	b, err := commitBatchFrom(a.RepositoryID, out.Repository, a.SHAs)
+	if err != nil {
+		return err
+	}
+	return pgx.BeginFunc(ctx, w.p.deps.DB, func(tx pgx.Tx) error {
+		return b.write(ctx, w.p.q.WithTx(tx))
+	})
 }
 
 // enqueue writes b (if any) and inserts jobs in one transaction.
