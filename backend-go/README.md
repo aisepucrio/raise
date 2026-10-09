@@ -90,7 +90,7 @@ git ignores.
 
 | Command | What it does |
 |---|---|
-| `make test` | Unit tests. The git parser test needs `git`; the GitHub client tests use `httptest`. |
+| `make test` | Unit tests: one `<package>_test.go` per package, fixtures in `testdata/` (architecture.md §2.1). The git tests need `git`; the GitHub tests use `httptest`. |
 | `make lint` | golangci-lint, including the **depguard import rules** from architecture.md §3 |
 | `make generate` | Regenerate sqlc code after editing a `query.sql` file or a migration |
 | `make build` | Build `api`, `worker` and `raisectl` into `./bin/` |

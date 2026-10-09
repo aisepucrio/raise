@@ -93,6 +93,25 @@ subpackage. Persistence is therefore owned by the package that owns the
 concept, not by a central data layer. Migrations stay central because goose
 needs a single linear history.
 
+### 2.1 Tests
+
+Each package keeps all its tests in **one file named after the package**,
+next to the code: `internal/platform/github/github_test.go`,
+`internal/credential/credential_test.go`, and so on.
+
+- The file declares the package itself (`package github`, not
+  `package github_test`), so tests can exercise unexported helpers such as the
+  GraphQL-to-row mapping in `store.go`.
+- Fixtures too large to inline (API payloads, sample repositories) go in a
+  `testdata/` directory in the same package, loaded with
+  `os.ReadFile("testdata/…")`. The Go toolchain ignores `testdata/`, so it is
+  never compiled or embedded. Small fixtures may stay inline as constants.
+- Group the file into sections by the source file under test (client, store,
+  …), in the same order as §4.2.
+- Don't create separate `tests/` packages or files like `tests.go`: Go only
+  treats `_test.go` files as tests, and a separate package can't reach
+  unexported code.
+
 ---
 
 ## 3. Dependency rules
@@ -183,6 +202,7 @@ reference implementation:
 | `store.go` | mapping API payloads to upserts |
 | `handlers.go` | lookup, dashboard and export operations |
 | `query.sql`, `sqlc/` | the platform's queries and generated code |
+| `<name>_test.go`, `testdata/` | the package's tests and their fixtures (see §2.1) |
 
 ### 4.3 Adding a platform
 
@@ -242,8 +262,8 @@ Implementation details:
   large histories. Each batch runs a single
   `git log --no-walk=unsorted --stdin -z --raw --numstat --find-renames --diff-merges=off`
   call with a custom format. Its output is streamed into `ParseLog`
-  (`logparse.go`), which is tested against a real repository with renames,
-  binaries and merges.
+  (`logparse.go`), which is tested (in `git_test.go`) against a real
+  repository with renames, binaries and merges.
 - **Mirrors** fetch only `refs/heads/*` and `refs/tags/*`, never GitHub's
   `refs/pull/*`. A new mirror is built in a temporary directory and renamed
   into place. Credentials go through `GIT_CONFIG_*` environment variables, so
@@ -573,6 +593,7 @@ TODO, in rough priority order:
 | Platforms as vertical slices behind capability interfaces | adding a platform doesn't touch shared code |
 | Git as the base platform; forges implement `git.Enricher` | the repository is the central concept; the import direction expresses that |
 | GitHub through GraphQL, not REST | one query per batch of items with all nested data instead of one request per resource per item; listing IDs then fetching batches in parallel keeps the parallelism despite cursor pagination |
+| One `<package>_test.go` per package, fixtures in `testdata/` | tests are in a predictable place, and staying in the package keeps unexported code testable (a `tests/` folder would be a separate package) |
 | Drop pydriller; git CLI + custom parser | performance on large histories; no Python dependency |
 | Commits keyed by SHA and shared across repositories | forks are common in mining datasets and are stored once |
 | huma for HTTP | OpenAPI generated from Go types; operation metadata drives authorization |

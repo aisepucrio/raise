@@ -65,6 +65,10 @@ the docs and explain why in your summary. Never leave them inconsistent.
 - Model new platforms on `internal/platform/github`, the reference
   implementation. Every job must be idempotent: its args fully describe the
   work, and all writes are upserts.
+- Tests: put all of a package's tests in a single `<package>_test.go` next to
+  its code (e.g. `internal/platform/github/github_test.go`), in the same
+  package, with larger fixtures in `testdata/`. Don't add `tests/`
+  folders or extra `_test.go` files. See architecture.md §2.1.
 - Before finishing, run from `backend-go/`:
 
   ```sh
