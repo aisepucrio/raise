@@ -54,6 +54,22 @@ CREATE TABLE commit_files (
     PRIMARY KEY (sha, path)
 );
 
+-- The text diff of each commit file, mined only when a collection asks for
+-- diffs. One row per commit_files row once its commit's diffs are mined;
+-- diff is NULL when the change has no text hunks (binary files, mode
+-- changes, pure renames). Immutable, like commits.
+CREATE TABLE commit_file_diffs (
+    sha               text        NOT NULL,
+    path              text        NOT NULL,
+    diff              text,                 -- unified diff hunks, from the first @@ line
+    diff_size_bytes   integer     NOT NULL, -- size of the full diff, before truncation
+    is_diff_truncated boolean     NOT NULL, -- diff was cut at a line boundary
+    first_mined_at    timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (sha, path),
+    FOREIGN KEY (sha, path) REFERENCES commit_files (sha, path) ON DELETE CASCADE
+);
+ALTER TABLE commit_file_diffs ALTER COLUMN diff SET COMPRESSION lz4;
+
 -- Branch and tag tips seen when commits were last planned.
 CREATE TABLE repository_refs (
     repository_id bigint      NOT NULL REFERENCES repositories (id) ON DELETE CASCADE,
@@ -65,6 +81,7 @@ CREATE TABLE repository_refs (
 
 -- +goose Down
 DROP TABLE repository_refs;
+DROP TABLE commit_file_diffs;
 DROP TABLE commit_files;
 DROP TABLE repository_commits;
 DROP TABLE commits;

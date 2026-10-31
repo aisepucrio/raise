@@ -43,11 +43,11 @@ describe("toDatasetSearchParams", () => {
       sort: "-github_created_at",
       since: "2024-01-01",
       limit: 10,
-      offset: 20,
+      cursor: "abc",
       columns: { repository_id: "1", label_names: ["bug", "ui"] },
     });
     expect(params.toString()).toBe(
-      "sort=-github_created_at&since=2024-01-01&limit=10&offset=20&repository_id=1&label_names=bug&label_names=ui",
+      "sort=-github_created_at&since=2024-01-01&limit=10&cursor=abc&repository_id=1&label_names=bug&label_names=ui",
     );
   });
 });

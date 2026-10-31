@@ -32,17 +32,6 @@ func (p *Platform) registerRoutes(api huma.API) {
 	})
 
 	huma.Register(api, huma.Operation{
-		OperationID: "list-repositories", Method: http.MethodGet, Path: "/api/repositories",
-		Summary: "List repositories", Tags: tags,
-	}, func(ctx context.Context, in *httpapi.Page) (*struct{ Body []Repository }, error) {
-		repos, err := p.ListRepositories(ctx, in.Limit, in.Offset)
-		if err != nil {
-			return nil, httpapi.Error(err)
-		}
-		return &struct{ Body []Repository }{repos}, nil
-	})
-
-	huma.Register(api, huma.Operation{
 		OperationID: "get-repository", Method: http.MethodGet, Path: "/api/repositories/{id}",
 		Summary: "Get a repository", Tags: tags,
 	}, func(ctx context.Context, in *struct {
@@ -56,27 +45,14 @@ func (p *Platform) registerRoutes(api huma.API) {
 	})
 
 	huma.Register(api, huma.Operation{
-		OperationID: "list-commits", Method: http.MethodGet, Path: "/api/repositories/{id}/commits",
-		Summary: "List mined commits, newest first", Tags: tags,
-	}, func(ctx context.Context, in *struct {
-		ID int64 `path:"id"`
-		httpapi.Page
-	}) (*struct{ Body []Commit }, error) {
-		commits, err := p.ListCommits(ctx, in.ID, in.Limit, in.Offset)
-		if err != nil {
-			return nil, httpapi.Error(err)
-		}
-		return &struct{ Body []Commit }{commits}, nil
-	})
-
-	huma.Register(api, huma.Operation{
 		OperationID: "get-commit", Method: http.MethodGet, Path: "/api/repositories/{id}/commits/{sha}",
 		Summary: "Get a commit with its changed files", Tags: tags,
 	}, func(ctx context.Context, in *struct {
-		ID  int64  `path:"id"`
-		SHA string `path:"sha" pattern:"^[0-9a-f]{40}$"`
+		ID    int64  `path:"id"`
+		SHA   string `path:"sha" pattern:"^[0-9a-f]{40}$"`
+		Diffs bool   `query:"diffs" doc:"Include each file's diff, if a collection with diffs mined them"`
 	}) (*struct{ Body Commit }, error) {
-		c, err := p.GetCommit(ctx, in.ID, in.SHA)
+		c, err := p.GetCommit(ctx, in.ID, in.SHA, in.Diffs)
 		if err != nil {
 			return nil, httpapi.Error(err)
 		}

@@ -304,7 +304,8 @@ curl -H "Authorization: Bearer rk_…" http://localhost:8000/api/collections
 import requests
 s = requests.Session()
 s.headers["Authorization"] = "Bearer rk_…"
-commits = s.get("http://localhost:8000/api/repositories/1/commits", params={"limit": 1000}).json()
+commits = s.get("http://localhost:8000/api/git/preview/commits",
+                params={"repository_id": 1, "limit": 1000}).json()["results"]
 ```
 
 ### Roles
@@ -366,6 +367,12 @@ curl -b cookies -H 'Content-Type: application/json' -d '{
   ```
 - `commits: true` clones or fetches the repository and mines its history
   locally. No token is needed for public repositories.
+- `diffs: true` (with `commits: true`) also mines each changed file's text
+  diff into `commit_file_diffs`, for the new commits and for the
+  repository's commits mined earlier without diffs. Diffs are large (about
+  4 KB per commit for spf13/cobra), so they are opt-in. A file's diff is cut
+  at 1 MiB, and a commit's at 32 MiB, marked `is_diff_truncated`. Merges have
+  no diffs, like they have no files.
 - `enrich` fetches platform data from the forge hosting the repository. It needs
   credentials for that platform. GitHub resources:
   - `metadata`: repository metadata (owner, stars, watchers, languages,
@@ -430,16 +437,19 @@ is kept after the job queue deletes its jobs.
 
 | Endpoint | Returns |
 |---|---|
-| `GET /api/repositories` | Registered repositories and the forges that host them |
-| `GET /api/repositories/{id}/commits?limit=&offset=` | Commits, newest first |
-| `GET /api/repositories/{id}/commits/{sha}` | One commit with its changed files |
+Lists of mined data (repositories, commits, refs, issues, pull requests,
+releases, …) are the [previews](#previews-and-exports) under
+`/api/{platform}/preview/{dataset}`. The endpoints below return one item
+with its nested data:
+
+| Endpoint | Returns |
+|---|---|
+| `GET /api/repositories/{id}` | One registered repository and the forges that host it |
+| `GET /api/repositories/{id}/commits/{sha}?diffs=` | One commit with its changed files; with `diffs=true`, each file's diff too, once mined |
 | `GET /api/github/repositories/{id}` | GitHub repository metadata, plus `contributor_count` computed from the mined commits (`null` until they are mined) |
-| `GET /api/github/repositories/{id}/issues?state=&kind=` | GitHub issues and pull requests (the conversation side) |
 | `GET /api/github/repositories/{id}/issues/{number}` | One issue or pull request with its comments and timeline events |
-| `GET /api/github/repositories/{id}/pull-requests?state=&merged=` | GitHub pull requests (the code side) |
 | `GET /api/github/repositories/{id}/pull-requests/{number}` | One pull request with its commits, reviews and review comments |
 | `GET /api/github/repositories/{id}/commits/{sha}` | GitHub's view of a commit: logins, signature and the pull requests that introduced it |
-| `GET /api/github/repositories/{id}/releases?limit=&offset=` | GitHub releases, newest first |
 | `GET /api/github/repositories/{id}/releases/{github_id}` | One release with its notes (`body`) and assets |
 | `GET /api/github/users/{login}` | One account's profile. Case-insensitive; bot logins end in `[bot]` (URL-encoded as `%5Bbot%5D`) |
 
@@ -492,12 +502,12 @@ page at a time and exported in full, with the same filters:
 | Endpoint | Returns |
 |---|---|
 | `GET /api/{platform}/preview` | The platform's datasets, with their typed columns, filter parameters, key and time column |
-| `GET /api/{platform}/preview/{dataset}` | A page of rows: `{platform, dataset, count, limit, offset, results}` |
+| `GET /api/{platform}/preview/{dataset}` | A page of rows: `{platform, dataset, count, limit, next_cursor, results}` |
 | `GET /api/{platform}/export/{dataset}?format=csv\|json\|jsonl` | Every matching row, streamed as an attachment |
 
 | Platform | Datasets |
 |---|---|
-| `git` | `repositories`, `commits`, `commit-files`, `refs` |
+| `git` | `repositories`, `commits`, `commit-files`, `commit-diffs`, `refs` |
 | `github` | `repositories`, `issues`, `pull-requests`, `issue-comments`, `issue-events`, `pull-request-commits`, `pull-request-reviews`, `pull-request-review-comments`, `commits`, `releases`, `release-assets`, `users` |
 
 ```sh
@@ -513,8 +523,18 @@ curl -b cookies 'http://localhost:8000/api/git/preview/commits?repository_id=1&s
 
 Parameters:
 
-- **Paging** (preview only): `limit` (1 to 1,000, default 50) and `offset`.
-  `count` is the number of matching rows across all pages.
+- **Paging** (preview only) is by keyset: `limit` (1 to 1,000, default 50)
+  and `cursor`. Omit `cursor` for the first page; each page's `next_cursor`
+  fetches the next one with the same filters and sort, and is `null` on the
+  last page. A cursor made for another sort is a 422. Pages can only be
+  walked forward, but each costs the same however deep it is. `count` is
+  the number of matching rows across all pages.
+
+  ```sh
+  curl -b cookies 'http://localhost:8000/api/git/preview/commits?repository_id=1&limit=1000'
+  # {"count": 1118, "limit": 1000, "next_cursor": "eyJzIjoi…", "results": [...], …}
+  curl -b cookies 'http://localhost:8000/api/git/preview/commits?repository_id=1&limit=1000&cursor=eyJzIjoi…'
+  ```
 - **`sort`**: comma-separated columns, `-` for descending
   (`sort=-github_created_at,number`). The default is the time column, newest
   first. The key columns always break ties, so pages are stable.
@@ -556,7 +576,7 @@ more than once.
 
 ### What works today
 
-- **Git:** commit mining.
+- **Git:** commit mining, and file diffs on request.
 - **GitHub** (GraphQL API): repository metadata, issues and pull requests
   with comments, timeline events, PR commits, reviews and review comments, and
   commit enrichment (logins, signatures, introducing pull requests),

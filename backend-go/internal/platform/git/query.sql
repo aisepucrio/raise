@@ -12,9 +12,6 @@ ON CONFLICT (repository_id, platform) DO UPDATE SET owner = EXCLUDED.owner, name
 -- name: GetRepository :one
 SELECT * FROM repositories WHERE id = $1;
 
--- name: ListRepositories :many
-SELECT * FROM repositories ORDER BY id DESC LIMIT $1 OFFSET $2;
-
 -- name: ListRemotes :many
 SELECT * FROM repository_remotes WHERE repository_id = ANY(sqlc.arg(repository_ids)::bigint[]);
 
@@ -53,12 +50,23 @@ INSERT INTO repository_commits (repository_id, sha)
 SELECT sqlc.arg(repository_id), unnest(sqlc.arg(shas)::text[])
 ON CONFLICT DO NOTHING;
 
--- name: ListCommits :many
-SELECT c.* FROM repository_commits rc
+-- name: InsertCommitFileDiff :batchexec
+INSERT INTO commit_file_diffs (sha, path, diff, diff_size_bytes, is_diff_truncated)
+VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (sha, path) DO NOTHING;
+
+-- name: ListCommitsWithoutDiffs :many
+-- The repository's mined commits with files whose diffs aren't mined yet.
+-- Merges have no files, so they are never planned.
+SELECT c.sha FROM repository_commits rc
 JOIN commits c ON c.sha = rc.sha
 WHERE rc.repository_id = $1
-ORDER BY c.committed_at DESC, c.sha
-LIMIT $2 OFFSET $3;
+  AND c.files_changed > 0
+  AND NOT EXISTS (SELECT 1 FROM commit_file_diffs d WHERE d.sha = c.sha)
+ORDER BY c.authored_at, c.sha;
+
+-- name: ListCommitFileDiffs :many
+SELECT * FROM commit_file_diffs WHERE sha = $1;
 
 -- name: GetRepositoryCommit :one
 SELECT c.* FROM repository_commits rc

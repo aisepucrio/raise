@@ -11,6 +11,16 @@ describe("buildGithubCollectionParameters", () => {
     ).toEqual({ urls: ["https://github.com/spf13/cobra"], commits: true });
   });
 
+  it("sends commits with diffs, since diffs are mined with them", () => {
+    expect(
+      buildGithubCollectionParameters(["spf13/cobra"], ["git_diffs"], noDates),
+    ).toEqual({
+      urls: ["https://github.com/spf13/cobra"],
+      commits: true,
+      diffs: true,
+    });
+  });
+
   it("sends only the selected GitHub resources, metadata included only if picked", () => {
     expect(
       buildGithubCollectionParameters(["spf13/cobra"], ["issues"], noDates),

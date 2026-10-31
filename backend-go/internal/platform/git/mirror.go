@@ -179,6 +179,29 @@ func (m *Mirrors) Log(ctx context.Context, repoID int64, shas []string) ([]LogEn
 	return entries, perr
 }
 
+// Diffs streams the diffs of the given commits to fn, one commit at a time.
+func (m *Mirrors) Diffs(ctx context.Context, repoID int64, shas []string, fn func(CommitDiffs) error) error {
+	cmd := m.command(ctx, nil, append([]string{"-C", m.Path(repoID)}, diffArgs()...)...)
+	cmd.Stdin = strings.NewReader(strings.Join(shas, "\n") + "\n")
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	perr := ParseDiffs(stdout, fn)
+	if perr != nil {
+		_, _ = io.Copy(io.Discard, stdout)
+	}
+	if err := cmd.Wait(); err != nil {
+		return gitError(err, stderr.Bytes(), "log --patch")
+	}
+	return perr
+}
+
 func (m *Mirrors) command(ctx context.Context, env []string, args ...string) *exec.Cmd {
 	cmd := exec.CommandContext(ctx, m.git, args...)
 	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")

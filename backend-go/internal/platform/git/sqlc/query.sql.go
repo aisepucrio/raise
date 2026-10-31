@@ -298,6 +298,37 @@ func (q *Queries) LinkCommits(ctx context.Context, arg LinkCommitsParams) error 
 	return err
 }
 
+const listCommitFileDiffs = `-- name: ListCommitFileDiffs :many
+SELECT sha, path, diff, diff_size_bytes, is_diff_truncated, first_mined_at FROM commit_file_diffs WHERE sha = $1
+`
+
+func (q *Queries) ListCommitFileDiffs(ctx context.Context, sha string) ([]CommitFileDiff, error) {
+	rows, err := q.db.Query(ctx, listCommitFileDiffs, sha)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CommitFileDiff
+	for rows.Next() {
+		var i CommitFileDiff
+		if err := rows.Scan(
+			&i.Sha,
+			&i.Path,
+			&i.Diff,
+			&i.DiffSizeBytes,
+			&i.IsDiffTruncated,
+			&i.FirstMinedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCommitFiles = `-- name: ListCommitFiles :many
 SELECT sha, path, previous_path, change_type, similarity_percent, lines_added, lines_deleted FROM commit_files WHERE sha = $1 ORDER BY path
 `
@@ -330,47 +361,30 @@ func (q *Queries) ListCommitFiles(ctx context.Context, sha string) ([]CommitFile
 	return items, nil
 }
 
-const listCommits = `-- name: ListCommits :many
-SELECT c.sha, c.parent_shas, c.author_name, c.author_email, c.authored_at, c.committer_name, c.committer_email, c.committed_at, c.message, c.lines_added, c.lines_deleted, c.files_changed, c.first_mined_at FROM repository_commits rc
+const listCommitsWithoutDiffs = `-- name: ListCommitsWithoutDiffs :many
+SELECT c.sha FROM repository_commits rc
 JOIN commits c ON c.sha = rc.sha
 WHERE rc.repository_id = $1
-ORDER BY c.committed_at DESC, c.sha
-LIMIT $2 OFFSET $3
+  AND c.files_changed > 0
+  AND NOT EXISTS (SELECT 1 FROM commit_file_diffs d WHERE d.sha = c.sha)
+ORDER BY c.authored_at, c.sha
 `
 
-type ListCommitsParams struct {
-	RepositoryID int64 `json:"repository_id"`
-	Limit        int32 `json:"limit"`
-	Offset       int32 `json:"offset"`
-}
-
-func (q *Queries) ListCommits(ctx context.Context, arg ListCommitsParams) ([]Commit, error) {
-	rows, err := q.db.Query(ctx, listCommits, arg.RepositoryID, arg.Limit, arg.Offset)
+// The repository's mined commits with files whose diffs aren't mined yet.
+// Merges have no files, so they are never planned.
+func (q *Queries) ListCommitsWithoutDiffs(ctx context.Context, repositoryID int64) ([]string, error) {
+	rows, err := q.db.Query(ctx, listCommitsWithoutDiffs, repositoryID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Commit
+	var items []string
 	for rows.Next() {
-		var i Commit
-		if err := rows.Scan(
-			&i.Sha,
-			&i.ParentShas,
-			&i.AuthorName,
-			&i.AuthorEmail,
-			&i.AuthoredAt,
-			&i.CommitterName,
-			&i.CommitterEmail,
-			&i.CommittedAt,
-			&i.Message,
-			&i.LinesAdded,
-			&i.LinesDeleted,
-			&i.FilesChanged,
-			&i.FirstMinedAt,
-		); err != nil {
+		var sha string
+		if err := rows.Scan(&sha); err != nil {
 			return nil, err
 		}
-		items = append(items, i)
+		items = append(items, sha)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -432,42 +446,6 @@ func (q *Queries) ListRemotes(ctx context.Context, repositoryIds []int64) ([]Rep
 			&i.Platform,
 			&i.Owner,
 			&i.Name,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listRepositories = `-- name: ListRepositories :many
-SELECT id, url, host, path, mirror_last_synced_at, created_at FROM repositories ORDER BY id DESC LIMIT $1 OFFSET $2
-`
-
-type ListRepositoriesParams struct {
-	Limit  int32 `json:"limit"`
-	Offset int32 `json:"offset"`
-}
-
-func (q *Queries) ListRepositories(ctx context.Context, arg ListRepositoriesParams) ([]Repository, error) {
-	rows, err := q.db.Query(ctx, listRepositories, arg.Limit, arg.Offset)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Repository
-	for rows.Next() {
-		var i Repository
-		if err := rows.Scan(
-			&i.ID,
-			&i.Url,
-			&i.Host,
-			&i.Path,
-			&i.MirrorLastSyncedAt,
-			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}

@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	filterChunk = 10_000 // SHAs per "which of these are already mined" query
-	insertChunk = 1_000  // jobs per InsertMany call
+	filterChunk   = 10_000 // SHAs per "which of these are already mined" query
+	insertChunk   = 1_000  // jobs per InsertMany call
+	diffBatchSize = 100    // commits per MineDiffBatch job
 )
 
 type syncMirrorWorker struct {
@@ -34,7 +35,9 @@ func (w *syncMirrorWorker) Work(ctx context.Context, job *river.Job[SyncMirrorAr
 		if err := p.q.WithTx(tx).MarkMirrorSynced(ctx, repo.ID); err != nil {
 			return err
 		}
-		_, err := jobkit.FromJob(ctx, job.JobRow).Enqueue(ctx, tx, jobkit.Job(PlanCommitsArgs{RepositoryID: repo.ID, Enrich: job.Args.Enrich}))
+		_, err := jobkit.FromJob(ctx, job.JobRow).Enqueue(ctx, tx, jobkit.Job(PlanCommitsArgs{
+			RepositoryID: repo.ID, Enrich: job.Args.Enrich, Diffs: job.Args.Diffs,
+		}))
 		return err
 	})
 }
@@ -87,7 +90,16 @@ func (w *planCommitsWorker) Work(ctx context.Context, job *river.Job[PlanCommits
 
 	var jobs []river.InsertManyParams
 	for batch := range chunks(pending, p.cfg.BatchSize) {
-		jobs = append(jobs, jobkit.Job(MineCommitBatchArgs{RepositoryID: repoID, SHAs: batch, Enrich: job.Args.Enrich}))
+		jobs = append(jobs, jobkit.Job(MineCommitBatchArgs{RepositoryID: repoID, SHAs: batch, Enrich: job.Args.Enrich, Diffs: job.Args.Diffs}))
+	}
+	if job.Args.Diffs {
+		// Commits mined earlier without their diffs. The pending ones aren't
+		// linked to the repository yet; their batches chain their diffs.
+		undiffed, err := p.q.ListCommitsWithoutDiffs(ctx, repoID)
+		if err != nil {
+			return err
+		}
+		jobs = append(jobs, diffJobs(repoID, undiffed)...)
 	}
 
 	names := make([]string, len(refs))
@@ -130,14 +142,23 @@ func (w *mineCommitBatchWorker) Work(ctx context.Context, job *river.Job[MineCom
 		return err
 	}
 	mined := make([]string, len(entries))
+	var withFiles []string
 	for i, e := range entries {
 		mined[i] = e.SHA
+		if len(e.Files) > 0 {
+			withFiles = append(withFiles, e.SHA)
+		}
 	}
 
 	enq := jobkit.FromJob(ctx, job.JobRow)
 	return pgx.BeginFunc(ctx, p.deps.DB, func(tx pgx.Tx) error {
 		if err := storeBatch(ctx, p.q.WithTx(tx), repo.ID, entries); err != nil {
 			return err
+		}
+		if job.Args.Diffs {
+			if _, err := enq.Enqueue(ctx, tx, diffJobs(repo.ID, withFiles)...); err != nil {
+				return err
+			}
 		}
 		for _, ref := range repo.Remotes {
 			e, ok := p.enrichers[ref.Platform]
@@ -150,6 +171,31 @@ func (w *mineCommitBatchWorker) Work(ctx context.Context, job *river.Job[MineCom
 			}
 		}
 		return nil
+	})
+}
+
+func diffJobs(repoID int64, shas []string) []river.InsertManyParams {
+	var jobs []river.InsertManyParams
+	for batch := range chunks(shas, diffBatchSize) {
+		jobs = append(jobs, jobkit.Job(MineDiffBatchArgs{RepositoryID: repoID, SHAs: batch}))
+	}
+	return jobs
+}
+
+type mineDiffBatchWorker struct {
+	river.WorkerDefaults[MineDiffBatchArgs]
+	p *Platform
+}
+
+// Work stores each commit's diffs as git streams them, so a batch never holds
+// more than one commit's diffs (at most maxCommitDiffBytes) in memory.
+func (w *mineDiffBatchWorker) Work(ctx context.Context, job *river.Job[MineDiffBatchArgs]) error {
+	p := w.p
+	return pgx.BeginFunc(ctx, p.deps.DB, func(tx pgx.Tx) error {
+		q := p.q.WithTx(tx)
+		return p.mirrors.Diffs(ctx, job.Args.RepositoryID, job.Args.SHAs, func(c CommitDiffs) error {
+			return storeDiffs(ctx, q, c)
+		})
 	})
 }
 

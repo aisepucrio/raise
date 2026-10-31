@@ -3,9 +3,11 @@ package git
 import (
 	"bytes"
 	"context"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -133,6 +135,131 @@ func TestParseLog(t *testing.T) {
 	if len(merge.ParentSHAs) != 2 || len(merge.Files) != 0 {
 		t.Errorf("merge: parents=%v files=%v", merge.ParentSHAs, merge.Files)
 	}
+}
+
+func TestParseDiffs(t *testing.T) {
+	dir := fixtureRepo(t)
+	revs, err := exec.Command("git", "-C", dir, "rev-list", "--branches").Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	gitLog := func(args []string, parse func(io.Reader) error) {
+		t.Helper()
+		cmd := exec.CommandContext(context.Background(), "git", append([]string{"-C", dir}, args...)...)
+		cmd.Stdin = bytes.NewReader(revs)
+		out, err := cmd.Output()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := parse(bytes.NewReader(out)); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	messages := map[string]string{}
+	files := map[string][]string{}
+	gitLog(logArgs(), func(r io.Reader) error {
+		return ParseLog(r, func(e LogEntry) error {
+			messages[e.SHA] = strings.SplitN(e.Message, "\n", 2)[0]
+			for _, f := range e.Files {
+				files[e.SHA] = append(files[e.SHA], f.Path)
+			}
+			return nil
+		})
+	})
+	byMsg := map[string]CommitDiffs{}
+	gitLog(diffArgs(), func(r io.Reader) error {
+		return ParseDiffs(r, func(c CommitDiffs) error {
+			byMsg[messages[c.SHA]] = c
+			// The diffs name the same files, in the same order, as the
+			// commit_files rows that ParseLog produces.
+			var paths []string
+			for _, f := range c.Files {
+				paths = append(paths, f.Path)
+			}
+			if !slices.Equal(paths, files[c.SHA]) {
+				t.Errorf("%s: diff paths %v, log paths %v", messages[c.SHA], paths, files[c.SHA])
+			}
+			return nil
+		})
+	})
+	if len(byMsg) != 5 {
+		t.Fatalf("parsed %d commits, want 5", len(byMsg))
+	}
+
+	diff := func(msg, path string) FileDiff {
+		t.Helper()
+		for _, f := range byMsg[msg].Files {
+			if f.Path == path {
+				return f
+			}
+		}
+		t.Fatalf("%s: no diff for %s in %+v", msg, path, byMsg[msg].Files)
+		return FileDiff{}
+	}
+	if d := diff("initial", "a.txt"); d.Diff == nil || *d.Diff != "@@ -0,0 +1,6 @@\n+one\n+two\n+three\n+four\n+five\n+six\n" ||
+		int(d.SizeBytes) != len(*d.Diff) || d.IsTruncated {
+		t.Errorf("a.txt = %+v (diff %q)", d, deref(d.Diff))
+	}
+	if d := diff("initial", "b.bin"); d.Diff != nil || d.SizeBytes != 0 {
+		t.Errorf("binary file has a diff: %+v", d)
+	}
+	if d := diff("rename and delete", "c.txt"); d.Diff == nil || !strings.HasSuffix(*d.Diff, " six\n+seven\n") {
+		t.Errorf("renamed c.txt = %q", deref(d.Diff))
+	}
+	if c := byMsg["merge feature"]; len(c.Files) != 0 {
+		t.Errorf("merge has diffs: %+v", c.Files)
+	}
+}
+
+// TestParseDiffsLimits feeds the parser output that the fixture can't
+// produce: a pure rename, a diff over the per-file cap, invalid UTF-8 and
+// content lines that look like headers.
+func TestParseDiffsLimits(t *testing.T) {
+	sha := strings.Repeat("a", 40)
+	big := "@@ -0,0 +1 @@\n+" + strings.Repeat("x", maxFileDiffBytes) + "\n"
+	in := "\x1e" + sha + "\x00\n" +
+		":100644 100644 1 2 R100\x00old.txt\x00new.txt\x00" +
+		":100644 100644 1 2 M\x00big.txt\x00" +
+		":100644 100644 1 2 M\x00odd.txt\x00\x00" +
+		"diff --git a/old.txt b/new.txt\nsimilarity index 100%\nrename from old.txt\nrename to new.txt\n" +
+		"diff --git a/big.txt b/big.txt\nindex 1..2 100644\n--- a/big.txt\n+++ b/big.txt\n" + big +
+		"diff --git a/odd.txt b/odd.txt\n--- a/odd.txt\n+++ b/odd.txt\n" +
+		"@@ -1 +1 @@\n-diff --git a/x b/x\n+caf\xe9\x00\n" +
+		"\x1e" + strings.Repeat("b", 40) + "\x00"
+	var got []CommitDiffs
+	if err := ParseDiffs(strings.NewReader(in), func(c CommitDiffs) error {
+		got = append(got, c)
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 2 || len(got[0].Files) != 3 || len(got[1].Files) != 0 {
+		t.Fatalf("got %+v", got)
+	}
+	rename, huge, odd := got[0].Files[0], got[0].Files[1], got[0].Files[2]
+	if rename.Path != "new.txt" || rename.Diff != nil {
+		t.Errorf("pure rename = %+v", rename)
+	}
+	if !huge.IsTruncated || int(huge.SizeBytes) != len(big) || deref(huge.Diff) != "@@ -0,0 +1 @@\n" {
+		t.Errorf("big file: truncated=%v size=%d diff=%.40q", huge.IsTruncated, huge.SizeBytes, deref(huge.Diff))
+	}
+	if want := "@@ -1 +1 @@\n-diff --git a/x b/x\n+caf��\n"; deref(odd.Diff) != want {
+		t.Errorf("odd.txt = %q, want %q", deref(odd.Diff), want)
+	}
+
+	// A patch with fewer sections than files is rejected.
+	bad := "\x1e" + sha + "\x00\n:100644 100644 1 2 M\x00a\x00:100644 100644 1 2 M\x00b\x00\x00diff --git a/a b/a\n"
+	if err := ParseDiffs(strings.NewReader(bad), func(CommitDiffs) error { return nil }); err == nil {
+		t.Error("mismatched patch accepted")
+	}
+}
+
+func deref(s *string) string {
+	if s == nil {
+		return "<nil>"
+	}
+	return *s
 }
 
 // ---- repository.go ----

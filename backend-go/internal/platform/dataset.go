@@ -1,7 +1,9 @@
 package platform
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
@@ -194,7 +196,7 @@ func (d Dataset) column(name string) (Column, bool) {
 const previewTimeout = 30 * time.Second
 
 // Parameters every dataset accepts, besides its column filters.
-var reservedParams = []string{"since", "until", "search", "sort", "limit", "offset", "format"}
+var reservedParams = []string{"since", "until", "search", "sort", "limit", "cursor", "format"}
 
 // datasetQuery is a parsed request: the WHERE clause, its arguments and the
 // ORDER BY clause.
@@ -202,6 +204,14 @@ type datasetQuery struct {
 	where   []string
 	args    []any
 	orderBy string
+	// order is orderBy as terms, which keyset cursors compare against.
+	order []sortTerm
+}
+
+// sortTerm is one ORDER BY term. Every term sorts NULLS LAST.
+type sortTerm struct {
+	col  Column
+	desc bool
 }
 
 func (q *datasetQuery) arg(v any) string {
@@ -276,11 +286,20 @@ func (d Dataset) parseQuery(values url.Values) (datasetQuery, error) {
 		q.where = append(q.where, "("+strings.Join(ors, " OR ")+")")
 	}
 
-	orderBy, err := d.orderBy(values.Get("sort"))
+	order, err := d.orderBy(values.Get("sort"))
 	if err != nil {
 		return q, err
 	}
-	q.orderBy = orderBy
+	q.order = order
+	terms := make([]string, len(order))
+	for i, t := range order {
+		dir := "ASC"
+		if t.desc {
+			dir = "DESC"
+		}
+		terms[i] = t.col.expr() + " " + dir + " NULLS LAST"
+	}
+	q.orderBy = strings.Join(terms, ", ")
 	return q, nil
 }
 
@@ -388,9 +407,10 @@ func escapeLike(s string) string {
 }
 
 // orderBy parses sort ("-github_created_at,number": comma-separated columns,
-// "-" for descending) and appends the key so that pages are stable.
-func (d Dataset) orderBy(sort string) (string, error) {
-	var terms []string
+// "-" for descending) and appends the key, so that the order is total and
+// keyset pages are stable.
+func (d Dataset) orderBy(sort string) ([]sortTerm, error) {
+	var terms []sortTerm
 	used := map[string]bool{}
 	add := func(name string, desc bool) error {
 		c, ok := d.column(name)
@@ -401,11 +421,7 @@ func (d Dataset) orderBy(sort string) (string, error) {
 			return nil
 		}
 		used[name] = true
-		dir := "ASC"
-		if desc {
-			dir = "DESC"
-		}
-		terms = append(terms, c.expr()+" "+dir+" NULLS LAST")
+		terms = append(terms, sortTerm{col: c, desc: desc})
 		return nil
 	}
 
@@ -418,15 +434,111 @@ func (d Dataset) orderBy(sort string) (string, error) {
 			continue
 		}
 		if err := add(strings.TrimPrefix(s, "-"), strings.HasPrefix(s, "-")); err != nil {
-			return "", err
+			return nil, err
 		}
 	}
 	for _, k := range d.Key {
 		if err := add(k, false); err != nil {
-			return "", err
+			return nil, err
 		}
 	}
-	return strings.Join(terms, ", "), nil
+	return terms, nil
+}
+
+// sortKey is the order in sort's syntax, with the key appended. A cursor
+// records it, so that it isn't used with another order.
+func (q datasetQuery) sortKey() string {
+	terms := make([]string, len(q.order))
+	for i, t := range q.order {
+		terms[i] = t.col.Name
+		if t.desc {
+			terms[i] = "-" + terms[i]
+		}
+	}
+	return strings.Join(terms, ",")
+}
+
+// cursor is the position after a preview page: the sort and the values of
+// the page's last row for each sort term. It is sent as opaque base64url
+// JSON.
+type cursor struct {
+	Sort  string          `json:"s"`
+	After json.RawMessage `json:"a"`
+}
+
+func encodeCursor(sort string, after []byte) (string, error) {
+	b, err := json.Marshal(cursor{Sort: sort, After: after})
+	if err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(b), nil
+}
+
+// sqlTypes are the types cursor values are cast to, so that they compare
+// as the column does.
+var sqlTypes = map[ColumnType]string{
+	ColText: "text", ColInteger: "bigint", ColNumber: "numeric", ColBoolean: "boolean", ColTimestamp: "timestamptz",
+}
+
+// after restricts q to the rows that follow the cursor in q's order. Each
+// term may be descending and every term sorts NULLS LAST, so a row value
+// comparison can't express it; the condition is expanded instead:
+// (a after a0) OR (a = a0 AND b after b0) OR …
+func (q *datasetQuery) after(encoded string) error {
+	invalid := func(why string) error {
+		return fmt.Errorf("%w: cursor: %s", apperr.ErrInvalid, why)
+	}
+	raw, err := base64.RawURLEncoding.DecodeString(encoded)
+	if err != nil {
+		return invalid("malformed")
+	}
+	var c cursor
+	if err := json.Unmarshal(raw, &c); err != nil {
+		return invalid("malformed")
+	}
+	if c.Sort != q.sortKey() {
+		return invalid("made for another sort; start again without a cursor")
+	}
+	dec := json.NewDecoder(bytes.NewReader(c.After))
+	dec.UseNumber()
+	var values []any
+	if err := dec.Decode(&values); err != nil || len(values) != len(q.order) {
+		return invalid("malformed")
+	}
+
+	var ors, equal []string
+	for i, t := range q.order {
+		e := t.col.expr()
+		if values[i] == nil {
+			// Nulls sort last: only other nulls tie, and nothing follows.
+			equal = append(equal, e+" IS NULL")
+			continue
+		}
+		p := q.arg(fmt.Sprint(values[i])) + "::text::" + sqlTypes[t.col.Type]
+		op := " > "
+		if t.desc {
+			op = " < "
+		}
+		follows := "(" + e + op + p + " OR " + e + " IS NULL)"
+		ors = append(ors, "("+strings.Join(append(slices.Clone(equal), follows), " AND ")+")")
+		equal = append(equal, e+" = "+p)
+	}
+	if len(ors) == 0 {
+		q.where = append(q.where, "FALSE")
+		return nil
+	}
+	q.where = append(q.where, "("+strings.Join(ors, " OR ")+")")
+	return nil
+}
+
+// cursorSelect selects a row's values for each sort term, from which the
+// next page's cursor is built.
+func (q datasetQuery) cursorSelect() string {
+	exprs := make([]string, len(q.order))
+	for i, t := range q.order {
+		exprs[i] = t.col.expr()
+	}
+	return "json_build_array(" + strings.Join(exprs, ", ") + ")"
 }
 
 func (d Dataset) fromWhere(q datasetQuery) string {
@@ -519,19 +631,19 @@ func (d Dataset) Info() DatasetInfo {
 }
 
 type DatasetPage struct {
-	Platform ID                `json:"platform"`
-	Dataset  string            `json:"dataset"`
-	Count    int64             `json:"count" doc:"Rows matching the filters, across all pages"`
-	Limit    int32             `json:"limit"`
-	Offset   int32             `json:"offset"`
-	Results  []json.RawMessage `json:"results" doc:"One object per row, with the dataset's columns in order"`
+	Platform   ID                `json:"platform"`
+	Dataset    string            `json:"dataset"`
+	Count      int64             `json:"count" doc:"Rows matching the filters, across all pages"`
+	Limit      int32             `json:"limit"`
+	NextCursor *string           `json:"next_cursor" doc:"Pass as cursor, with the same filters and sort, for the next page; null on the last page"`
+	Results    []json.RawMessage `json:"results" doc:"One object per row, with the dataset's columns in order"`
 }
 
 type previewInput struct {
 	Search string `query:"search" doc:"Case-insensitive substring match on the dataset's searchable columns"`
 	Sort   string `query:"sort" doc:"Comma-separated columns, each optionally prefixed with - for descending. Defaults to the time column, newest first; the key columns always break ties" example:"-github_created_at"`
 	Limit  int32  `query:"limit" minimum:"1" maximum:"1000" default:"50"`
-	Offset int32  `query:"offset" minimum:"0" default:"0"`
+	Cursor string `query:"cursor" doc:"The previous page's next_cursor; omit for the first page. Only valid with the sort it was made for"`
 	values url.Values
 }
 
@@ -596,7 +708,14 @@ func registerPreview(api huma.API, db *pgxpool.Pool, id ID, d Dataset) {
 		if err != nil {
 			return nil, httpapi.Error(err)
 		}
-		page := DatasetPage{Platform: id, Dataset: d.Name, Limit: in.Limit, Offset: in.Offset, Results: []json.RawMessage{}}
+		// The count covers every page, so it is taken without the cursor.
+		countSQL, countArgs := "SELECT count(*)"+d.fromWhere(q), slices.Clone(q.args)
+		if in.Cursor != "" {
+			if err := q.after(in.Cursor); err != nil {
+				return nil, httpapi.Error(err)
+			}
+		}
+		page := DatasetPage{Platform: id, Dataset: d.Name, Limit: in.Limit, Results: []json.RawMessage{}}
 
 		tx, err := readTx(ctx, db, previewTimeout)
 		if err != nil {
@@ -604,25 +723,37 @@ func registerPreview(api huma.API, db *pgxpool.Pool, id ID, d Dataset) {
 		}
 		defer func() { _ = tx.Rollback(ctx) }()
 
-		from := d.fromWhere(q)
-		if err := tx.QueryRow(ctx, "SELECT count(*)"+from, q.args...).Scan(&page.Count); err != nil {
+		if err := tx.QueryRow(ctx, countSQL, countArgs...).Scan(&page.Count); err != nil {
 			return nil, httpapi.Error(err)
 		}
-		args := append(slices.Clone(q.args), in.Limit, in.Offset)
-		sql := d.jsonSelect() + from + " ORDER BY " + q.orderBy +
-			fmt.Sprintf(" LIMIT $%d OFFSET $%d", len(args)-1, len(args))
+		// One row more than the page tells whether there is a next one.
+		args := append(slices.Clone(q.args), in.Limit+1)
+		sql := d.jsonSelect() + ", " + q.cursorSelect() + d.fromWhere(q) + " ORDER BY " + q.orderBy +
+			fmt.Sprintf(" LIMIT $%d", len(args))
 		rows, err := tx.Query(ctx, sql, args...)
 		if err != nil {
 			return nil, httpapi.Error(err)
 		}
+		var last []byte
 		for rows.Next() {
-			var row []byte
-			if err := rows.Scan(&row); err != nil {
+			var row, after []byte
+			if err := rows.Scan(&row, &after); err != nil {
 				rows.Close()
 				return nil, httpapi.Error(err)
 			}
+			if len(page.Results) == int(in.Limit) {
+				next, err := encodeCursor(q.sortKey(), last)
+				if err != nil {
+					rows.Close()
+					return nil, httpapi.Error(err)
+				}
+				page.NextCursor = &next
+				break
+			}
 			page.Results = append(page.Results, row)
+			last = after
 		}
+		rows.Close()
 		if err := rows.Err(); err != nil {
 			return nil, httpapi.Error(err)
 		}

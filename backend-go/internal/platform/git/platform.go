@@ -77,6 +77,7 @@ func (p *Platform) RegisterWorkers(w *river.Workers) {
 	river.AddWorker(w, &syncMirrorWorker{p: p})
 	river.AddWorker(w, &planCommitsWorker{p: p})
 	river.AddWorker(w, &mineCommitBatchWorker{p: p})
+	river.AddWorker(w, &mineDiffBatchWorker{p: p})
 }
 
 func (p *Platform) RegisterRoutes(api huma.API) { p.registerRoutes(api) }
@@ -91,6 +92,9 @@ type CollectParams struct {
 	URLs          []string `json:"urls,omitempty" doc:"Alternative to repository_ids; registers the repositories if needed"`
 	// Commits mines the commit history from the local mirror.
 	Commits bool `json:"commits"`
+	// Diffs also mines each commit file's text diff, for the commits mined
+	// now and those mined before without it. It needs commits.
+	Diffs bool `json:"diffs,omitempty" doc:"Also mine each changed file's diff (commit_file_diffs). Needs commits: true"`
 	// Enrich requests forge data, keyed by forge (e.g. "github").
 	Enrich map[platform.ID]EnrichRequest `json:"enrich,omitempty"`
 }
@@ -105,6 +109,9 @@ func (p *Platform) StartCollection(ctx context.Context, tx pgx.Tx, enq jobkit.En
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&params); err != nil {
 		return fmt.Errorf("%w: %v", apperr.ErrInvalid, err)
+	}
+	if params.Diffs && !params.Commits {
+		return fmt.Errorf("%w: diffs are mined with the commits: set commits too", apperr.ErrInvalid)
 	}
 	if !params.Commits && len(params.Enrich) == 0 {
 		return fmt.Errorf("%w: nothing to collect: set commits and/or enrich", apperr.ErrInvalid)
@@ -177,7 +184,7 @@ func (p *Platform) collectionRepositories(ctx context.Context, q *sqlc.Queries, 
 // startRepository enqueues the root jobs for one repository of a collection.
 func (p *Platform) startRepository(ctx context.Context, tx pgx.Tx, enq jobkit.Enqueuer, repo Repository, params CollectParams) error {
 	if params.Commits {
-		if _, err := enq.Enqueue(ctx, tx, jobkit.Job(SyncMirrorArgs{RepositoryID: repo.ID, Enrich: params.Enrich})); err != nil {
+		if _, err := enq.Enqueue(ctx, tx, jobkit.Job(SyncMirrorArgs{RepositoryID: repo.ID, Enrich: params.Enrich, Diffs: params.Diffs})); err != nil {
 			return err
 		}
 	}

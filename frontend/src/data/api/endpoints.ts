@@ -18,12 +18,11 @@ export const endpoints = {
   changePassword: () => "/api/auth/password",
   users: () => "/api/users",
 
-  // ==> PLATFORMS, CREDENTIALS AND REPOSITORIES
+  // ==> PLATFORMS AND CREDENTIALS
   platforms: () => "/api/platforms",
   credentials: () => "/api/credentials",
   credential: (id: number) => `/api/credentials/${id}`,
   testCredential: (id: number) => `/api/credentials/${id}/test`,
-  repositories: () => "/api/repositories",
 
   // ==> DASHBOARDS (every platform with `has_dashboard`)
   dashboard: (platform: PlatformId) => `/api/${platform}/dashboard`,

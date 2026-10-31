@@ -24,7 +24,8 @@ export type DatasetPage = {
   dataset: string;
   count: number;
   limit: number;
-  offset: number;
+  // Pass as `cursor` for the next page; null on the last page.
+  next_cursor: string | null;
   results: DatasetRow[];
 };
 
@@ -39,16 +40,18 @@ export type DatasetFilters = {
   columns?: Record<string, string | number | boolean | (string | number)[]>;
 };
 
+// Pages are keyset-paginated: a page's `next_cursor` fetches the one after
+// it, with the same filters and sort. There is no offset.
 export type DatasetPreviewParams = DatasetFilters & {
   limit: number;
-  offset: number;
+  cursor?: string;
 };
 
 export type DatasetExportFormat = "csv" | "json" | "jsonl";
 
 // Builds the query string the API expects, with repeated keys for arrays.
 export function toDatasetSearchParams(
-  filters: DatasetFilters & { limit?: number; offset?: number; format?: string },
+  filters: DatasetFilters & { limit?: number; cursor?: string; format?: string },
 ) {
   const params = new URLSearchParams();
   const { columns, ...rest } = filters;

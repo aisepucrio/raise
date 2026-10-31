@@ -243,6 +243,7 @@ Summary only; column-level detail is in [database.md](database.md).
 | `commits` | git | keyed by **SHA only**: content-addressed and shared between forks |
 | `repository_commits` | git | which repositories contain which commits |
 | `commit_files` | git | per-file `change_type` (added, renamed, …), previous path, similarity, lines added/deleted (NULL = binary) |
+| `commit_file_diffs` | git | each commit file's diff hunks, mined only with `diffs: true` |
 | `repository_refs` | git | branch and tag tips seen at the last plan |
 | `github_*`, `gitlab_*` | forge | keyed by `repository_id` (+ `sha` for commit enrichment) |
 
@@ -259,6 +260,7 @@ POST /api/collections {platform:"git", parameters:{url|urls|repository_id|reposi
  │   └─ git.plan_commits{repo, enrich}  rev-list --branches --tags, minus commits already in repository_commits
  │       └─ git.mine_commit_batch{repo, shas[≤500], enrich} × N    (parallel)
  │            ├─ upsert commits, commit_files, repository_commits   (ON CONFLICT DO NOTHING)
+ │            ├─ git.mine_diff_batch{repo, shas[≤100]} × N         (when diffs: true)
  │            └─ forge.OnCommitsMined(..., enrich[forge], ...) → enqueued in the same transaction
  │                 └─ github.fetch_commits{repo, shas[≤50]} × N    (when enrich.github has "commits")
  └─ github.list_issues{repo, cursor}    runs in parallel with git; no dependency on it
@@ -286,6 +288,21 @@ Implementation details:
   they never appear in process arguments or in the mirror's config.
 - **Planning is incremental.** Only commits missing from `repository_commits`
   are planned, so re-running a collection only mines new history.
+- **Diffs are opt-in and chained.** With `diffs: true`, each
+  `mine_commit_batch` enqueues `mine_diff_batch` jobs for its commits in the
+  transaction that stores them, and `plan_commits` also plans the
+  repository's commits that were mined without diffs
+  (`ListCommitsWithoutDiffs`), so turning diffs on later backfills them.
+  The job runs `git log -z --raw --patch` with the same rename and merge
+  options as mining (`diffOptions`), so the `--raw` entries name exactly the
+  `commit_files` rows, in the order of the patch's `diff --git` sections;
+  `ParseDiffs` pairs them by position rather than parsing the ambiguous paths
+  in the patch headers. It reads the patch line by line, keeps at most 1 MiB
+  per file and 32 MiB per commit, and stores each commit as git streams it,
+  so a batch's memory is bounded. Batches are 100 commits, smaller than
+  mining's 500, because diffs are much larger than metadata. Every file gets a
+  row (with a `NULL` diff when there are no hunks), which marks the commit's
+  diffs as mined.
 - **Commit-level enrichment is chained, not orchestrated.** `OnCommitsMined`
   returns follow-up jobs that are inserted in the same transaction that stores
   the batch. This gives dependent work without a workflow engine. The git jobs
@@ -566,10 +583,10 @@ The API uses huma v2 on chi (`humachi`). The OpenAPI 3.1 spec is served at
 | platforms | `GET /api/platforms` |
 | credentials | `GET/POST /api/credentials`, `POST /api/credentials/{id}/test`, `DELETE /api/credentials/{id}` |
 | collections | `POST/GET /api/collections`, `GET /api/collections/{id}`, `GET /api/collections/{id}/errors`, `POST /api/collections/{id}/cancel` |
-| git | `POST/GET /api/repositories`, `GET /api/repositories/{id}`, `GET /api/repositories/{id}/commits`, `GET /api/repositories/{id}/commits/{sha}` |
+| git | `POST /api/repositories`, `GET /api/repositories/{id}`, `GET /api/repositories/{id}/commits/{sha}` |
 | dashboards | `GET /api/{platform}/dashboard`, `GET /api/{platform}/dashboard/graph`, `GET /api/{platform}/dashboard/date-range` for every `Dashboarder` (§9.1): `git`, `github` |
 | preview and export | `GET /api/{platform}/preview`, `GET /api/{platform}/preview/{dataset}`, `GET /api/{platform}/export/{dataset}` for every `DatasetProvider` (§9.2): `git`, `github` |
-| github | `GET /api/github/repositories/{id}`, `GET /api/github/repositories/{id}/issues`, `GET /api/github/repositories/{id}/issues/{number}`, `GET /api/github/repositories/{id}/pull-requests`, `GET /api/github/repositories/{id}/pull-requests/{number}`, `GET /api/github/repositories/{id}/commits/{sha}`, `GET /api/github/repositories/{id}/releases`, `GET /api/github/repositories/{id}/releases/{github_id}` |
+| github | `GET /api/github/repositories/{id}`, `GET /api/github/repositories/{id}/issues/{number}`, `GET /api/github/repositories/{id}/pull-requests/{number}`, `GET /api/github/repositories/{id}/commits/{sha}`, `GET /api/github/repositories/{id}/releases/{github_id}` |
 | health | `GET /healthz` |
 
 **Schema names.** huma names each OpenAPI schema after its Go type, and the
@@ -656,7 +673,7 @@ the SQL and serves them. `GET /api/platforms` lists each platform's
 | Endpoint | Output |
 |---|---|
 | `GET /api/{platform}/preview` | `[]DatasetInfo`: name, description, key, time column, and per column its type, filter parameters, and whether it is sortable and searchable |
-| `GET /api/{platform}/preview/{dataset}` | `{platform, dataset, count, limit, offset, results}`; `limit` ≤ 1000 (default 50) |
+| `GET /api/{platform}/preview/{dataset}` | `{platform, dataset, count, limit, next_cursor, results}`; `limit` ≤ 1000 (default 50), `cursor` for the following pages |
 | `GET /api/{platform}/export/{dataset}` | `format=csv\|json\|jsonl`, streamed as an attachment; no paging |
 
 - **A dataset** is a `From` clause (with joins), an optional fixed `Where`, an
@@ -673,9 +690,21 @@ the SQL and serves them. `GET /api/platforms` lists each platform's
   `until` apply to the time column, `search` is an `ILIKE` over the searchable
   columns, and `sort` takes columns with an optional `-`. Long text and JSON
   aren't filtered or sorted. Unknown parameters are a 422.
-- **Stable order.** The key columns are appended to every sort, so offset
-  pages don't skip or repeat rows. The default sort is the time column,
-  newest first.
+- **Stable order.** The key columns are appended to every sort, so the order
+  is total. The default sort is the time column, newest first.
+- **Keyset pagination.** Mined data is listed only through previews, and
+  previews page by cursor, not offset, so a deep page costs the same as the
+  first. The handler reads `limit + 1` rows to know whether a next page
+  exists, and selects each row's sort values (`json_build_array`) alongside
+  it. `next_cursor` is base64url JSON of the sort (in `sort` syntax, with the
+  key) and the last row's values; a cursor used with another sort is a 422.
+  Since terms can be descending and sort `NULLS LAST`, a row-value comparison
+  can't express "after", so `datasetQuery.after` expands it:
+  `(a after a0) OR (a = a0 AND b after b0) OR …`, where "after" also admits
+  NULL and a NULL cursor value only ties with NULL. Values are cast back to
+  the column's type (`$n::text::timestamptz`, …). `count` ignores the cursor:
+  it is the total across pages. Pages are forward only; a client keeps the
+  cursors it has seen to go back.
 - **The filters differ per dataset**, so huma can't bind them: the input
   struct's `Resolve` keeps the raw query string, the handler parses it against
   the columns, and `Dataset.filterDocs` adds every parameter to the OpenAPI
@@ -745,6 +774,11 @@ collection and one 1,118-commit spf13/cobra collection):
   tracking.
 - Collections: transactional start, sharded progress, reconcile, cancel.
 - Git: registration, mirrors, incremental planning, parallel batch mining.
+- Git diffs (`diffs: true`): verified against spf13/cobra (backfilled after a
+  commits-only collection) and spf13/pflag (chained after mining). Every
+  stored diff of their 1,310 non-merge commits matched `git diff-tree`, every
+  file got a row, and the 10 `NULL` diffs were 1 binary file and 9 pure
+  renames. A re-run enqueued no diff jobs.
 - GitHub (GraphQL): repository metadata, issues and pull requests with
   comments, timeline events, commits, reviews and review comments. Includes
   credential rotation, rate limits, secondary limits and timeout splitting.
@@ -763,7 +797,8 @@ collection and one 1,118-commit spf13/cobra collection):
   GraphQL queries and 12 REST requests.
 - Dashboards (§9.1) for git and GitHub, with a shared card and time-series
   format for every platform.
-- Previews and exports (§9.2) of every git and GitHub table. Verified against
+- Previews and exports (§9.2) of every git and GitHub table, with keyset
+  pagination; they replaced the per-repository listing endpoints. Verified against
   spf13/cobra: the preview counts matched SQL counts (114 merges, 83 commits
   since 2024), and CSV, JSON and JSON Lines exports returned every row (1,118
   commits, 1,920 commit files). The GitHub datasets were exercised with every
@@ -780,13 +815,9 @@ TODO, in rough priority order:
   plan → page pattern. Jira can split large ranges with `jobkit.SplitWindows`.
 - GitLab enrichment, plus scoping credentials by host for self-managed
   instances.
-- Parquet exports or exports written by jobs if streaming CSV/JSON proves too
-  slow for the largest tables (dashboards, date ranges, previews and exports
-  are done for git and GitHub, §9.1 and §9.2; Jira and Stack Overflow
-  implement `Dashboarder` and `DatasetProvider` with their collection jobs).
-- Keyset pagination for large listings; currently `limit`/`offset`.
-- Diff-on-demand from mirrors, which requires the API to reach the mirror
-  volume.
+- Dashboards, previews and exports for Jira and Stack Overflow: they
+  implement `Dashboarder` and `DatasetProvider` with their collection jobs
+  (git and GitHub are done, §9.1 and §9.2).
 - Frontend: the GitHub screens, login, admin user registration, credential
   management, password change and the collections (Jobs) screen use this API,
   served from one origin (Vite's dev proxy, or nginx). Still to do there: the

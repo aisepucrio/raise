@@ -64,12 +64,13 @@ function describeCollectionRepositories(
 
 // What a collection mines, e.g. "commits, github: metadata, issues".
 function describeCollectionScope(collection: Collection) {
-  const { commits, enrich } = collection.parameters as {
+  const { commits, diffs, enrich } = collection.parameters as {
     commits?: boolean;
+    diffs?: boolean;
     enrich?: Record<string, { resources?: string[] }>;
   };
   const parts: string[] = [];
-  if (commits) parts.push("commits");
+  if (commits) parts.push(diffs ? "commits with diffs" : "commits");
   for (const [platform, request] of Object.entries(enrich ?? {})) {
     parts.push(`${platform}: ${(request.resources ?? []).join(", ")}`);
   }

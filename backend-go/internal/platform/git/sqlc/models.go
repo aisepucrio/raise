@@ -34,6 +34,15 @@ type CommitFile struct {
 	LinesDeleted      *int32  `json:"lines_deleted"`
 }
 
+type CommitFileDiff struct {
+	Sha             string    `json:"sha"`
+	Path            string    `json:"path"`
+	Diff            *string   `json:"diff"`
+	DiffSizeBytes   int32     `json:"diff_size_bytes"`
+	IsDiffTruncated bool      `json:"is_diff_truncated"`
+	FirstMinedAt    time.Time `json:"first_mined_at"`
+}
+
 type Repository struct {
 	ID                 int64      `json:"id"`
 	Url                string     `json:"url"`

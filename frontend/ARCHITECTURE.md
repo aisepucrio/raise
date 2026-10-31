@@ -182,11 +182,11 @@ are the database column names (`github_created_at`, `first_mined_at`, ...).
 | Graph | `GET /api/{platform}/dashboard/graph?…&interval=` | Overview chart |
 | Date range | `GET /api/{platform}/dashboard/date-range?entity=` | Date-picker bounds |
 | Datasets | `GET /api/{platform}/preview` | Which filters a section offers |
-| Preview | `GET /api/{platform}/preview/{dataset}?limit=&offset=&…` | Preview tables |
+| Preview | `GET /api/{platform}/preview/{dataset}?limit=&cursor=&…` | Preview tables |
 | Export | `GET /api/{platform}/export/{dataset}?format=&…` | Preview export (a plain link) |
 | Collections | `GET /api/collections`, `POST /api/collections`, `POST /api/collections/{id}/cancel` | Jobs, Collect |
 | Collection log | `GET /api/collections/{id}/errors?limit=1000` | Jobs (View log) |
-| Repositories | `GET /api/repositories` | Jobs (repository names) |
+| Repositories | `GET /api/git/preview/repositories?limit=1000&cursor=` (every page) | Jobs (repository names), Collect (known repositories) |
 
 ### Overview
 
@@ -218,11 +218,19 @@ Each GitHub section is one dataset:
 `GithubPreview` waits for the dataset catalogue and offers the repository
 filter only when the dataset has a `repository_id` column, and the date
 filter only when it has a time column, so it never sends a parameter the
-dataset rejects (a 422). Requests send `limit` and `offset` (from the page),
+dataset rejects (a 422). Requests send `limit` and `cursor` (see below),
 `search`, `sort` (`col` or `-col`, three-state), `since`/`until`
 (`YYYY-MM-DD`, until exclusive) and `repository_id`. Columns the catalogue
 marks unsortable (long text, JSON) can't be sorted. The response is
-`{count, limit, offset, results}`; columns are derived from the rows.
+`{count, limit, next_cursor, results}`; columns are derived from the rows.
+
+Paging is by keyset cursor, so pages open in order: `GithubPreview` keeps
+the cursors it has seen (`cursors[n]` fetches page `n + 1`) and records each
+page's `next_cursor`. The footer still numbers pages from `count`, but
+disables those past the last known cursor (`maxReachablePage`), including the
+last page until it is reached. Changing a filter, the sort or the page size
+drops the cursors and returns to page 1, since a cursor only holds for the
+query it was made with.
 
 Export builds the same query (no paging) with `format=json|csv` and opens it
 as a link: a same-origin GET with the session cookie, streamed by the API as
@@ -250,6 +258,8 @@ starts a `git` collection, built by `buildGithubCollectionParameters`
 
 - **What to collect** is grouped by source. "From the git
   repository: Commits" sets `commits: true` (a local clone; no token).
+  "File diffs" sets `diffs: true` and `commits: true`, since the API mines
+  diffs with the commits; Jobs shows it as "commits with diffs".
   "From GitHub" lists `metadata`, `issues`, `pull_requests`, `commits`
   (authors and PR links), `releases` and `users`. Every option is optional;
   commits and repository details are selected by default. `enrich.github` is
@@ -264,7 +274,7 @@ starts a `git` collection, built by `buildGithubCollectionParameters`
   credential (`GET /api/credentials`), the form warns that GitHub items would
   fail, with a link to Credentials for admins.
 - **Repositories** are typed as `owner/repo` or a URL, or picked from the
-  github.com repositories Raise already knows (`GET /api/repositories`); all
+  github.com repositories Raise already knows (git's `repositories` dataset); all
   are sent as URLs, which the API matches to existing repositories.
 - A summary sentence says what the button will do; Collect stays disabled
   until there is a repository and an option. Starting needs the researcher
@@ -274,7 +284,7 @@ starts a `git` collection, built by `buildGithubCollectionParameters`
 
 Rows are collections, newest first (the list returns a bare array; the page
 loads up to 1,000 and paginates in memory). Each shows its repositories
-(URLs and `repository_ids`, named from `GET /api/repositories`), what it
+(URLs and `repository_ids`, named from git's `repositories` dataset), what it
 mines, its creation time, progress (`jobs_done`/`jobs_expected`, plus failed
 jobs) and status. `formatStatusItem` maps `running`, `completed`, `partial`
 (settled with failures) and `canceled`. Researchers can cancel a running

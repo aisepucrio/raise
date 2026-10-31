@@ -9,6 +9,8 @@ type CollectOption = {
 // Mined from a local clone: needs no token.
 const REPOSITORY_OPTIONS: readonly CollectOption[] = [
   { collectType: "git_commits", label: "Commits (history, branches, tags)" },
+  // Implies commits; the API mines diffs with them.
+  { collectType: "git_diffs", label: "File diffs (with the commits; large)" },
 ];
 
 // Fetched from the GitHub API: needs a GitHub token under Credentials.

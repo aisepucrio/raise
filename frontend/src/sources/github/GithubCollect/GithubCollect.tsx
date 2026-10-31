@@ -115,7 +115,9 @@ export default function GithubCollect() {
 
   // A plain-language description of what the button will do.
   const summaryParts: string[] = [];
-  if (selectedTypes.includes("git_commits")) {
+  if (selectedTypes.includes("git_diffs")) {
+    summaryParts.push("mine the commit history with each file's diff");
+  } else if (selectedTypes.includes("git_commits")) {
     summaryParts.push("mine the commit history");
   }
   if (usesGithub) {

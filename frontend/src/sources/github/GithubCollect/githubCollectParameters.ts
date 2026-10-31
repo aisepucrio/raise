@@ -5,10 +5,11 @@ import {
   type GithubResource,
 } from "@/data";
 
-// What a GitHub collection can mine. `git_commits` comes from the repository
-// itself (cloned locally, no token needed); the rest are GitHub resources,
-// which need a GitHub credential (backend-go README, Mining a repository).
-export type GithubCollectType = "git_commits" | GithubResource;
+// What a GitHub collection can mine. `git_commits` and `git_diffs` come from
+// the repository itself (cloned locally, no token needed); the rest are
+// GitHub resources, which need a GitHub credential (backend-go README, Mining
+// a repository).
+export type GithubCollectType = "git_commits" | "git_diffs" | GithubResource;
 
 // GitHub resources the date filters apply to.
 export const DATED_RESOURCES: readonly GithubResource[] = [
@@ -34,12 +35,15 @@ export type GithubCollectDates = {
 export function githubResourcesOf(
   types: readonly GithubCollectType[],
 ): GithubResource[] {
-  return types.filter((t): t is GithubResource => t !== "git_commits");
+  return types.filter(
+    (t): t is GithubResource => t !== "git_commits" && t !== "git_diffs",
+  );
 }
 
 // Builds a `git` collection, enriched with GitHub only when a GitHub resource
 // is selected, so a commits-only collection needs no token. Repositories are
-// sent as URLs; the API registers unknown ones and matches known ones.
+// sent as URLs; the API registers unknown ones and matches known ones. Diffs
+// are mined with the commits, so they send `commits` too.
 export function buildGithubCollectionParameters(
   repositories: readonly string[],
   types: readonly GithubCollectType[],
@@ -54,7 +58,10 @@ export function buildGithubCollectionParameters(
 
   return {
     urls: repositories.map((repository) => `https://github.com/${repository}`),
-    ...(types.includes("git_commits") ? { commits: true } : {}),
+    ...(types.includes("git_commits") || types.includes("git_diffs")
+      ? { commits: true }
+      : {}),
+    ...(types.includes("git_diffs") ? { diffs: true } : {}),
     ...(resources.length > 0
       ? {
           enrich: {

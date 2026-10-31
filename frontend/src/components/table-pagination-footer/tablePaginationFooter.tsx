@@ -16,6 +16,9 @@ export type TablePaginationFooterProps = {
   currentPage: number;
   rowsPerPage: number;
   totalItems: number;
+  // The last page that can be opened, when pages can only be reached in
+  // order (keyset pagination); later pages are disabled. Defaults to all.
+  maxReachablePage?: number;
   onPageChange: (page: number) => void;
   onRowsPerPageChange: (rowsPerPage: number) => void;
   itemsLabel?: string;
@@ -38,6 +41,7 @@ export function TablePaginationFooter({
   currentPage,
   rowsPerPage,
   totalItems,
+  maxReachablePage,
   onPageChange,
   onRowsPerPageChange,
   itemsLabel = "items",
@@ -51,6 +55,8 @@ export function TablePaginationFooter({
   const firstRowNumber = hasItems ? (safeCurrentPage - 1) * rowsPerPage + 1 : 0;
   const lastRowNumber = hasItems ? Math.min(safeCurrentPage * rowsPerPage, totalItems) : 0;
   const visiblePages = getVisiblePages(safeCurrentPage, totalPages);
+  const isReachable = (page: number) =>
+    maxReachablePage === undefined || page <= maxReachablePage;
 
   return (
     <div
@@ -101,6 +107,7 @@ export function TablePaginationFooter({
                     text={String(page)}
                     isActive={safeCurrentPage === page}
                     aria-label={`Go to page ${page}`}
+                    disabled={!isReachable(page)}
                     onClick={() => onPageChange(page)}
                   />
                 </PaginationItem>
@@ -115,7 +122,11 @@ export function TablePaginationFooter({
               icon={<ChevronRight />}
               aria-label="Go to next page"
               title="Next page"
-              disabled={safeCurrentPage >= totalPages || !hasItems}
+              disabled={
+                safeCurrentPage >= totalPages ||
+                !hasItems ||
+                !isReachable(safeCurrentPage + 1)
+              }
               onClick={() => {
                 if (safeCurrentPage < totalPages) onPageChange(safeCurrentPage + 1);
               }}

@@ -118,6 +118,7 @@ erDiagram
     repositories ||--o{ repository_commits : contains
     commits ||--o{ repository_commits : "appears in"
     commits ||--o{ commit_files : changes
+    commit_files ||--o| commit_file_diffs : "diff of"
 
     repositories ||--o| github_repositories : "enriched by"
     repositories ||--o{ github_issues : "enriched by"
@@ -353,6 +354,28 @@ detection.
 | `change_type` | `text` | | `added`, `modified`, `deleted`, `renamed`, `copied`, `type_changed`, `unmerged` |
 | `similarity_percent` | `integer` | ✓ | Similarity for renames and copies |
 | `lines_added`, `lines_deleted` | `integer` | ✓ | `NULL` for binary files |
+
+### `commit_file_diffs` ✅
+
+Migration: `00004_git.sql`. The text diff of each commit file, mined only by
+collections with `diffs: true`. Once a commit's diffs are mined, every
+`commit_files` row of it has one row here, so "commits without a row here"
+is what still needs mining. Rows are inserted once and never updated.
+
+The diff is what `git log --patch --find-renames --unified=3` prints for the
+file, from its first `@@` line: the hunks, without the `diff --git`, `index`
+and `---`/`+++` lines, whose information `commit_files` already holds. The
+column is compressed with lz4. As a rough size, spf13/cobra's 1,118 commits
+take 3.8 MB here.
+
+| Column | Type | Null | Description |
+|---|---|:-:|---|
+| `sha` | `text` | | Part of the primary key; with `path`, → `commit_files` |
+| `path` | `text` | | Part of the primary key |
+| `diff` | `text` | ✓ | Unified diff hunks; `NULL` when there are none (binary files, mode changes, pure renames). NUL bytes and invalid UTF-8 are replaced with U+FFFD |
+| `diff_size_bytes` | `integer` | | Size of the whole diff, before truncation; `0` when `diff` is `NULL` |
+| `is_diff_truncated` | `boolean` | | The diff was cut at a line boundary: past 1 MiB for the file, or 32 MiB for the whole commit |
+| `first_mined_at` | `timestamptz` | | |
 
 ### `repository_refs` ✅
 
@@ -1058,6 +1081,15 @@ FROM repository_commits rc
 JOIN commit_files f ON f.sha = rc.sha
 WHERE rc.repository_id = 1 AND f.change_type <> 'deleted'
 GROUP BY f.path ORDER BY times_changed DESC LIMIT 20;
+```
+
+Commits whose diffs add a call to a function (with `diffs: true` mined):
+
+```sql
+SELECT d.sha, d.path
+FROM repository_commits rc
+JOIN commit_file_diffs d ON d.sha = rc.sha
+WHERE rc.repository_id = 1 AND d.diff ~ '(?n)^\+.*MarkFlagRequired\(';
 ```
 
 Time to close GitHub issues (excluding pull requests). Note the platform

@@ -60,8 +60,10 @@ export function GithubPreview({
   const [endDate, setEndDate] = useState("");
   const [search, setSearch] = useState("");
 
-  // Pagination and sorting.
+  // Pagination and sorting. Pages are keyset-paginated: cursors[n] fetches
+  // page n + 1, and is known once page n has loaded, so pages open in order.
   const [currentPage, setCurrentPage] = useState(1);
+  const [cursors, setCursors] = useState<(string | undefined)[]>([undefined]);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [sortState, setSortState] = useState<PreviewSortState>(null);
 
@@ -106,10 +108,12 @@ export function GithubPreview({
 
   const sort = useMemo(() => resolvePreviewOrdering(sortState), [sortState]);
 
-  // When filters change, return to the first page.
+  // When filters change, return to the first page; cursors only hold for
+  // the filters, sort and page size they were made with.
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedSourceId, startDate, endDate, search, sort]);
+    setCursors([undefined]);
+  }, [selectedSourceId, startDate, endDate, search, sort, rowsPerPage]);
 
   // Filters shared by the preview and the export, so an export is the
   // currently filtered table.
@@ -136,13 +140,14 @@ export function GithubPreview({
     ],
   );
 
+  const pageCursor = cursors[currentPage - 1];
   const previewParams = useMemo(
     () => ({
       ...filters,
       limit: rowsPerPage,
-      offset: (currentPage - 1) * rowsPerPage,
+      ...(pageCursor ? { cursor: pageCursor } : {}),
     }),
-    [filters, rowsPerPage, currentPage],
+    [filters, rowsPerPage, pageCursor],
   );
 
   // Waits for the catalogue so unsupported filters are never sent (a 422).
@@ -158,11 +163,25 @@ export function GithubPreview({
   const totalItems = previewQuery.data?.count ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
 
-  // Prevents an invalid page when the total changes.
+  // Records the cursor of the page after the current one.
+  const nextCursor = previewQuery.isPlaceholderData
+    ? undefined
+    : previewQuery.data?.next_cursor;
+  useEffect(() => {
+    if (!nextCursor) return;
+    setCursors((current) =>
+      current[currentPage] === nextCursor
+        ? current
+        : [...current.slice(0, currentPage), nextCursor],
+    );
+  }, [nextCursor, currentPage]);
+
+  // Prevents an invalid page when the total changes. Only pages whose
+  // cursor is known can be opened.
   useEffect(() => {
     if (currentPage <= totalPages) return;
-    setCurrentPage(totalPages);
-  }, [currentPage, totalPages]);
+    setCurrentPage(Math.min(totalPages, cursors.length));
+  }, [currentPage, totalPages, cursors.length]);
 
   // Derives visible columns and table configuration from row data.
   const { columns, visibleColumns, tableColumns } = useMemo(
@@ -310,12 +329,10 @@ export function GithubPreview({
         currentPage={currentPage}
         rowsPerPage={rowsPerPage}
         totalItems={totalItems}
+        maxReachablePage={cursors.length}
         itemsLabel={itemsLabel}
         onPageChange={setCurrentPage}
-        onRowsPerPageChange={(nextRowsPerPage) => {
-          setRowsPerPage(nextRowsPerPage);
-          setCurrentPage(1);
-        }}
+        onRowsPerPageChange={setRowsPerPage}
       />
 
       {/* Modal that shows long cell values without breaking table layout. */}

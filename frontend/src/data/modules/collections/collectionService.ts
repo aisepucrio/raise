@@ -1,5 +1,6 @@
 import { api } from "../../api/apiClient";
 import { endpoints } from "../../api/endpoints";
+import type { DatasetPage } from "../datasets/datasetTypes";
 import type { RequestOptions } from "../shared";
 import type {
   Collection,
@@ -33,9 +34,22 @@ export const collectionService = {
   // Researcher or admin.
   cancel: (id: number) => api.post(endpoints.cancelCollection(id)),
 
-  listRepositories: (options?: RequestOptions) =>
-    api.get<Repository[], Repository[]>(endpoints.repositories(), {
-      params: { limit: MAX_LIMIT },
-      signal: options?.signal,
-    }),
+  // Every registered repository, from git's `repositories` dataset, newest
+  // first. It follows the cursors, since a page holds at most 1000.
+  listRepositories: async (options?: RequestOptions) => {
+    const repositories: Repository[] = [];
+    let cursor: string | undefined;
+    do {
+      const page = await api.get<DatasetPage, DatasetPage>(
+        endpoints.datasetPreview("git", "repositories"),
+        {
+          params: { limit: MAX_LIMIT, ...(cursor ? { cursor } : {}) },
+          signal: options?.signal,
+        },
+      );
+      repositories.push(...(page.results as Repository[]));
+      cursor = page.next_cursor ?? undefined;
+    } while (cursor);
+    return repositories;
+  },
 };

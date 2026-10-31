@@ -37,6 +37,8 @@ export type PreviewTableProps = {
   currentPage: number;
   rowsPerPage: number;
   totalItems: number;
+  // See TablePaginationFooter: pages after it are disabled.
+  maxReachablePage?: number;
   itemsLabel: string;
   onPageChange: (nextPage: number) => void;
   onRowsPerPageChange: (nextRowsPerPage: number) => void;
@@ -70,6 +72,7 @@ export function PreviewTable({
   currentPage,
   rowsPerPage,
   totalItems,
+  maxReachablePage,
   itemsLabel,
   onPageChange,
   onRowsPerPageChange,
@@ -244,6 +247,7 @@ export function PreviewTable({
             currentPage={currentPage}
             rowsPerPage={rowsPerPage}
             totalItems={totalItems}
+            maxReachablePage={maxReachablePage}
             itemsLabel={itemsLabel}
             onPageChange={(nextPage) => {
               onPageChange(nextPage);

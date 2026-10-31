@@ -289,40 +289,6 @@ func (p *Platform) registerRoutes(api huma.API) {
 	})
 
 	huma.Register(api, huma.Operation{
-		OperationID: "github-list-issues", Method: http.MethodGet, Path: "/api/github/repositories/{id}/issues",
-		Summary: "List mined GitHub issues and pull requests of a repository", Tags: tags,
-	}, func(ctx context.Context, in *struct {
-		ID    int64  `path:"id"`
-		State string `query:"state" enum:"open,closed"`
-		Kind  string `query:"kind" enum:"issue,pull_request"`
-		httpapi.Page
-	}) (*struct{ Body []GitHubIssue }, error) {
-		params := sqlc.ListIssuesParams{RepositoryID: in.ID, Limit: in.Limit, Offset: in.Offset}
-		if in.State != "" {
-			params.State = &in.State
-		}
-		if in.Kind != "" {
-			params.IsPullRequest = new(in.Kind == "pull_request")
-		}
-		rows, err := p.q.ListIssues(ctx, params)
-		if err != nil {
-			return nil, httpapi.Error(err)
-		}
-		out := make([]GitHubIssue, len(rows))
-		for i, r := range rows {
-			out[i] = GitHubIssue{
-				Number: r.Number, GithubID: r.GithubID, Title: r.Title, State: r.State, StateReason: r.StateReason,
-				AuthorLogin: r.AuthorLogin, AuthorAssociation: r.AuthorAssociation,
-				LabelNames: r.LabelNames, AssigneeLogins: r.AssigneeLogins, MilestoneTitle: r.MilestoneTitle,
-				IsLocked: r.IsLocked, CommentCount: r.CommentCount, ReactionCounts: r.ReactionCounts,
-				IsPullRequest: r.IsPullRequest, GithubCreatedAt: r.GithubCreatedAt, GithubUpdatedAt: r.GithubUpdatedAt,
-				GithubClosedAt: r.GithubClosedAt, FirstMinedAt: r.FirstMinedAt, LastMinedAt: r.LastMinedAt,
-			}
-		}
-		return &struct{ Body []GitHubIssue }{out}, nil
-	})
-
-	huma.Register(api, huma.Operation{
 		OperationID: "github-get-issue", Method: http.MethodGet, Path: "/api/github/repositories/{id}/issues/{number}",
 		Summary: "Get a GitHub issue or pull request conversation with its comments and timeline events", Tags: tags,
 	}, func(ctx context.Context, in *itemPath) (*struct{ Body GitHubIssueDetail }, error) {
@@ -331,33 +297,6 @@ func (p *Platform) registerRoutes(api huma.API) {
 			return nil, httpapi.Error(err)
 		}
 		return &struct{ Body GitHubIssueDetail }{d}, nil
-	})
-
-	huma.Register(api, huma.Operation{
-		OperationID: "github-list-pull-requests", Method: http.MethodGet, Path: "/api/github/repositories/{id}/pull-requests",
-		Summary: "List mined GitHub pull requests of a repository", Tags: tags,
-	}, func(ctx context.Context, in *struct {
-		ID     int64  `path:"id"`
-		State  string `query:"state" enum:"open,closed"`
-		Merged string `query:"merged" enum:"true,false"`
-		httpapi.Page
-	}) (*struct{ Body []GitHubPullRequest }, error) {
-		params := sqlc.ListPullRequestsParams{RepositoryID: in.ID, Limit: in.Limit, Offset: in.Offset}
-		if in.State != "" {
-			params.State = &in.State
-		}
-		if in.Merged != "" {
-			params.IsMerged = new(in.Merged == "true")
-		}
-		rows, err := p.q.ListPullRequests(ctx, params)
-		if err != nil {
-			return nil, httpapi.Error(err)
-		}
-		out := make([]GitHubPullRequest, len(rows))
-		for i, r := range rows {
-			out[i] = GitHubPullRequest(r)
-		}
-		return &struct{ Body []GitHubPullRequest }{out}, nil
 	})
 
 	huma.Register(api, huma.Operation{
@@ -383,30 +322,6 @@ func (p *Platform) registerRoutes(api huma.API) {
 			return nil, httpapi.Error(err)
 		}
 		return &struct{ Body GitHubCommit }{c}, nil
-	})
-
-	huma.Register(api, huma.Operation{
-		OperationID: "github-list-releases", Method: http.MethodGet, Path: "/api/github/repositories/{id}/releases",
-		Summary: "List mined GitHub releases of a repository, newest first", Tags: tags,
-	}, func(ctx context.Context, in *struct {
-		ID int64 `path:"id"`
-		httpapi.Page
-	}) (*struct{ Body []GitHubRelease }, error) {
-		rows, err := p.q.ListReleases(ctx, sqlc.ListReleasesParams{RepositoryID: in.ID, Limit: in.Limit, Offset: in.Offset})
-		if err != nil {
-			return nil, httpapi.Error(err)
-		}
-		out := make([]GitHubRelease, len(rows))
-		for i, r := range rows {
-			out[i] = GitHubRelease{
-				GithubID: r.GithubID, GithubNodeID: r.GithubNodeID, TagName: r.TagName, Name: r.Name,
-				TagCommitSha: r.TagCommitSha, IsDraft: r.IsDraft, IsPrerelease: r.IsPrerelease, IsLatest: r.IsLatest,
-				AuthorLogin: r.AuthorLogin, ReactionCounts: r.ReactionCounts, AssetCount: r.AssetCount,
-				GithubCreatedAt: r.GithubCreatedAt, GithubUpdatedAt: r.GithubUpdatedAt,
-				GithubPublishedAt: r.GithubPublishedAt, FirstMinedAt: r.FirstMinedAt, LastMinedAt: r.LastMinedAt,
-			}
-		}
-		return &struct{ Body []GitHubRelease }{out}, nil
 	})
 
 	huma.Register(api, huma.Operation{

@@ -210,17 +210,6 @@ JOIN commits c ON c.sha = rc.sha
 LEFT JOIN github_commits g ON g.sha = rc.sha
 WHERE rc.repository_id = $1;
 
--- name: ListIssues :many
-SELECT repository_id, number, github_id, title, state, state_reason, author_login, author_association,
-       label_names, assignee_logins, milestone_title, is_locked, comment_count, reaction_counts,
-       is_pull_request, github_created_at, github_updated_at, github_closed_at, first_mined_at, last_mined_at
-FROM github_issues
-WHERE repository_id = $1
-  AND (sqlc.narg(state)::text IS NULL OR state = sqlc.narg(state))
-  AND (sqlc.narg(is_pull_request)::boolean IS NULL OR is_pull_request = sqlc.narg(is_pull_request))
-ORDER BY number DESC
-LIMIT $2 OFFSET $3;
-
 -- name: GetIssue :one
 SELECT repository_id, number, github_id, title, state, state_reason, author_login, author_association,
        label_names, assignee_logins, milestone_title, is_locked, comment_count, reaction_counts,
@@ -240,21 +229,6 @@ SELECT github_node_id, issue_number, event_type, actor_login, commit_sha, github
 FROM github_issue_events
 WHERE repository_id = $1 AND issue_number = $2
 ORDER BY github_created_at, github_node_id;
-
--- name: ListPullRequests :many
-SELECT p.number, p.github_id, i.title, p.state, p.is_draft, p.is_merged, p.author_login,
-       p.merged_by_login, p.head_ref, p.head_sha, p.head_repository_full_name, p.base_ref, p.base_sha,
-       p.merge_commit_sha, p.commit_count, p.files_changed, p.lines_added, p.lines_deleted,
-       p.comment_count, p.review_count, p.review_thread_count, p.requested_reviewer_logins,
-       p.github_created_at, p.github_updated_at, p.github_closed_at, p.github_merged_at,
-       p.first_mined_at, p.last_mined_at
-FROM github_pull_requests p
-JOIN github_issues i ON i.repository_id = p.repository_id AND i.number = p.number
-WHERE p.repository_id = $1
-  AND (sqlc.narg(state)::text IS NULL OR p.state = sqlc.narg(state))
-  AND (sqlc.narg(is_merged)::boolean IS NULL OR p.is_merged = sqlc.narg(is_merged))
-ORDER BY p.number DESC
-LIMIT $2 OFFSET $3;
 
 -- name: GetPullRequest :one
 SELECT p.number, p.github_id, i.title, p.state, p.is_draft, p.is_merged, p.author_login,
@@ -387,15 +361,6 @@ ON CONFLICT (github_node_id) DO UPDATE SET
     raw_payload       = EXCLUDED.raw_payload,
     last_mined_at     = now()
 WHERE github_release_assets.github_updated_at <= EXCLUDED.github_updated_at;
-
--- name: ListReleases :many
-SELECT github_id, github_node_id, tag_name, name, tag_commit_sha, is_draft, is_prerelease, is_latest,
-       author_login, reaction_counts, asset_count, github_created_at, github_updated_at,
-       github_published_at, first_mined_at, last_mined_at
-FROM github_releases
-WHERE repository_id = $1
-ORDER BY github_created_at DESC, github_id DESC
-LIMIT $2 OFFSET $3;
 
 -- name: GetRelease :one
 SELECT github_id, github_node_id, tag_name, name, body, tag_commit_sha, is_draft, is_prerelease, is_latest,

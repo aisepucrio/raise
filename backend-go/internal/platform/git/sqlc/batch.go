@@ -151,3 +151,60 @@ func (b *InsertCommitFileBatchResults) Close() error {
 	b.closed = true
 	return b.br.Close()
 }
+
+const insertCommitFileDiff = `-- name: InsertCommitFileDiff :batchexec
+INSERT INTO commit_file_diffs (sha, path, diff, diff_size_bytes, is_diff_truncated)
+VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (sha, path) DO NOTHING
+`
+
+type InsertCommitFileDiffBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type InsertCommitFileDiffParams struct {
+	Sha             string  `json:"sha"`
+	Path            string  `json:"path"`
+	Diff            *string `json:"diff"`
+	DiffSizeBytes   int32   `json:"diff_size_bytes"`
+	IsDiffTruncated bool    `json:"is_diff_truncated"`
+}
+
+func (q *Queries) InsertCommitFileDiff(ctx context.Context, arg []InsertCommitFileDiffParams) *InsertCommitFileDiffBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.Sha,
+			a.Path,
+			a.Diff,
+			a.DiffSizeBytes,
+			a.IsDiffTruncated,
+		}
+		batch.Queue(insertCommitFileDiff, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &InsertCommitFileDiffBatchResults{br, len(arg), false}
+}
+
+func (b *InsertCommitFileDiffBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *InsertCommitFileDiffBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}

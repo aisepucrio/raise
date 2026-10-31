@@ -54,6 +54,9 @@ export type GitCollectionParameters = {
   repository_ids?: number[];
   // Clone or fetch the repository and mine its history locally.
   commits?: boolean;
+  // Also mine each changed file's diff (needs `commits`). Large: roughly
+  // 4 KB per commit.
+  diffs?: boolean;
   enrich?: {
     github?: {
       resources: GithubResource[];

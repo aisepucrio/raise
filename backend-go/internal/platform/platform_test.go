@@ -2,11 +2,13 @@ package platform
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"net/url"
 	"reflect"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -295,6 +297,60 @@ func TestDatasetParseQueryRejects(t *testing.T) {
 	}
 }
 
+func TestDatasetCursor(t *testing.T) {
+	q, err := parse(t, "state=open&sort=-score,login")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := q.sortKey(), "-score,login,id"; got != want {
+		t.Fatalf("sort key: got %q, want %q", got, want)
+	}
+	if got, want := q.cursorSelect(), "json_build_array(score, login, id)"; got != want {
+		t.Errorf("cursor select: got %q, want %q", got, want)
+	}
+
+	// A null sorts last, so only rows with a null score can follow it.
+	c, err := encodeCursor(q.sortKey(), []byte(`[null, "bob", 42]`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := q.after(c); err != nil {
+		t.Fatal(err)
+	}
+	want := "((score IS NULL AND (login > $2::text::text OR login IS NULL)) OR " +
+		"(score IS NULL AND login = $2::text::text AND (id > $3::text::bigint OR id IS NULL)))"
+	if got := q.where[len(q.where)-1]; got != want {
+		t.Errorf("after:\n got %s\nwant %s", got, want)
+	}
+	if got := q.args[1:]; !reflect.DeepEqual(got, []any{"bob", "42"}) {
+		t.Errorf("args: %#v", got)
+	}
+
+	q, _ = parse(t, "sort=-score,login")
+	c, _ = encodeCursor(q.sortKey(), []byte(`[1.5, "bob", 42]`))
+	if err := q.after(c); err != nil {
+		t.Fatal(err)
+	}
+	if got := q.where[len(q.where)-1]; !strings.HasPrefix(got, "(((score < $1::text::numeric OR score IS NULL)) OR (score = $1::text::numeric AND ") {
+		t.Errorf("descending after: %s", got)
+	}
+
+	for _, bad := range []string{
+		"not base64!",
+		base64.RawURLEncoding.EncodeToString([]byte(`{"s":"-score,login,id","a":[1]}`)), // wrong length
+	} {
+		q, _ := parse(t, "sort=-score,login")
+		if err := q.after(bad); !errors.Is(err, apperr.ErrInvalid) {
+			t.Errorf("%s: got %v, want ErrInvalid", bad, err)
+		}
+	}
+	// A cursor is only valid with the sort it was made for.
+	q, _ = parse(t, "sort=login")
+	if err := q.after(c); !errors.Is(err, apperr.ErrInvalid) {
+		t.Errorf("other sort: got %v, want ErrInvalid", err)
+	}
+}
+
 func TestDatasetSelects(t *testing.T) {
 	d := Dataset{Columns: []Column{IntCol("id"), TextArrayCol("labels"), TimeCol("created_at").Expression("t.created")}}
 	if got, want := d.jsonSelect(), "SELECT json_build_object('id', id, 'labels', labels, 'created_at', t.created)"; got != want {
@@ -374,6 +430,12 @@ func TestDatasetRoutes(t *testing.T) {
 	if resp := api.Get("/api/fake/preview/things?limit=5000"); resp.Code != 422 {
 		t.Errorf("limit above maximum: got %d, want 422", resp.Code)
 	}
+	// Paging is by cursor; offset is not a parameter.
+	for _, path := range []string{"/api/fake/preview/things?offset=50", "/api/fake/preview/things?cursor=nope"} {
+		if resp := api.Get(path); resp.Code != 422 {
+			t.Errorf("%s: got %d, want 422", path, resp.Code)
+		}
+	}
 
 	// The filters are documented in the OpenAPI document.
 	op := api.OpenAPI().Paths["/api/fake/preview/things"].Get
@@ -381,7 +443,7 @@ func TestDatasetRoutes(t *testing.T) {
 	for _, p := range op.Parameters {
 		names[p.Name] = true
 	}
-	for _, want := range []string{"since", "until", "state", "created_at_since", "score_min", "limit", "sort"} {
+	for _, want := range []string{"since", "until", "state", "created_at_since", "score_min", "limit", "cursor", "sort"} {
 		if !names[want] {
 			t.Errorf("parameter %s not documented", want)
 		}

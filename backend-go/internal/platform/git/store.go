@@ -38,6 +38,10 @@ type CommitFile struct {
 	SimilarityPercent *int32  `json:"similarity_percent,omitempty"`
 	LinesAdded        *int32  `json:"lines_added" doc:"null for binary files"`
 	LinesDeleted      *int32  `json:"lines_deleted"`
+	// The diff fields are set only when requested and mined.
+	Diff            *string `json:"diff,omitempty" doc:"With diffs=true: the unified diff hunks; absent for binary files, mode changes and pure renames, and until diffs are mined"`
+	DiffSizeBytes   *int32  `json:"diff_size_bytes,omitempty" doc:"With diffs=true, once mined: the size of the whole diff, before truncation"`
+	IsDiffTruncated *bool   `json:"is_diff_truncated,omitempty" doc:"With diffs=true, once mined"`
 }
 
 func toCommit(c sqlc.Commit) Commit {
@@ -106,14 +110,6 @@ func (p *Platform) getRepository(ctx context.Context, q *sqlc.Queries, id int64)
 	return repos[0], nil
 }
 
-func (p *Platform) ListRepositories(ctx context.Context, limit, offset int32) ([]Repository, error) {
-	rows, err := p.q.ListRepositories(ctx, sqlc.ListRepositoriesParams{Limit: limit, Offset: offset})
-	if err != nil {
-		return nil, err
-	}
-	return p.withRemotes(ctx, p.q, rows)
-}
-
 func (p *Platform) withRemotes(ctx context.Context, q *sqlc.Queries, rows []sqlc.Repository) ([]Repository, error) {
 	ids := make([]int64, len(rows))
 	for i, r := range rows {
@@ -141,19 +137,7 @@ func (p *Platform) withRemotes(ctx context.Context, q *sqlc.Queries, rows []sqlc
 	return out, nil
 }
 
-func (p *Platform) ListCommits(ctx context.Context, repoID int64, limit, offset int32) ([]Commit, error) {
-	rows, err := p.q.ListCommits(ctx, sqlc.ListCommitsParams{RepositoryID: repoID, Limit: limit, Offset: offset})
-	if err != nil {
-		return nil, err
-	}
-	out := make([]Commit, len(rows))
-	for i, c := range rows {
-		out[i] = toCommit(c)
-	}
-	return out, nil
-}
-
-func (p *Platform) GetCommit(ctx context.Context, repoID int64, sha string) (Commit, error) {
+func (p *Platform) GetCommit(ctx context.Context, repoID int64, sha string, withDiffs bool) (Commit, error) {
 	row, err := p.q.GetRepositoryCommit(ctx, sqlc.GetRepositoryCommitParams{RepositoryID: repoID, Sha: sha})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Commit{}, fmt.Errorf("%w: commit %s in repository %d", apperr.ErrNotFound, sha, repoID)
@@ -171,6 +155,22 @@ func (p *Platform) GetCommit(ctx context.Context, repoID int64, sha string) (Com
 		c.Files[i] = CommitFile{
 			Path: f.Path, PreviousPath: f.PreviousPath, ChangeType: f.ChangeType,
 			SimilarityPercent: f.SimilarityPercent, LinesAdded: f.LinesAdded, LinesDeleted: f.LinesDeleted,
+		}
+	}
+	if !withDiffs {
+		return c, nil
+	}
+	diffs, err := p.q.ListCommitFileDiffs(ctx, sha)
+	if err != nil {
+		return Commit{}, err
+	}
+	byPath := make(map[string]sqlc.CommitFileDiff, len(diffs))
+	for _, d := range diffs {
+		byPath[d.Path] = d
+	}
+	for i := range c.Files {
+		if d, ok := byPath[c.Files[i].Path]; ok {
+			c.Files[i].Diff, c.Files[i].DiffSizeBytes, c.Files[i].IsDiffTruncated = d.Diff, &d.DiffSizeBytes, &d.IsDiffTruncated
 		}
 	}
 	return c, nil
@@ -215,6 +215,22 @@ func storeBatch(ctx context.Context, q *sqlc.Queries, repoID int64, entries []Lo
 		}
 	}
 	return q.LinkCommits(ctx, sqlc.LinkCommitsParams{RepositoryID: repoID, Shas: shas})
+}
+
+func storeDiffs(ctx context.Context, q *sqlc.Queries, c CommitDiffs) error {
+	if len(c.Files) == 0 {
+		return nil
+	}
+	rows := make([]sqlc.InsertCommitFileDiffParams, len(c.Files))
+	for i, f := range c.Files {
+		rows[i] = sqlc.InsertCommitFileDiffParams{
+			Sha: c.SHA, Path: f.Path, Diff: f.Diff, DiffSizeBytes: f.SizeBytes, IsDiffTruncated: f.IsTruncated,
+		}
+	}
+	if err := execBatch(q.InsertCommitFileDiff(ctx, rows)); err != nil {
+		return fmt.Errorf("insert diffs of %s: %w", c.SHA, err)
+	}
+	return nil
 }
 
 type batchResults interface {
