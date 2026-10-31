@@ -1,6 +1,6 @@
 // Package github is a forge: it enriches git repositories hosted on GitHub
-// with repository metadata, issues, pull requests and commit data from the
-// GraphQL API.
+// with repository metadata, issues, pull requests, commit data, releases and
+// the profiles of the accounts involved, mostly from the GraphQL API.
 package github
 
 import (
@@ -73,6 +73,11 @@ func (p *Platform) RegisterWorkers(w *river.Workers) {
 	river.AddWorker(w, &fetchConnectionWorker{p: p})
 	river.AddWorker(w, &planCommitsWorker{p: p})
 	river.AddWorker(w, &fetchCommitsWorker{p: p})
+	river.AddWorker(w, &listReleasesWorker{p: p})
+	river.AddWorker(w, &fetchReleaseAssetsWorker{p: p})
+	river.AddWorker(w, &planUsersWorker{p: p})
+	river.AddWorker(w, &fetchUsersWorker{p: p})
+	river.AddWorker(w, &fetchBotWorker{p: p})
 }
 
 func (p *Platform) RegisterRoutes(api huma.API) { p.registerRoutes(api) }

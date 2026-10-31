@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"slices"
 	"strconv"
 	"strings"
@@ -156,6 +157,8 @@ func TestQueryErrorClassification(t *testing.T) {
 		"gateway timeout": {http.StatusBadGateway, ``, ErrQueryTimeout},
 		"query timeout": {http.StatusOK, `{"data": null, "errors": [{"message": "Something went wrong while executing your query. This may be the result of a timeout, or it could be a GitHub bug."}]}`,
 			ErrQueryTimeout},
+		"resource limits": {http.StatusOK, `{"data": {"nodes": [{"releaseAssets": {"nodes": [null]}}]}, "errors": [{"type": "RESOURCE_LIMITS_EXCEEDED", "path": ["nodes", 0, "releaseAssets", "nodes", 0, "id"], "message": "Resource limits for this query exceeded."}]}`,
+			ErrQueryTimeout},
 		"forbidden":     {http.StatusOK, `{"data": {"repository": null}, "errors": [{"type": "FORBIDDEN", "path": ["repository"], "message": "SAML enforcement"}]}`, jobkit.ErrPermanent},
 		"forbidden 403": {http.StatusForbidden, `{"message": "Resource not accessible"}`, jobkit.ErrPermanent},
 	}
@@ -181,6 +184,33 @@ func TestQueryErrorClassification(t *testing.T) {
 			t.Fatalf("err = %v, want a non-permanent GraphQLError", err)
 		}
 	})
+}
+
+func TestGetREST(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		quotaHeaders(w, 4000)
+		switch r.URL.EscapedPath() {
+		case "/users/dependabot%5Bbot%5D":
+			_, _ = w.Write([]byte(`{"id": 49699333, "login": "dependabot[bot]", "type": "Bot"}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	t.Cleanup(srv.Close)
+	leaser := &fakeLeaser{}
+	c := NewClient(srv.Client(), srv.URL, srv.URL+"/graphql", leaser)
+
+	var u restUser
+	found, err := c.Get(context.Background(), "/users/"+url.PathEscape("dependabot[bot]"), &u)
+	if err != nil || !found || u.ID != 49699333 || u.Type != "Bot" {
+		t.Fatalf("Get = %v, %v, %+v", found, err, u)
+	}
+	if leaser.scopes[0] != ScopeCore {
+		t.Errorf("leased scope %q, want %q", leaser.scopes[0], ScopeCore)
+	}
+	if found, err := c.Get(context.Background(), "/users/gone", &u); err != nil || found {
+		t.Errorf("Get of a missing user = %v, %v", found, err)
+	}
 }
 
 func TestGraphQLURLFor(t *testing.T) {
@@ -226,8 +256,48 @@ func TestOnCommitsMinedOnlyWhenRequested(t *testing.T) {
 		t.Fatalf("jobs = %d, want 2", len(jobs))
 	}
 	a := jobs[1].Args.(FetchCommitsArgs)
-	if a.RepositoryID != 3 || a.Owner != "o" || a.Name != "r" || len(a.SHAs) != 1 || a.SHAs[0] != shas[commitBatchSize] {
+	if a.RepositoryID != 3 || a.Owner != "o" || a.Name != "r" || len(a.SHAs) != 1 || a.SHAs[0] != shas[commitBatchSize] || a.Users {
 		t.Errorf("second batch = %+v", a)
+	}
+	jobs = p.OnCommitsMined(repo, ref, git.EnrichRequest{Resources: []string{ResourceCommits, ResourceUsers}}, shas)
+	if !jobs[0].Args.(FetchCommitsArgs).Users {
+		t.Error("users requested, but FetchCommits doesn't fetch them")
+	}
+}
+
+func TestInCreationWindow(t *testing.T) {
+	day := func(d int) time.Time { return time.Date(2024, 1, d, 0, 0, 0, 0, time.UTC) }
+	page := []issueID{{"a", day(1)}, {"b", day(2)}, {"c", day(3)}, {"d", day(4)}}
+	created := func(n issueID) time.Time { return n.CreatedAt }
+	ids := func(ns []issueID) string {
+		var out string
+		for _, n := range ns {
+			out += n.ID
+		}
+		return out
+	}
+	since, until := day(2), day(4)
+	cases := []struct {
+		name         string
+		since, until *time.Time
+		want         string
+		past         bool
+	}{
+		{"open", nil, nil, "abcd", false},
+		{"since is inclusive", &since, nil, "bcd", false},
+		{"until is exclusive and stops the listing", nil, &until, "abc", true},
+		{"both", &since, &until, "bc", true},
+	}
+	for _, c := range cases {
+		kept, past := inCreationWindow(page, created, c.since, c.until)
+		if ids(kept) != c.want || past != c.past {
+			t.Errorf("%s: got %q past=%v, want %q past=%v", c.name, ids(kept), past, c.want, c.past)
+		}
+	}
+	// A page entirely before since keeps nothing but goes on listing.
+	late := day(10)
+	if kept, past := inCreationWindow(page, created, &late, nil); len(kept) != 0 || past {
+		t.Errorf("page before since: kept %d, past=%v", len(kept), past)
 	}
 }
 
@@ -251,7 +321,8 @@ const pullRequestFixture = `{
   "baseRefName": "main", "baseRefOid": "bbbb", "mergeCommit": {"oid": "cccc"},
   "changedFiles": 3, "additions": 10, "deletions": 2,
   "reviewRequests": {"nodes": [{"requestedReviewer": {"__typename": "User", "login": "dave"}},
-                               {"requestedReviewer": {"__typename": "Team", "combinedSlug": "o/core"}}]},
+                               {"requestedReviewer": {"__typename": "Team", "combinedSlug": "o/core"}},
+                               {"requestedReviewer": {"__typename": "Bot", "login": "copilot-pull-request-reviewer"}}]},
   "timelineItems": {"pageInfo": {"hasNextPage": false, "endCursor": "T1"}, "nodes": [
     {"__typename": "MergedEvent", "id": "ME_1", "actor": {"login": "carol"}, "createdAt": "2024-01-02T00:00:00Z",
      "mergeRefName": "main", "commit": {"oid": "cccc"}},
@@ -305,7 +376,7 @@ func TestBatchMapsPullRequest(t *testing.T) {
 	pr := b.pullRequests[0]
 	if pr.State != "closed" || !pr.IsMerged || *pr.MergedByLogin != "carol" || pr.HeadRepositoryFullName != nil ||
 		*pr.MergeCommitSha != "cccc" || pr.CommitCount != 101 || pr.ReviewThreadCount != 1 ||
-		len(pr.RequestedReviewerLogins) != 1 || pr.RequestedReviewerLogins[0] != "dave" {
+		!slices.Equal(pr.RequestedReviewerLogins, []string{"dave", "copilot-pull-request-reviewer[bot]"}) {
 		t.Errorf("pull request row = %+v", pr)
 	}
 	if len(b.commitTrims) != 1 || b.commitTrims[0].CommitCount != 101 {
@@ -339,6 +410,12 @@ func TestBatchMapsPullRequest(t *testing.T) {
 	if rc := b.reviewComments[0]; rc.ThreadGithubNodeID != "PRRT_1" || *rc.ReviewGithubID != 4000000001 ||
 		rc.InReplyToGithubID != nil || rc.Line != nil || *rc.OriginalLine != 7 || rc.PullRequestNumber != 42 {
 		t.Errorf("review comment = %+v", rc)
+	}
+
+	logins := b.logins()
+	slices.Sort(logins)
+	if want := []string{"alice", "alice", "bob", "carol", "carol", "copilot-pull-request-reviewer[bot]", "dave", "dave", "dave"}; !slices.Equal(logins, want) {
+		t.Errorf("logins = %v, want %v", logins, want)
 	}
 
 	// Continuations: comments and commits of the PR, comments of the thread.
@@ -464,6 +541,104 @@ func TestCommitBatchFrom(t *testing.T) {
 	}
 }
 
+// A release as returned by queryListReleases.
+const releaseFixture = `{
+  "id": "RE_1", "databaseId": 150000001, "tagName": "v1.2.0", "name": "", "description": "Notes",
+  "url": "https://github.com/o/r/releases/tag/v1.2.0", "isDraft": false, "isPrerelease": true, "isLatest": false,
+  "immutable": false, "author": {"login": "alice"}, "tagCommit": {"oid": "aaaa"},
+  "reactionGroups": [{"content": "HOORAY", "reactors": {"totalCount": 3}}],
+  "createdAt": "2024-01-01T00:00:00Z", "updatedAt": "2024-01-02T00:00:00Z", "publishedAt": "2024-01-01T01:00:00Z",
+  "releaseAssets": {"totalCount": 101}
+}`
+
+func TestBatchMapsRelease(t *testing.T) {
+	var n node[gqlRelease]
+	if err := json.Unmarshal([]byte(releaseFixture), &n); err != nil {
+		t.Fatal(err)
+	}
+	b := &batch{repoID: 3}
+	b.addRelease(n)
+	if b.err != nil {
+		t.Fatal(b.err)
+	}
+	if len(b.releases) != 1 {
+		t.Fatalf("releases = %+v", b.releases)
+	}
+	r := b.releases[0]
+	if r.GithubID != 150000001 || r.RepositoryID != 3 || r.TagName != "v1.2.0" || r.Name != nil || *r.Body != "Notes" ||
+		*r.TagCommitSha != "aaaa" || !r.IsPrerelease || r.IsLatest || *r.AuthorLogin != "alice" ||
+		r.AssetCount != 101 || string(r.ReactionCounts) != `{"hooray":3}` || r.GithubPublishedAt == nil {
+		t.Errorf("release row = %+v", r)
+	}
+	raw := string(r.RawPayload)
+	if strings.Contains(raw, "releaseAssets") || !strings.Contains(raw, `"immutable"`) {
+		t.Errorf("raw_payload = %s", raw)
+	}
+
+	// A release without a database ID can't be keyed and is skipped.
+	b = &batch{repoID: 3}
+	b.addRelease(node[gqlRelease]{V: gqlRelease{ID: "RE_2"}})
+	if len(b.releases) != 0 {
+		t.Errorf("release without databaseId was mapped: %+v", b.releases)
+	}
+}
+
+func TestBatchMapsReleaseAssets(t *testing.T) {
+	var v gqlReleaseAssets
+	err := json.Unmarshal([]byte(`{
+	  "id": "RE_1", "databaseId": 150000001,
+	  "releaseAssets": {"pageInfo": {"hasNextPage": true, "endCursor": "A1"}, "nodes": [
+	    {"id": "RA_1", "name": "app.tar.gz", "contentType": "application/gzip", "size": 2048, "downloadCount": 17,
+	     "downloadUrl": "https://github.com/o/r/releases/download/v1.2.0/app.tar.gz", "digest": "sha256:ff",
+	     "uploadedBy": {"__typename": "Bot", "login": "github-actions"}, "createdAt": "2024-01-01T00:30:00Z", "updatedAt": "2024-01-01T00:31:00Z"}]}
+	}`), &v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b := &batch{repoID: 3, users: true}
+	b.addReleaseAssets(v.ID, *v.DatabaseID, v.ReleaseAssets)
+	if len(b.releaseAssets) != 1 {
+		t.Fatalf("assets = %+v", b.releaseAssets)
+	}
+	if a := b.releaseAssets[0]; a.GithubNodeID != "RA_1" || a.ReleaseGithubID != 150000001 || a.SizeBytes != 2048 ||
+		a.DownloadCount != 17 || *a.UploaderLogin != "github-actions[bot]" || *a.Digest != "sha256:ff" ||
+		!strings.Contains(string(a.RawPayload), `"digest"`) {
+		t.Errorf("asset row = %+v", a)
+	}
+	want := FetchConnectionArgs{RepositoryID: 3, Connection: ConnReleaseAssets, NodeID: "RE_1", Cursor: "A1", Users: true}
+	if len(b.jobs) != 1 || b.jobs[0].Args.(FetchConnectionArgs) != want {
+		t.Errorf("jobs = %+v", b.jobs)
+	}
+}
+
+func TestReleaseAssetBatches(t *testing.T) {
+	release := func(id string, assets int32) node[gqlRelease] {
+		var n node[gqlRelease]
+		n.V.ID, n.V.ReleaseAssets.TotalCount = id, assets
+		return n
+	}
+	// 312 assets count as one page of 100; releases without assets are skipped.
+	releases := []node[gqlRelease]{
+		release("a", 312), release("b", 0), release("c", 100), release("d", 250),
+		release("e", 50), release("f", 100), release("g", 100), release("h", 1),
+	}
+	var got [][]string
+	for _, j := range releaseAssetBatches(9, true, releases) {
+		a := j.Args.(FetchReleaseAssetsArgs)
+		if a.RepositoryID != 9 || !a.Users {
+			t.Errorf("args = %+v", a)
+		}
+		got = append(got, a.NodeIDs)
+	}
+	want := [][]string{{"a", "c", "d", "e", "f"}, {"g", "h"}}
+	if !slices.EqualFunc(got, want, slices.Equal) {
+		t.Errorf("batches = %v, want %v", got, want)
+	}
+	if jobs := releaseAssetBatches(9, false, []node[gqlRelease]{release("x", 0)}); len(jobs) != 0 {
+		t.Errorf("jobs for releases without assets = %+v", jobs)
+	}
+}
+
 func TestQueryFetchCommits(t *testing.T) {
 	q := queryFetchCommits(2)
 	for _, want := range []string{"$s0: GitObjectID!, $s1: GitObjectID!", "c0: object(oid: $s0)", "c1: object(oid: $s1)", "fragment commitFields on Commit"} {
@@ -478,12 +653,111 @@ func TestQueryFetchCommits(t *testing.T) {
 
 func TestEveryConnectionHasAQuery(t *testing.T) {
 	for _, c := range []string{ConnIssueComments, ConnTimelineItems, ConnPullRequestCommits,
-		ConnPullRequestReviews, ConnReviewThreads, ConnThreadComments} {
+		ConnPullRequestReviews, ConnReviewThreads, ConnThreadComments, ConnReleaseAssets} {
 		if connectionQueries[c] == "" {
 			t.Errorf("no query for connection %q", c)
 		}
 	}
 	if len(eventTypes) != len(pullRequestTimelineEvents) {
 		t.Error("duplicate __typename in the timeline event tables")
+	}
+}
+
+func TestQueryFetchUsers(t *testing.T) {
+	q := queryFetchUsers(2)
+	for _, want := range []string{"query($l0: String!, $l1: String!)", "u0: repositoryOwner(login: $l0)", "u1: repositoryOwner(login: $l1)", "fragment ownerFields on RepositoryOwner"} {
+		if !strings.Contains(q, want) {
+			t.Errorf("query lacks %q:\n%s", want, q)
+		}
+	}
+	if strings.Contains(q, "u2:") {
+		t.Error("query has more aliases than logins")
+	}
+}
+
+// A queryFetchUsers response for a user, an organization and a login that no
+// longer resolves.
+const usersFixture = `{
+  "u0": {"__typename": "User", "id": "U_1", "login": "spf13", "url": "https://github.com/spf13", "databaseId": 173412,
+         "name": "Steve Francia", "company": null, "location": "NYC", "email": "", "websiteUrl": "http://spf13.com",
+         "bio": "b", "isSiteAdmin": false, "createdAt": "2009-12-29T03:37:15Z", "updatedAt": "2024-01-01T00:00:00Z",
+         "followers": {"totalCount": 16701}, "following": {"totalCount": 85}, "repositories": {"totalCount": 123}},
+  "u1": {"__typename": "Organization", "id": "O_1", "login": "dependabot", "url": "https://github.com/dependabot",
+         "databaseId": 27347476, "name": "Dependabot", "location": null, "email": null, "websiteUrl": null,
+         "description": "d", "isVerified": true, "createdAt": "2017-04-12T11:03:37Z", "updatedAt": "2025-03-11T20:05:57Z",
+         "repositories": {"totalCount": 26}},
+  "u2": null
+}`
+
+func TestUsersFrom(t *testing.T) {
+	var data map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(usersFixture), &data); err != nil {
+		t.Fatal(err)
+	}
+	rows, err := usersFrom(data, []string{"spf13", "dependabot", "renamed"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 2 {
+		t.Fatalf("rows = %+v (unresolved logins must be skipped)", rows)
+	}
+	if u := rows[0]; u.GithubID != 173412 || u.Login != "spf13" || u.AccountType != "User" || u.Email != nil ||
+		u.Company != nil || *u.BlogUrl != "http://spf13.com" || *u.FollowerCount != 16701 || *u.FollowingCount != 85 ||
+		u.PublicRepositoryCount != 123 || !strings.Contains(string(u.RawPayload), `"bio"`) {
+		t.Errorf("user row = %+v", u)
+	}
+	if o := rows[1]; o.AccountType != "Organization" || o.FollowerCount != nil || o.FollowingCount != nil ||
+		o.PublicRepositoryCount != 26 || o.IsSiteAdmin {
+		t.Errorf("organization row = %+v", o)
+	}
+}
+
+func TestBotRow(t *testing.T) {
+	var u node[restUser]
+	// REST names this bot "Copilot"; the data mined through GraphQL refers to
+	// it by the login it was looked up with.
+	err := json.Unmarshal([]byte(`{"id": 175728472, "node_id": "BOT_kgDOCnlnWA", "login": "Copilot",
+	  "type": "Bot", "site_admin": false, "name": null, "blog": "", "email": null, "public_repos": 0,
+	  "followers": 0, "following": 0, "created_at": "2024-07-01T00:00:00Z", "updated_at": "2024-07-01T00:00:00Z"}`), &u)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := botRow("copilot-pull-request-reviewer[bot]", u)
+	if r.GithubID != 175728472 || r.Login != "copilot-pull-request-reviewer[bot]" || r.AccountType != "Bot" ||
+		r.BlogUrl != nil || *r.FollowerCount != 0 || !strings.Contains(string(r.RawPayload), `"login": "Copilot"`) {
+		t.Errorf("bot row = %+v", r)
+	}
+}
+
+func TestUserJobs(t *testing.T) {
+	logins := []string{"dependabot[bot]"}
+	for i := range userBatchSize + 1 {
+		logins = append(logins, fmt.Sprintf("user%d", i))
+	}
+	jobs := userJobs(logins)
+	if len(jobs) != 3 {
+		t.Fatalf("jobs = %d, want a bot job and two user batches", len(jobs))
+	}
+	if a := jobs[0].Args.(FetchBotArgs); a.Login != "dependabot[bot]" {
+		t.Errorf("bot job = %+v", a)
+	}
+	if a := jobs[1].Args.(FetchUsersArgs); len(a.Logins) != userBatchSize || a.Logins[0] != "user0" {
+		t.Errorf("first user batch = %d logins", len(a.Logins))
+	}
+	if a := jobs[2].Args.(FetchUsersArgs); len(a.Logins) != 1 {
+		t.Errorf("second user batch = %+v", a)
+	}
+	if jobs := userJobs(nil); len(jobs) != 0 {
+		t.Errorf("jobs for no logins = %+v", jobs)
+	}
+}
+
+// ---- datasets.go ----
+
+func TestDatasetsAreValid(t *testing.T) {
+	for _, d := range (&Platform{}).Datasets() {
+		if err := d.Validate(); err != nil {
+			t.Error(err)
+		}
 	}
 }

@@ -12,6 +12,10 @@
 //   - Source: the platform can start a collection on its own (git, jira,
 //     stackoverflow). Forges (github, gitlab) instead enrich git
 //     repositories; see the Enricher interface in platform/git.
+//   - Dashboarder: the platform has an overview dashboard, served in the
+//     shared format of dashboard.go.
+//   - DatasetProvider: the platform's tables can be previewed and exported,
+//     with the shared filters of dataset.go.
 package platform
 
 import (

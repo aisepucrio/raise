@@ -31,6 +31,21 @@ times are `first_mined_at`/`last_mined_at`. See database.md's naming
 conventions before adding any table or column. API JSON fields use the same
 names as the columns.
 
+## Before writing frontend code: read the docs
+
+When working in `frontend/`, read these first and follow them:
+
+- **[frontend/README.md](frontend/README.md):** setup, configuration,
+  development commands, validation limits, routes, and deployment.
+- **[frontend/ARCHITECTURE.md](frontend/ARCHITECTURE.md):** code organisation,
+  routing and state, data access and caching, current API contracts, known
+  gaps, and the Go backend migration checklist.
+
+The frontend currently targets the legacy Django/Celery API. Changing
+`VITE_API_URL` alone does not make it compatible with `backend-go/`. For
+migration work, also read the Go backend docs above and check its published
+OpenAPI contract; distinguish implemented behaviour from planned work.
+
 ## Keep the docs up to date
 
 These documents are part of the code. Update them **in the same change** as the
@@ -48,6 +63,11 @@ code they describe:
   - Moving items in the status/TODO section.
 - **README.md:** new commands, configuration variables, endpoints or
   deployment steps.
+- **frontend/README.md:** changes to frontend setup, commands, configuration,
+  routes, validation, or serving/deployment.
+- **frontend/ARCHITECTURE.md:** changes to frontend structure, source modules,
+  routing/state, API contracts, caching, or migration status. Update known gaps
+  and planned work as they are resolved or implemented.
 
 If code and docs disagree, either fix the code to match the docs, or update
 the docs and explain why in your summary. Never leave them inconsistent.
@@ -55,8 +75,11 @@ the docs and explain why in your summary. Never leave them inconsistent.
 ## Working in backend-go
 
 - Database changes:
-  - Add a new migration in `internal/db/migrations/`. Never edit a migration
-    that has been applied outside development.
+  - Migrations in `internal/db/migrations/` are grouped one per module
+    (`00004_git.sql`, `00005_github.sql`, …). No production database exists
+    yet, so edit the owning module's migration in place, or add one for a new
+    module, then run `make reset-db`. Once a migration has been applied
+    outside development, never edit it; add a new one instead.
   - Put queries in the owning package's `query.sql`, then run `make generate`.
   - Never hand-edit generated `sqlc/` code.
 - Respect the import rules enforced by `.golangci.yml` (depguard). Don't loosen

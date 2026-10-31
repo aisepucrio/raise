@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -40,8 +41,11 @@ type conn[T any] struct {
 	Nodes      []T         `json:"nodes"`
 }
 
+// gqlActor is a user, organization, bot or mannequin. Deleted accounts
+// ("ghost") come back as null.
 type gqlActor struct {
-	Login string `json:"login"`
+	Typename string `json:"__typename"`
+	Login    string `json:"login"`
 }
 
 type gqlCommitRef struct {
@@ -171,9 +175,7 @@ type gqlPullRequest struct {
 	Additions      int32         `json:"additions"`
 	Deletions      int32         `json:"deletions"`
 	ReviewRequests conn[struct {
-		RequestedReviewer *struct {
-			Login string `json:"login"` // users, bots and mannequins; teams have none
-		} `json:"requestedReviewer"`
+		RequestedReviewer *gqlActor `json:"requestedReviewer"` // teams have no login
 	}] `json:"reviewRequests"`
 	Commits       conn[gqlPullRequestCommit] `json:"commits"`
 	Reviews       conn[node[gqlReview]]      `json:"reviews"`
@@ -263,8 +265,48 @@ type gqlCommit struct {
 	}] `json:"associatedPullRequests"`
 }
 
+type gqlRelease struct {
+	ID             string             `json:"id"`
+	DatabaseID     *int64             `json:"databaseId"`
+	TagName        string             `json:"tagName"`
+	Name           *string            `json:"name"`
+	Description    *string            `json:"description"`
+	IsDraft        bool               `json:"isDraft"`
+	IsPrerelease   bool               `json:"isPrerelease"`
+	IsLatest       bool               `json:"isLatest"`
+	Author         *gqlActor          `json:"author"`
+	TagCommit      *gqlCommitRef      `json:"tagCommit"`
+	ReactionGroups []gqlReactionGroup `json:"reactionGroups"`
+	CreatedAt      time.Time          `json:"createdAt"`
+	UpdatedAt      time.Time          `json:"updatedAt"`
+	PublishedAt    *time.Time         `json:"publishedAt"`
+	// Listing selects only the count; assets are fetched separately.
+	ReleaseAssets conn[any] `json:"releaseAssets"`
+}
+
+// gqlReleaseAssets is a release as queryFetchReleaseAssets and the
+// release_assets continuation select it.
+type gqlReleaseAssets struct {
+	ID            string                      `json:"id"`
+	DatabaseID    *int64                      `json:"databaseId"`
+	ReleaseAssets conn[node[gqlReleaseAsset]] `json:"releaseAssets"`
+}
+
+type gqlReleaseAsset struct {
+	ID            string    `json:"id"`
+	Name          string    `json:"name"`
+	ContentType   string    `json:"contentType"`
+	Size          int64     `json:"size"`
+	DownloadCount int32     `json:"downloadCount"`
+	DownloadURL   string    `json:"downloadUrl"`
+	Digest        *string   `json:"digest"`
+	UploadedBy    *gqlActor `json:"uploadedBy"`
+	CreatedAt     time.Time `json:"createdAt"`
+	UpdatedAt     time.Time `json:"updatedAt"`
+}
+
 // nestedConnections are stripped from raw_payload: they have their own tables.
-var nestedConnections = []string{"comments", "timelineItems", "commits", "reviews", "reviewThreads"}
+var nestedConnections = []string{"comments", "timelineItems", "commits", "reviews", "reviewThreads", "releaseAssets"}
 
 func repositoryRow(repoID int64, r node[gqlRepository]) (sqlc.UpsertRepositoryParams, error) {
 	v := r.V
@@ -309,7 +351,9 @@ func repositoryRow(repoID int64, r node[gqlRepository]) (sqlc.UpsertRepositoryPa
 // batch accumulates the rows and follow-up jobs produced by one job, so they
 // are written and enqueued in a single transaction.
 type batch struct {
-	repoID         int64
+	repoID int64
+	// users enqueues profile fetches for stored logins (see FetchRepositoryArgs).
+	users          bool
 	issues         []sqlc.UpsertIssueParams
 	pullRequests   []sqlc.UpsertPullRequestParams
 	commitTrims    []sqlc.TrimPullRequestCommitsParams
@@ -318,6 +362,8 @@ type batch struct {
 	reviewComments []sqlc.UpsertPullRequestReviewCommentParams
 	comments       []sqlc.UpsertIssueCommentParams
 	events         []sqlc.InsertIssueEventParams
+	releases       []sqlc.UpsertReleaseParams
+	releaseAssets  []sqlc.UpsertReleaseAssetParams
 	jobs           []river.InsertManyParams
 	err            error
 }
@@ -358,7 +404,7 @@ func (b *batch) addPullRequest(n node[gqlPullRequest]) {
 	}
 	for _, r := range v.ReviewRequests.Nodes {
 		if r.RequestedReviewer != nil && r.RequestedReviewer.Login != "" {
-			p.RequestedReviewerLogins = append(p.RequestedReviewerLogins, r.RequestedReviewer.Login)
+			p.RequestedReviewerLogins = append(p.RequestedReviewerLogins, *login(r.RequestedReviewer))
 		}
 	}
 	b.pullRequests = append(b.pullRequests, p)
@@ -391,7 +437,7 @@ func (b *batch) conversationRow(v gqlConversation, raw json.RawMessage, isPR boo
 		row.LabelNames = append(row.LabelNames, l.Name)
 	}
 	for _, a := range v.Assignees.Nodes {
-		row.AssigneeLogins = append(row.AssigneeLogins, a.Login)
+		row.AssigneeLogins = append(row.AssigneeLogins, *login(&a))
 	}
 	return row
 }
@@ -493,6 +539,67 @@ func (b *batch) addThreadComments(threadID string, number int32, c conn[node[gql
 	b.continueConnection(ConnThreadComments, threadID, c.PageInfo, 0)
 }
 
+func (b *batch) addRelease(n node[gqlRelease]) {
+	v := n.V
+	// databaseId is nullable in the schema; a release without one can't be keyed.
+	if v.DatabaseID == nil {
+		return
+	}
+	r := sqlc.UpsertReleaseParams{
+		GithubID: *v.DatabaseID, GithubNodeID: v.ID, RepositoryID: b.repoID, TagName: v.TagName,
+		Name: emptyToNil(v.Name), Body: emptyToNil(v.Description),
+		IsDraft: v.IsDraft, IsPrerelease: v.IsPrerelease, IsLatest: v.IsLatest, AuthorLogin: login(v.Author),
+		ReactionCounts: b.reactions(v.ReactionGroups), AssetCount: v.ReleaseAssets.TotalCount,
+		GithubCreatedAt: v.CreatedAt, GithubUpdatedAt: v.UpdatedAt, GithubPublishedAt: v.PublishedAt,
+		RawPayload: b.strip(n.Raw),
+	}
+	if v.TagCommit != nil {
+		r.TagCommitSha = &v.TagCommit.Oid
+	}
+	b.releases = append(b.releases, r)
+}
+
+// releaseAssetBatches packs releases into FetchReleaseAssets batches of at
+// most releaseAssetBatchSize assets, counting each release's first page.
+// Releases without assets are skipped.
+func releaseAssetBatches(repoID int64, users bool, releases []node[gqlRelease]) []river.InsertManyParams {
+	var jobs []river.InsertManyParams
+	var ids []string
+	assets := 0
+	flush := func() {
+		if len(ids) > 0 {
+			jobs = append(jobs, jobkit.Job(FetchReleaseAssetsArgs{RepositoryID: repoID, NodeIDs: ids, Users: users}))
+		}
+		ids, assets = nil, 0
+	}
+	for _, n := range releases {
+		count := min(int(n.V.ReleaseAssets.TotalCount), nestedPageSize)
+		if count == 0 {
+			continue
+		}
+		if assets+count > releaseAssetBatchSize {
+			flush()
+		}
+		ids = append(ids, n.V.ID)
+		assets += count
+	}
+	flush()
+	return jobs
+}
+
+func (b *batch) addReleaseAssets(releaseID string, releaseGithubID int64, c conn[node[gqlReleaseAsset]]) {
+	for _, n := range c.Nodes {
+		v := n.V
+		b.releaseAssets = append(b.releaseAssets, sqlc.UpsertReleaseAssetParams{
+			GithubNodeID: v.ID, RepositoryID: b.repoID, ReleaseGithubID: releaseGithubID,
+			Name: v.Name, ContentType: v.ContentType, SizeBytes: v.Size, DownloadCount: v.DownloadCount,
+			DownloadUrl: v.DownloadURL, Digest: v.Digest, UploaderLogin: login(v.UploadedBy),
+			GithubCreatedAt: v.CreatedAt, GithubUpdatedAt: v.UpdatedAt, RawPayload: n.Raw,
+		})
+	}
+	b.continueConnection(ConnReleaseAssets, releaseID, c.PageInfo, 0)
+}
+
 // continueConnection enqueues the next page of a nested connection that
 // didn't fit in this response.
 func (b *batch) continueConnection(connection, nodeID string, pi gqlPageInfo, offset int) {
@@ -501,6 +608,7 @@ func (b *batch) continueConnection(connection, nodeID string, pi gqlPageInfo, of
 	}
 	b.jobs = append(b.jobs, jobkit.Job(FetchConnectionArgs{
 		RepositoryID: b.repoID, Connection: connection, NodeID: nodeID, Cursor: pi.EndCursor, Offset: offset,
+		Users: b.users,
 	}))
 }
 
@@ -569,12 +677,53 @@ func (b *batch) write(ctx context.Context, q *sqlc.Queries) error {
 		func() error { return execBatch(ctx, q.UpsertPullRequestReviewComment, b.reviewComments) },
 		func() error { return execBatch(ctx, q.UpsertIssueComment, b.comments) },
 		func() error { return execBatch(ctx, q.InsertIssueEvent, b.events) },
+		func() error { return execBatch(ctx, q.UpsertRelease, b.releases) },
+		func() error { return execBatch(ctx, q.UpsertReleaseAsset, b.releaseAssets) },
 	} {
 		if err := run(); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// logins returns every login in the accumulated rows, possibly repeated.
+func (b *batch) logins() []string {
+	var out []string
+	add := func(ls ...*string) {
+		for _, l := range ls {
+			if l != nil {
+				out = append(out, *l)
+			}
+		}
+	}
+	for _, r := range b.issues {
+		add(r.AuthorLogin)
+		out = append(out, r.AssigneeLogins...)
+	}
+	for _, r := range b.pullRequests {
+		add(r.MergedByLogin)
+		out = append(out, r.RequestedReviewerLogins...)
+	}
+	for _, r := range b.reviews {
+		add(r.ReviewerLogin)
+	}
+	for _, r := range b.reviewComments {
+		add(r.AuthorLogin)
+	}
+	for _, r := range b.comments {
+		add(r.AuthorLogin)
+	}
+	for _, r := range b.events {
+		add(r.ActorLogin)
+	}
+	for _, r := range b.releases {
+		add(r.AuthorLogin)
+	}
+	for _, r := range b.releaseAssets {
+		add(r.UploaderLogin)
+	}
+	return out
 }
 
 // commitBatch holds GitHub's view of a batch of commits: one github_commits
@@ -642,6 +791,18 @@ func (b *commitBatch) addCommit(ghRepoID int64, n node[gqlCommit]) error {
 	return nil
 }
 
+func (b *commitBatch) logins() []string {
+	var out []string
+	for _, c := range b.commits {
+		for _, l := range []*string{c.AuthorLogin, c.CommitterLogin} {
+			if l != nil {
+				out = append(out, *l)
+			}
+		}
+	}
+	return out
+}
+
 // write stores the commits and replaces their pull request links.
 func (b *commitBatch) write(ctx context.Context, q *sqlc.Queries) error {
 	if len(b.commits) == 0 {
@@ -700,16 +861,153 @@ func conversationState(s string) string {
 	return "closed"
 }
 
+// login returns an actor's login as the REST API spells it. GraphQL drops the
+// "[bot]" suffix of bot logins, which then collide with real accounts
+// ("dependabot" is also an organization), so it is restored.
 func login(a *gqlActor) *string {
 	if a == nil {
 		return nil
 	}
+	if a.Typename == "Bot" {
+		return new(a.Login + botSuffix)
+	}
 	return &a.Login
 }
+
+const botSuffix = "[bot]"
 
 func emptyToNil(s *string) *string {
 	if s == nil || *s == "" {
 		return nil
 	}
 	return s
+}
+
+// gqlOwner is a user or organization as queryFetchUsers selects it.
+type gqlOwner struct {
+	Typename    string     `json:"__typename"`
+	ID          string     `json:"id"`
+	DatabaseID  *int64     `json:"databaseId"`
+	Login       string     `json:"login"`
+	Name        *string    `json:"name"`
+	Company     *string    `json:"company"`
+	Location    *string    `json:"location"`
+	Email       *string    `json:"email"`
+	WebsiteURL  *string    `json:"websiteUrl"`
+	IsSiteAdmin bool       `json:"isSiteAdmin"`
+	CreatedAt   time.Time  `json:"createdAt"`
+	UpdatedAt   time.Time  `json:"updatedAt"`
+	Followers   *conn[any] `json:"followers"` // users only
+	Following   *conn[any] `json:"following"`
+	Repos       conn[any]  `json:"repositories"`
+}
+
+// restUser is a REST /users/{login} response, used for bots.
+type restUser struct {
+	ID          int64     `json:"id"`
+	NodeID      string    `json:"node_id"`
+	Login       string    `json:"login"`
+	Type        string    `json:"type"`
+	Name        *string   `json:"name"`
+	Company     *string   `json:"company"`
+	Location    *string   `json:"location"`
+	Email       *string   `json:"email"`
+	Blog        *string   `json:"blog"`
+	SiteAdmin   bool      `json:"site_admin"`
+	Followers   int32     `json:"followers"`
+	Following   int32     `json:"following"`
+	PublicRepos int32     `json:"public_repos"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+// usersFrom maps a queryFetchUsers response, where the account for logins[i]
+// is aliased u<i>. Logins that don't resolve (renamed or deleted accounts,
+// mannequins) are skipped.
+func usersFrom(data map[string]json.RawMessage, logins []string) ([]sqlc.UpsertUserParams, error) {
+	var rows []sqlc.UpsertUserParams
+	for i, l := range logins {
+		var n *node[gqlOwner]
+		if err := json.Unmarshal(data["u"+strconv.Itoa(i)], &n); err != nil {
+			return nil, fmt.Errorf("decode account %s: %w", l, err)
+		}
+		if n == nil || n.V.DatabaseID == nil {
+			continue
+		}
+		v := n.V
+		row := sqlc.UpsertUserParams{
+			GithubID: *v.DatabaseID, GithubNodeID: v.ID, Login: v.Login, AccountType: v.Typename,
+			Name: emptyToNil(v.Name), Company: emptyToNil(v.Company), Location: emptyToNil(v.Location),
+			Email: emptyToNil(v.Email), BlogUrl: emptyToNil(v.WebsiteURL), IsSiteAdmin: v.IsSiteAdmin,
+			PublicRepositoryCount: v.Repos.TotalCount,
+			GithubCreatedAt:       v.CreatedAt, GithubUpdatedAt: v.UpdatedAt, RawPayload: n.Raw,
+		}
+		if v.Followers != nil {
+			row.FollowerCount = &v.Followers.TotalCount
+		}
+		if v.Following != nil {
+			row.FollowingCount = &v.Following.TotalCount
+		}
+		rows = append(rows, row)
+	}
+	return rows, nil
+}
+
+// botRow maps a bot looked up by login. The row keeps that login, which is
+// how GraphQL data refers to the bot: REST can report another one (it calls
+// copilot-pull-request-reviewer[bot] "Copilot"), which stays in raw_payload.
+func botRow(login string, u node[restUser]) sqlc.UpsertUserParams {
+	v := u.V
+	return sqlc.UpsertUserParams{
+		GithubID: v.ID, GithubNodeID: v.NodeID, Login: login, AccountType: v.Type,
+		Name: emptyToNil(v.Name), Company: emptyToNil(v.Company), Location: emptyToNil(v.Location),
+		Email: emptyToNil(v.Email), BlogUrl: emptyToNil(v.Blog), IsSiteAdmin: v.SiteAdmin,
+		FollowerCount: &v.Followers, FollowingCount: &v.Following, PublicRepositoryCount: v.PublicRepos,
+		GithubCreatedAt: v.CreatedAt, GithubUpdatedAt: v.UpdatedAt, RawPayload: u.Raw,
+	}
+}
+
+// writeUsers stores profiles, first taking their logins away from any stale
+// row of another account (see DeleteUserLoginConflicts).
+func writeUsers(ctx context.Context, q *sqlc.Queries, rows []sqlc.UpsertUserParams) error {
+	conflicts := make([]sqlc.DeleteUserLoginConflictsParams, len(rows))
+	for i, r := range rows {
+		conflicts[i] = sqlc.DeleteUserLoginConflictsParams{Login: r.Login, GithubID: r.GithubID}
+	}
+	if err := execBatch(ctx, q.DeleteUserLoginConflicts, conflicts); err != nil {
+		return err
+	}
+	return execBatch(ctx, q.UpsertUser, rows)
+}
+
+// userJobs fetches the given logins: users and organizations in FetchUsers
+// batches, bots one FetchBot job each.
+func userJobs(logins []string) []river.InsertManyParams {
+	var jobs []river.InsertManyParams
+	var accounts []string
+	for _, l := range logins {
+		if strings.HasSuffix(l, botSuffix) {
+			jobs = append(jobs, jobkit.Job(FetchBotArgs{Login: l}))
+		} else {
+			accounts = append(accounts, l)
+		}
+	}
+	for chunk := range slices.Chunk(accounts, userBatchSize) {
+		jobs = append(jobs, jobkit.Job(FetchUsersArgs{Logins: chunk}))
+	}
+	return jobs
+}
+
+// unminedUserJobs returns userJobs for the logins without a github_users row.
+// Concurrent batches can enqueue the same login before either is fetched;
+// the upserts converge, at the cost of a repeated lookup.
+func unminedUserJobs(ctx context.Context, q *sqlc.Queries, logins []string) ([]river.InsertManyParams, error) {
+	if len(logins) == 0 {
+		return nil, nil
+	}
+	missing, err := q.ListUnminedLogins(ctx, logins)
+	if err != nil {
+		return nil, err
+	}
+	return userJobs(missing), nil
 }

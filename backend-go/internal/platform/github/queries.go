@@ -27,6 +27,13 @@ const (
 	// one: the pull request that merged it.
 	commitBatchSize           = 50
 	commitPullRequestPageSize = 25
+	// Assets per FetchReleaseAssets query, counting each release's first
+	// page (up to nestedPageSize). GitHub nulls every asset beyond roughly
+	// 800-1,000 per query (RESOURCE_LIMITS_EXCEEDED), so batches are packed
+	// by the asset counts that listing reports.
+	releaseAssetBatchSize = 500
+	// Accounts per FetchUsers query (one aliased repositoryOwner lookup each).
+	userBatchSize = 100
 )
 
 const queryRepository = `query($owner: String!, $name: String!) {
@@ -53,12 +60,13 @@ const queryRepository = `query($owner: String!, $name: String!) {
 }`
 
 // queryListIssues lists issue node IDs in creation order, so cursors stay
-// stable while new issues arrive. $since filters on updatedAt.
+// stable while new issues arrive, and a creation window can stop at its end.
+// $since filters on updatedAt.
 const queryListIssues = `query($owner: String!, $name: String!, $cursor: String, $since: DateTime) {
   repository(owner: $owner, name: $name) {
     issues(first: 100, after: $cursor, orderBy: {field: CREATED_AT, direction: ASC}, filterBy: {since: $since}) {
       pageInfo { hasNextPage endCursor }
-      nodes { id }
+      nodes { id createdAt }
     }
   }
 }`
@@ -70,7 +78,7 @@ const queryListPullRequests = `query($owner: String!, $name: String!, $cursor: S
   repository(owner: $owner, name: $name) {
     pullRequests(first: 100, after: $cursor, orderBy: {field: $field, direction: $direction}) {
       pageInfo { hasNextPage endCursor }
-      nodes { id updatedAt }
+      nodes { id createdAt updatedAt }
     }
   }
 }`
@@ -79,20 +87,20 @@ const pageInfo = `pageInfo { hasNextPage endCursor }`
 
 const fragmentComment = `
 fragment commentFields on IssueComment {
-  id fullDatabaseId author { login } authorAssociation body url
+  id fullDatabaseId author { __typename login } authorAssociation body url
   createdAt updatedAt lastEditedAt isMinimized minimizedReason
   reactionGroups { content reactors { totalCount } }
 }`
 
 const fragmentReview = `
 fragment reviewFields on PullRequestReview {
-  id fullDatabaseId author { login } authorAssociation state body url
+  id fullDatabaseId author { __typename login } authorAssociation state body url
   commit { oid } createdAt submittedAt updatedAt lastEditedAt
 }`
 
 const fragmentReviewComment = `
 fragment reviewCommentFields on PullRequestReviewComment {
-  id fullDatabaseId author { login } authorAssociation body url
+  id fullDatabaseId author { __typename login } authorAssociation body url
   path line originalLine startLine originalStartLine diffHunk outdated
   commit { oid } originalCommit { oid }
   pullRequestReview { fullDatabaseId }
@@ -113,8 +121,8 @@ type timelineEvent struct {
 const refTarget = `{ __typename ... on Issue { number repository { nameWithOwner } } ... on PullRequest { number repository { nameWithOwner } } }`
 
 var issueTimelineEvents = []timelineEvent{
-	{"ASSIGNED_EVENT", "AssignedEvent", "assigned", "assignee { ... on Actor { login } }"},
-	{"UNASSIGNED_EVENT", "UnassignedEvent", "unassigned", "assignee { ... on Actor { login } }"},
+	{"ASSIGNED_EVENT", "AssignedEvent", "assigned", "assignee { ... on Actor { __typename login } }"},
+	{"UNASSIGNED_EVENT", "UnassignedEvent", "unassigned", "assignee { ... on Actor { __typename login } }"},
 	{"LABELED_EVENT", "LabeledEvent", "labeled", "label { name }"},
 	{"UNLABELED_EVENT", "UnlabeledEvent", "unlabeled", "label { name }"},
 	{"MILESTONED_EVENT", "MilestonedEvent", "milestoned", "milestoneTitle"},
@@ -131,7 +139,7 @@ var issueTimelineEvents = []timelineEvent{
 	{"MARKED_AS_DUPLICATE_EVENT", "MarkedAsDuplicateEvent", "marked_as_duplicate", "isCrossRepository canonical " + refTarget},
 	{"UNMARKED_AS_DUPLICATE_EVENT", "UnmarkedAsDuplicateEvent", "unmarked_as_duplicate", "isCrossRepository canonical " + refTarget},
 	{"TRANSFERRED_EVENT", "TransferredEvent", "transferred", "fromRepository { nameWithOwner }"},
-	{"COMMENT_DELETED_EVENT", "CommentDeletedEvent", "comment_deleted", "deletedCommentAuthor { login }"},
+	{"COMMENT_DELETED_EVENT", "CommentDeletedEvent", "comment_deleted", "deletedCommentAuthor { __typename login }"},
 	{"PINNED_EVENT", "PinnedEvent", "pinned", ""},
 	{"UNPINNED_EVENT", "UnpinnedEvent", "unpinned", ""},
 }
@@ -140,8 +148,8 @@ var pullRequestOnlyTimelineEvents = []timelineEvent{
 	{"MERGED_EVENT", "MergedEvent", "merged", "mergeRefName commit { oid }"},
 	{"READY_FOR_REVIEW_EVENT", "ReadyForReviewEvent", "ready_for_review", ""},
 	{"CONVERT_TO_DRAFT_EVENT", "ConvertToDraftEvent", "convert_to_draft", ""},
-	{"REVIEW_REQUESTED_EVENT", "ReviewRequestedEvent", "review_requested", "requestedReviewer { __typename ... on Actor { login } ... on Team { combinedSlug } }"},
-	{"REVIEW_REQUEST_REMOVED_EVENT", "ReviewRequestRemovedEvent", "review_request_removed", "requestedReviewer { __typename ... on Actor { login } ... on Team { combinedSlug } }"},
+	{"REVIEW_REQUESTED_EVENT", "ReviewRequestedEvent", "review_requested", "requestedReviewer { __typename ... on Actor { __typename login } ... on Team { combinedSlug } }"},
+	{"REVIEW_REQUEST_REMOVED_EVENT", "ReviewRequestRemovedEvent", "review_request_removed", "requestedReviewer { __typename ... on Actor { __typename login } ... on Team { combinedSlug } }"},
 	{"REVIEW_DISMISSED_EVENT", "ReviewDismissedEvent", "review_dismissed", "dismissalMessage previousReviewState review { fullDatabaseId }"},
 	{"HEAD_REF_FORCE_PUSHED_EVENT", "HeadRefForcePushedEvent", "head_ref_force_pushed", "ref { name } beforeCommit { oid } afterCommit { oid }"},
 	{"HEAD_REF_DELETED_EVENT", "HeadRefDeletedEvent", "head_ref_deleted", "headRefName"},
@@ -168,7 +176,7 @@ func timelineConnection(events []timelineEvent, size string) string {
 	var types, frags []string
 	for _, e := range events {
 		types = append(types, e.itemType)
-		frags = append(frags, "... on "+e.typename+" { id actor { login } createdAt "+e.fields+" }")
+		frags = append(frags, "... on "+e.typename+" { id actor { __typename login } createdAt "+e.fields+" }")
 	}
 	return "timelineItems(first: " + size + ", after: $cursor, itemTypes: [" + strings.Join(types, ", ") + "]) { " +
 		pageInfo + " nodes { __typename " + strings.Join(frags, " ") + " } }"
@@ -177,11 +185,11 @@ func timelineConnection(events []timelineEvent, size string) string {
 // Selections shared by issues and pull requests (the conversation half).
 const conversationFields = `
   id fullDatabaseId number title state body url locked activeLockReason
-  author { login } authorAssociation
+  author { __typename login } authorAssociation
   milestone { title number }
   createdAt updatedAt closedAt lastEditedAt
   labels(first: 100) { nodes { name } }
-  assignees(first: 100) { nodes { login } }
+  assignees(first: 100) { nodes { __typename login } }
   reactionGroups { content reactors { totalCount } }
   comments(first: NESTED) { totalCount ` + pageInfo + ` nodes { ...commentFields } }`
 
@@ -207,13 +215,13 @@ var queryFetchIssues = withSizes(`query($ids: [ID!]!, $cursor: String) {
 var queryFetchPullRequests = withSizes(`query($ids: [ID!]!, $cursor: String) {
   nodes(ids: $ids) {
     ... on PullRequest {` + conversationFields + `
-      isDraft merged mergedAt mergedBy { login }
+      isDraft merged mergedAt mergedBy { __typename login }
       headRefName headRefOid headRepository { nameWithOwner }
       baseRefName baseRefOid
       mergeCommit { oid }
       changedFiles additions deletions
       reviewDecision mergeStateStatus maintainerCanModify
-      reviewRequests(first: 100) { nodes { requestedReviewer { __typename ... on Actor { login } ... on Team { combinedSlug } } } }
+      reviewRequests(first: 100) { nodes { requestedReviewer { __typename ... on Actor { __typename login } ... on Team { combinedSlug } } } }
       ` + timelineConnection(pullRequestTimelineEvents, "NESTED") + `
       commits(first: NESTED) { totalCount ` + pageInfo + ` nodes { commit { oid } } }
       reviews(first: NESTED) { totalCount ` + pageInfo + ` nodes { ...reviewFields } }
@@ -223,6 +231,37 @@ var queryFetchPullRequests = withSizes(`query($ids: [ID!]!, $cursor: String) {
     }
   }
 }` + fragmentComment + fragmentReview + fragmentReviewComment)
+
+const fragmentReleaseAsset = `
+fragment releaseAssetFields on ReleaseAsset {
+  id name contentType size downloadCount downloadUrl url digest
+  uploadedBy { __typename login } createdAt updatedAt
+}`
+
+// queryListReleases lists releases in creation order, so cursors stay stable
+// while new releases are published. Only the asset count is selected: assets
+// are fetched in batches sized by it.
+const queryListReleases = `query($owner: String!, $name: String!, $cursor: String) {
+  repository(owner: $owner, name: $name) {
+    releases(first: 100, after: $cursor, orderBy: {field: CREATED_AT, direction: ASC}) {
+      ` + pageInfo + `
+      nodes {
+        id databaseId tagName name description url isDraft isPrerelease isLatest immutable
+        author { __typename login }
+        tagCommit { oid }
+        reactionGroups { content reactors { totalCount } }
+        createdAt updatedAt publishedAt
+        releaseAssets { totalCount }
+      }
+    }
+  }
+}`
+
+var queryFetchReleaseAssets = withSizes(`query($ids: [ID!]!) {
+  nodes(ids: $ids) {
+    ... on Release { id databaseId releaseAssets(first: NESTED) { ` + pageInfo + ` nodes { ...releaseAssetFields } } }
+  }
+}` + fragmentReleaseAsset)
 
 // Continuation queries: the next page of one nested connection of one node.
 // Each also selects the parent's number so rows can be keyed without lookups.
@@ -266,6 +305,12 @@ var connectionQueries = map[string]string{
     ... on PullRequestReviewThread { pullRequest { number } reviewComments: comments(first: 100, after: $cursor) { ` + pageInfo + ` nodes { ...reviewCommentFields } } }
   }
 }` + fragmentReviewComment,
+
+	ConnReleaseAssets: `query($id: ID!, $cursor: String) {
+  node(id: $id) {
+    ... on Release { databaseId releaseAssets(first: 100, after: $cursor) { ` + pageInfo + ` nodes { ...releaseAssetFields } } }
+  }
+}` + fragmentReleaseAsset,
 }
 
 // queryFetchCommits looks up n commits by SHA ($s0, $s1, …) as aliases c0,
@@ -285,9 +330,38 @@ func queryFetchCommits(n int) string {
 }
 fragment commitFields on Commit {
   id oid url
-  author { user { login } }
-  committer { user { login } }
-  signature { isValid state wasSignedByGitHub signer { login } }
+  author { user { __typename login } }
+  committer { user { __typename login } }
+  signature { isValid state wasSignedByGitHub signer { __typename login } }
   associatedPullRequests(first: ` + strconv.Itoa(commitPullRequestPageSize) + `) { totalCount nodes { number baseRepository { databaseId } } }
+}`
+}
+
+// queryFetchUsers looks up n accounts by login ($l0, $l1, …) as aliases u0,
+// u1, …: GitHub has no batch lookup by login. repositoryOwner resolves users
+// and organizations; bots can't be looked up by login in GraphQL (see
+// FetchBotArgs).
+func queryFetchUsers(n int) string {
+	var vars, owners strings.Builder
+	for i := range n {
+		fmt.Fprintf(&vars, "$l%d: String!", i)
+		if i < n-1 {
+			vars.WriteString(", ")
+		}
+		fmt.Fprintf(&owners, "\n  u%d: repositoryOwner(login: $l%d) { ...ownerFields }", i, i)
+	}
+	return `query(` + vars.String() + `) {` + owners.String() + `
+}
+fragment ownerFields on RepositoryOwner {
+  __typename id login url
+  ... on User {
+    databaseId name company location email websiteUrl bio twitterUsername pronouns isSiteAdmin isHireable
+    createdAt updatedAt followers { totalCount } following { totalCount }
+    repositories(ownerAffiliations: OWNER, privacy: PUBLIC) { totalCount }
+  }
+  ... on Organization {
+    databaseId name location email websiteUrl description twitterUsername isVerified createdAt updatedAt
+    repositories(ownerAffiliations: OWNER, privacy: PUBLIC) { totalCount }
+  }
 }`
 }

@@ -18,7 +18,7 @@ import (
 
 // Rate-limit scopes ("resources" in GitHub's terms). Mining uses the GraphQL
 // API, whose quota is measured in points per hour; REST is only used for
-// credential tests and cloning.
+// credential tests, cloning and bot profiles (Get).
 const (
 	ScopeCore    = "core"
 	ScopeGraphQL = "graphql"
@@ -34,8 +34,10 @@ const secondaryLimitWait = time.Minute
 
 var errRetryCredential = errors.New("retry with another credential")
 
-// ErrQueryTimeout means GitHub gave up executing a query (its limit is 10s).
-// Retrying the same query may work; a smaller one is more likely to.
+// ErrQueryTimeout means GitHub gave up executing a query: it ran past the
+// 10-second limit, or it exceeded GitHub's resource limits (which nulls every
+// field past the limit). Retrying the same query may work; a smaller one is
+// more likely to.
 var ErrQueryTimeout = errors.New("GitHub query timed out")
 
 // Client is a GitHub GraphQL client that leases a credential per request from
@@ -120,26 +122,13 @@ func (c *Client) query(ctx context.Context, lease platform.Lease, body []byte, o
 	}
 	defer resp.Body.Close()
 
-	quota, hasQuota := parseQuota(resp.Header, ScopeGraphQL)
-	if hasQuota {
-		_ = lease.Report(ctx, quota)
+	exhausted, err := checkCredential(ctx, lease, resp, ScopeGraphQL)
+	if err != nil {
+		return err
 	}
-	exhausted := hasQuota && quota.RequestsRemaining == 0
 	credID := lease.Credential().ID
 
 	switch {
-	case resp.StatusCode == http.StatusUnauthorized:
-		_ = lease.Invalidate(ctx, "rejected by GitHub (401)")
-		return fmt.Errorf("credential %d: %w", credID, errRetryCredential)
-	case resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusTooManyRequests:
-		msg, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		if rl := secondaryLimit(resp.Header, msg); rl != nil {
-			return rl
-		}
-		if exhausted {
-			return fmt.Errorf("credential %d exhausted: %w", credID, errRetryCredential)
-		}
-		return fmt.Errorf("%w: GitHub returned %s: %s", jobkit.ErrPermanent, resp.Status, msg)
 	case resp.StatusCode == http.StatusBadGateway || resp.StatusCode == http.StatusGatewayTimeout:
 		return fmt.Errorf("%w (%s)", ErrQueryTimeout, resp.Status)
 	case resp.StatusCode >= 400:
@@ -165,6 +154,73 @@ func (c *Client) query(ctx context.Context, lease platform.Lease, body []byte, o
 	return nil
 }
 
+// checkCredential reports the response's quota to the lease and handles the
+// statuses GraphQL and REST share: a rejected credential, an exhausted one
+// and secondary rate limits. It returns whether the credential is exhausted.
+func checkCredential(ctx context.Context, lease platform.Lease, resp *http.Response, scope string) (bool, error) {
+	quota, hasQuota := parseQuota(resp.Header, scope)
+	if hasQuota {
+		_ = lease.Report(ctx, quota)
+	}
+	exhausted := hasQuota && quota.RequestsRemaining == 0
+	credID := lease.Credential().ID
+
+	switch resp.StatusCode {
+	case http.StatusUnauthorized:
+		_ = lease.Invalidate(ctx, "rejected by GitHub (401)")
+		return exhausted, fmt.Errorf("credential %d: %w", credID, errRetryCredential)
+	case http.StatusForbidden, http.StatusTooManyRequests:
+		msg, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		if rl := secondaryLimit(resp.Header, msg); rl != nil {
+			return exhausted, rl
+		}
+		if exhausted {
+			return exhausted, fmt.Errorf("credential %d exhausted: %w", credID, errRetryCredential)
+		}
+		return exhausted, fmt.Errorf("%w: GitHub returned %s: %s", jobkit.ErrPermanent, resp.Status, msg)
+	}
+	return exhausted, nil
+}
+
+// Get performs a REST GET with a pooled credential and decodes the JSON
+// response into out. It returns false, and leaves out alone, on a 404.
+func (c *Client) Get(ctx context.Context, path string, out any) (bool, error) {
+	var lastErr error
+	for range maxLeaseAttempts {
+		lease, err := c.leaser.Lease(ctx, ID, ScopeCore)
+		if err != nil {
+			return false, err
+		}
+		found, err := c.get(ctx, lease, path, out)
+		if !errors.Is(err, errRetryCredential) {
+			return found, err
+		}
+		lastErr = err
+	}
+	return false, lastErr
+}
+
+func (c *Client) get(ctx context.Context, lease platform.Lease, path string, out any) (bool, error) {
+	resp, err := c.rest(ctx, lease.Credential().Field("token"), path)
+	if err != nil {
+		return false, err
+	}
+	defer resp.Body.Close()
+	if _, err := checkCredential(ctx, lease, resp, ScopeCore); err != nil {
+		return false, err
+	}
+	switch {
+	case resp.StatusCode == http.StatusNotFound:
+		return false, nil
+	case resp.StatusCode >= 400:
+		return false, fmt.Errorf("unexpected response from GitHub: %s", resp.Status)
+	}
+	if err := json.NewDecoder(resp.Body).Decode(out); err != nil {
+		return false, fmt.Errorf("decode GitHub response: %w", err)
+	}
+	return true, nil
+}
+
 func classifyErrors(errs []gqlError, exhausted bool, h http.Header, credID int64) error {
 	var fatal []gqlError
 	for _, e := range errs {
@@ -178,7 +234,8 @@ func classifyErrors(errs []gqlError, exhausted bool, h http.Header, credID int64
 			}
 		case e.Type == "NOT_FOUND" && len(e.Path) > 0:
 			// Partial result: the field is null.
-		case strings.Contains(e.Message, "timeout") || strings.Contains(e.Message, "Something went wrong while executing your query"):
+		case e.Type == "RESOURCE_LIMITS_EXCEEDED",
+			strings.Contains(e.Message, "timeout") || strings.Contains(e.Message, "Something went wrong while executing your query"):
 			return fmt.Errorf("%w: %s", ErrQueryTimeout, e.Message)
 		default:
 			fatal = append(fatal, e)
@@ -210,8 +267,8 @@ func secondaryLimit(h http.Header, body []byte) *jobkit.RateLimitedError {
 	return nil
 }
 
-// rest performs a REST GET with the given token, bypassing the pool: a
-// credential test must use the credential under test.
+// rest performs a REST GET with the given token. Credential tests call it
+// directly, bypassing the pool: they must use the credential under test.
 func (c *Client) rest(ctx context.Context, token, path string) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.restURL+path, nil)
 	if err != nil {

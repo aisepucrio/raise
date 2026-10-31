@@ -198,6 +198,67 @@ type GitHubCommit struct {
 	LastMinedAt         time.Time `json:"last_mined_at"`
 }
 
+type GitHubRelease struct {
+	GithubID          int64           `json:"github_id"`
+	GithubNodeID      string          `json:"github_node_id"`
+	TagName           string          `json:"tag_name"`
+	Name              *string         `json:"name"`
+	Body              *string         `json:"body,omitempty"`
+	TagCommitSha      *string         `json:"tag_commit_sha"`
+	IsDraft           bool            `json:"is_draft"`
+	IsPrerelease      bool            `json:"is_prerelease"`
+	IsLatest          bool            `json:"is_latest"`
+	AuthorLogin       *string         `json:"author_login"`
+	ReactionCounts    json.RawMessage `json:"reaction_counts"`
+	AssetCount        int32           `json:"asset_count"`
+	GithubCreatedAt   time.Time       `json:"github_created_at"`
+	GithubUpdatedAt   time.Time       `json:"github_updated_at"`
+	GithubPublishedAt *time.Time      `json:"github_published_at"`
+	FirstMinedAt      time.Time       `json:"first_mined_at"`
+	LastMinedAt       time.Time       `json:"last_mined_at"`
+}
+
+type GitHubReleaseAsset struct {
+	GithubNodeID    string    `json:"github_node_id"`
+	Name            string    `json:"name"`
+	ContentType     string    `json:"content_type"`
+	SizeBytes       int64     `json:"size_bytes"`
+	DownloadCount   int32     `json:"download_count"`
+	DownloadURL     string    `json:"download_url"`
+	Digest          *string   `json:"digest"`
+	UploaderLogin   *string   `json:"uploader_login"`
+	GithubCreatedAt time.Time `json:"github_created_at"`
+	GithubUpdatedAt time.Time `json:"github_updated_at"`
+	FirstMinedAt    time.Time `json:"first_mined_at"`
+	LastMinedAt     time.Time `json:"last_mined_at"`
+}
+
+// GitHubReleaseDetail is a release with its body and assets.
+type GitHubReleaseDetail struct {
+	GitHubRelease
+	Assets []GitHubReleaseAsset `json:"assets"`
+}
+
+type GitHubUser struct {
+	GithubID              int64     `json:"github_id"`
+	GithubNodeID          string    `json:"github_node_id"`
+	Login                 string    `json:"login"`
+	AccountType           string    `json:"account_type" doc:"User, Organization or Bot"`
+	Name                  *string   `json:"name"`
+	Company               *string   `json:"company"`
+	Location              *string   `json:"location"`
+	Email                 *string   `json:"email"`
+	BlogURL               *string   `json:"blog_url"`
+	IsSiteAdmin           bool      `json:"is_site_admin"`
+	FollowerCount         *int32    `json:"follower_count" doc:"Null for organizations"`
+	FollowingCount        *int32    `json:"following_count" doc:"Null for organizations"`
+	PublicRepositoryCount int32     `json:"public_repository_count"`
+	GithubCreatedAt       time.Time `json:"github_created_at"`
+	GithubUpdatedAt       time.Time `json:"github_updated_at"`
+	FirstMinedAt          time.Time `json:"first_mined_at"`
+	LastMinedAt           time.Time `json:"last_mined_at"`
+}
+
 type itemPath struct {
 	ID     int64 `path:"id"`
 	Number int32 `path:"number"`
@@ -323,6 +384,85 @@ func (p *Platform) registerRoutes(api huma.API) {
 		}
 		return &struct{ Body GitHubCommit }{c}, nil
 	})
+
+	huma.Register(api, huma.Operation{
+		OperationID: "github-list-releases", Method: http.MethodGet, Path: "/api/github/repositories/{id}/releases",
+		Summary: "List mined GitHub releases of a repository, newest first", Tags: tags,
+	}, func(ctx context.Context, in *struct {
+		ID int64 `path:"id"`
+		httpapi.Page
+	}) (*struct{ Body []GitHubRelease }, error) {
+		rows, err := p.q.ListReleases(ctx, sqlc.ListReleasesParams{RepositoryID: in.ID, Limit: in.Limit, Offset: in.Offset})
+		if err != nil {
+			return nil, httpapi.Error(err)
+		}
+		out := make([]GitHubRelease, len(rows))
+		for i, r := range rows {
+			out[i] = GitHubRelease{
+				GithubID: r.GithubID, GithubNodeID: r.GithubNodeID, TagName: r.TagName, Name: r.Name,
+				TagCommitSha: r.TagCommitSha, IsDraft: r.IsDraft, IsPrerelease: r.IsPrerelease, IsLatest: r.IsLatest,
+				AuthorLogin: r.AuthorLogin, ReactionCounts: r.ReactionCounts, AssetCount: r.AssetCount,
+				GithubCreatedAt: r.GithubCreatedAt, GithubUpdatedAt: r.GithubUpdatedAt,
+				GithubPublishedAt: r.GithubPublishedAt, FirstMinedAt: r.FirstMinedAt, LastMinedAt: r.LastMinedAt,
+			}
+		}
+		return &struct{ Body []GitHubRelease }{out}, nil
+	})
+
+	huma.Register(api, huma.Operation{
+		OperationID: "github-get-release", Method: http.MethodGet, Path: "/api/github/repositories/{id}/releases/{github_id}",
+		Summary: "Get a GitHub release with its body and assets", Tags: tags,
+	}, func(ctx context.Context, in *struct {
+		ID       int64 `path:"id"`
+		GithubID int64 `path:"github_id"`
+	}) (*struct{ Body GitHubReleaseDetail }, error) {
+		d, err := p.releaseDetail(ctx, in.ID, in.GithubID)
+		if err != nil {
+			return nil, httpapi.Error(err)
+		}
+		return &struct{ Body GitHubReleaseDetail }{d}, nil
+	})
+
+	huma.Register(api, huma.Operation{
+		OperationID: "github-get-user", Method: http.MethodGet, Path: "/api/github/users/{login}",
+		Summary: "Get the mined profile of a GitHub account", Tags: tags,
+	}, func(ctx context.Context, in *struct {
+		Login string `path:"login" doc:"Case-insensitive. Bots end in [bot], e.g. dependabot[bot]"`
+	}) (*struct{ Body GitHubUser }, error) {
+		u, err := p.q.GetUserByLogin(ctx, in.Login)
+		if err != nil {
+			return nil, httpapi.Error(lookupErr(err, "GitHub user %s", in.Login))
+		}
+		return &struct{ Body GitHubUser }{GitHubUser{
+			GithubID: u.GithubID, GithubNodeID: u.GithubNodeID, Login: u.Login, AccountType: u.AccountType,
+			Name: u.Name, Company: u.Company, Location: u.Location, Email: u.Email, BlogURL: u.BlogUrl,
+			IsSiteAdmin: u.IsSiteAdmin, FollowerCount: u.FollowerCount, FollowingCount: u.FollowingCount,
+			PublicRepositoryCount: u.PublicRepositoryCount, GithubCreatedAt: u.GithubCreatedAt,
+			GithubUpdatedAt: u.GithubUpdatedAt, FirstMinedAt: u.FirstMinedAt, LastMinedAt: u.LastMinedAt,
+		}}, nil
+	})
+}
+
+func (p *Platform) releaseDetail(ctx context.Context, repoID, githubID int64) (GitHubReleaseDetail, error) {
+	r, err := p.q.GetRelease(ctx, sqlc.GetReleaseParams{RepositoryID: repoID, GithubID: githubID})
+	if err != nil {
+		return GitHubReleaseDetail{}, lookupErr(err, "GitHub release %d", githubID)
+	}
+	d := GitHubReleaseDetail{GitHubRelease: GitHubRelease(r)}
+	assets, err := p.q.ListReleaseAssets(ctx, githubID)
+	if err != nil {
+		return GitHubReleaseDetail{}, err
+	}
+	d.Assets = make([]GitHubReleaseAsset, len(assets))
+	for i, a := range assets {
+		d.Assets[i] = GitHubReleaseAsset{
+			GithubNodeID: a.GithubNodeID, Name: a.Name, ContentType: a.ContentType, SizeBytes: a.SizeBytes,
+			DownloadCount: a.DownloadCount, DownloadURL: a.DownloadUrl, Digest: a.Digest, UploaderLogin: a.UploaderLogin,
+			GithubCreatedAt: a.GithubCreatedAt, GithubUpdatedAt: a.GithubUpdatedAt,
+			FirstMinedAt: a.FirstMinedAt, LastMinedAt: a.LastMinedAt,
+		}
+	}
+	return d, nil
 }
 
 func (p *Platform) commit(ctx context.Context, repoID int64, sha string) (GitHubCommit, error) {

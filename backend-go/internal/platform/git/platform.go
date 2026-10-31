@@ -81,15 +81,23 @@ func (p *Platform) RegisterWorkers(w *river.Workers) {
 
 func (p *Platform) RegisterRoutes(api huma.API) { p.registerRoutes(api) }
 
-// CollectParams are the params of a git collection.
+// CollectParams are the params of a git collection. A collection covers one
+// or more repositories, given by ID or by URL in any combination, and does
+// the same for each.
 type CollectParams struct {
-	RepositoryID int64  `json:"repository_id,omitempty"`
-	URL          string `json:"url,omitempty" doc:"Alternative to repository_id; registers the repository if needed"`
+	RepositoryID  int64    `json:"repository_id,omitempty"`
+	RepositoryIDs []int64  `json:"repository_ids,omitempty"`
+	URL           string   `json:"url,omitempty" doc:"Alternative to repository_id; registers the repository if needed"`
+	URLs          []string `json:"urls,omitempty" doc:"Alternative to repository_ids; registers the repositories if needed"`
 	// Commits mines the commit history from the local mirror.
 	Commits bool `json:"commits"`
 	// Enrich requests forge data, keyed by forge (e.g. "github").
 	Enrich map[platform.ID]EnrichRequest `json:"enrich,omitempty"`
 }
+
+// maxCollectionRepositories bounds a collection, whose root jobs are all
+// enqueued in the request's transaction.
+const maxCollectionRepositories = 1000
 
 func (p *Platform) StartCollection(ctx context.Context, tx pgx.Tx, enq jobkit.Enqueuer, raw json.RawMessage) error {
 	var params CollectParams
@@ -102,36 +110,83 @@ func (p *Platform) StartCollection(ctx context.Context, tx pgx.Tx, enq jobkit.En
 		return fmt.Errorf("%w: nothing to collect: set commits and/or enrich", apperr.ErrInvalid)
 	}
 
-	q := p.q.WithTx(tx)
-	var repo Repository
-	var err error
-	switch {
-	case params.RepositoryID != 0:
-		repo, err = p.getRepository(ctx, q, params.RepositoryID)
-	case params.URL != "":
-		repo, err = p.register(ctx, q, params.URL)
-	default:
-		err = fmt.Errorf("%w: repository_id or url is required", apperr.ErrInvalid)
+	for forge, req := range params.Enrich {
+		if _, ok := p.enrichers[forge]; !ok {
+			return fmt.Errorf("%w: %q is not a forge", apperr.ErrInvalid, forge)
+		}
+		if req.CreatedSince != nil && req.CreatedUntil != nil && !req.CreatedSince.Before(*req.CreatedUntil) {
+			return fmt.Errorf("%w: %s: created_since must be before created_until", apperr.ErrInvalid, forge)
+		}
 	}
+
+	repos, err := p.collectionRepositories(ctx, p.q.WithTx(tx), params)
 	if err != nil {
 		return err
 	}
+	for _, repo := range repos {
+		if err := p.startRepository(ctx, tx, enq, repo, params); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
+// collectionRepositories resolves and registers the collection's
+// repositories, in the order given and without duplicates.
+func (p *Platform) collectionRepositories(ctx context.Context, q *sqlc.Queries, params CollectParams) ([]Repository, error) {
+	ids := params.RepositoryIDs
+	if params.RepositoryID != 0 {
+		ids = append([]int64{params.RepositoryID}, ids...)
+	}
+	urls := params.URLs
+	if params.URL != "" {
+		urls = append([]string{params.URL}, urls...)
+	}
+	if len(ids) == 0 && len(urls) == 0 {
+		return nil, fmt.Errorf("%w: repository_id, repository_ids, url or urls is required", apperr.ErrInvalid)
+	}
+	if n := len(ids) + len(urls); n > maxCollectionRepositories {
+		return nil, fmt.Errorf("%w: %d repositories, more than %d per collection", apperr.ErrInvalid, n, maxCollectionRepositories)
+	}
+
+	var repos []Repository
+	seen := map[int64]bool{}
+	add := func(repo Repository, err error) error {
+		if err != nil {
+			return err
+		}
+		if !seen[repo.ID] {
+			seen[repo.ID] = true
+			repos = append(repos, repo)
+		}
+		return nil
+	}
+	for _, id := range ids {
+		if err := add(p.getRepository(ctx, q, id)); err != nil {
+			return nil, err
+		}
+	}
+	for _, u := range urls {
+		if err := add(p.register(ctx, q, u)); err != nil {
+			return nil, err
+		}
+	}
+	return repos, nil
+}
+
+// startRepository enqueues the root jobs for one repository of a collection.
+func (p *Platform) startRepository(ctx context.Context, tx pgx.Tx, enq jobkit.Enqueuer, repo Repository, params CollectParams) error {
 	if params.Commits {
 		if _, err := enq.Enqueue(ctx, tx, jobkit.Job(SyncMirrorArgs{RepositoryID: repo.ID, Enrich: params.Enrich})); err != nil {
 			return err
 		}
 	}
 	for forge, req := range params.Enrich {
-		e, ok := p.enrichers[forge]
-		if !ok {
-			return fmt.Errorf("%w: %q is not a forge", apperr.ErrInvalid, forge)
-		}
 		ref, ok := repo.Remote(forge)
 		if !ok {
 			return fmt.Errorf("%w: repository %s is not hosted on %s", apperr.ErrInvalid, repo.URL, forge)
 		}
-		if err := e.StartEnrichment(ctx, tx, enq, repo, ref, req); err != nil {
+		if err := p.enrichers[forge].StartEnrichment(ctx, tx, enq, repo, ref, req); err != nil {
 			return err
 		}
 	}

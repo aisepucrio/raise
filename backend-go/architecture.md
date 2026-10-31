@@ -85,7 +85,7 @@ backend-go/
 │       └── stackoverflow/       source: credential test (jobs TODO)
 ├── sqlc.yaml                    one entry per package: <pkg>/query.sql → <pkg>/sqlc/
 ├── .golangci.yml                depguard rules enforcing §3
-├── Dockerfile, compose.yaml, Makefile, .env.example
+├── Dockerfile, .dockerignore, Makefile   (docker-compose.yaml and .env.example are at the repository root)
 ```
 
 Every package that owns tables has a `query.sql` and a generated `sqlc/`
@@ -165,6 +165,15 @@ type Source interface {                  // can start a collection itself
     Platform
     StartCollection(ctx, pgx.Tx, jobkit.Enqueuer, params json.RawMessage) error
 }
+type Dashboarder interface {             // has an overview dashboard (§9.1)
+    Platform
+    Dashboard(ctx, DashboardFilter) (Dashboard, error)
+    DashboardGraphs(ctx, GraphFilter) (DashboardGraphs, error)
+}
+type DatasetProvider interface {         // tables to preview and export (§9.2)
+    Platform
+    Datasets() []Dataset
+}
 // platform/git
 type Enricher interface {                // forges
     Platform
@@ -177,13 +186,13 @@ type Enricher interface {                // forges
 
 Capabilities are optional interfaces, checked with type assertions:
 
-| Platform | Platform | Credentialed | Source | git.Enricher |
-|---|:-:|:-:|:-:|:-:|
-| git | ✓ | | ✓ | |
-| github | ✓ | ✓ | | ✓ |
-| gitlab | ✓ | ✓ | | ✓ |
-| jira | ✓ | ✓ | ✓ | |
-| stackoverflow | ✓ | ✓ | ✓ | |
+| Platform | Platform | Credentialed | Source | git.Enricher | Dashboarder | DatasetProvider |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|
+| git | ✓ | | ✓ | | ✓ | ✓ |
+| github | ✓ | ✓ | | ✓ | ✓ | ✓ |
+| gitlab | ✓ | ✓ | | ✓ | | |
+| jira | ✓ | ✓ | ✓ | | | |
+| stackoverflow | ✓ | ✓ | ✓ | | | |
 
 ### 4.2 Package shape
 
@@ -200,7 +209,9 @@ reference implementation:
 | `jobs.go` | `JobArgs` types: `Kind()`, `InsertOpts()` (queue, uniqueness) |
 | `workers.go` | `river.Worker` implementations |
 | `store.go` | mapping API payloads to upserts |
-| `handlers.go` | lookup, dashboard and export operations |
+| `handlers.go` | lookup and export operations |
+| `dashboard.go` | the `platform.Dashboarder` implementation (§9.1) |
+| `datasets.go` | the `platform.DatasetProvider` implementation: the platform's tables as previews and exports (§9.2) |
 | `query.sql`, `sqlc/` | the platform's queries and generated code |
 | `<name>_test.go`, `testdata/` | the package's tests and their fixtures (see §2.1) |
 
@@ -241,8 +252,9 @@ forge tables.
 ### 5.2 Mining pipeline
 
 ```
-POST /api/collections {platform:"git", parameters:{url|repository_id, commits:true,
+POST /api/collections {platform:"git", parameters:{url|urls|repository_id|repository_ids, commits:true,
                                                    enrich:{github:{resources:["issues"]}}}}
+ for each repository (deduplicated, at most 1,000 per collection):
  ├─ git.sync_mirror{repo, enrich}       unique while in flight; clone or fetch under an advisory lock
  │   └─ git.plan_commits{repo, enrich}  rev-list --branches --tags, minus commits already in repository_commits
  │       └─ git.mine_commit_batch{repo, shas[≤500], enrich} × N    (parallel)
@@ -254,6 +266,9 @@ POST /api/collections {platform:"git", parameters:{url|repository_id, commits:tr
      │   └─ github.fetch_connection{node_id, cursor}        only for overflowing comments/timelines
      └─ github.list_issues{repo, next cursor}               chained until the last page
 ```
+
+Pull requests follow the same shape as issues. Releases are stored by the
+listing job itself, which fans out their assets (§5.3).
 
 GitHub's side of the pipeline is described in §5.3.
 
@@ -297,6 +312,8 @@ about 700 points of the 5,000-point hourly quota.
 | `issues` | `list_issues` → `fetch_issues` (25 per query) | `github_issues`, `github_issue_comments`, `github_issue_events` |
 | `pull_requests` | `list_pull_requests` → `fetch_pull_requests` (10 per query) | the above, plus `github_pull_requests`, `github_pull_request_commits`, `github_pull_request_reviews`, `github_pull_request_review_comments` |
 | `commits` | `fetch_commits` (50 per query) after each mined batch via `OnCommitsMined`; `plan_commits` → `fetch_commits` for commits mined earlier | `github_commits`, `github_commit_pull_requests` |
+| `releases` | `list_releases` (100 per query, stored directly) → `fetch_release_assets` (up to 500 assets per query) | `github_releases`, `github_release_assets` |
+| `users` | `fetch_users` (100 per query) and `fetch_bot` (one REST request), enqueued by every job above as it stores logins, and by `plan_users` for data mined earlier | `github_users` |
 
 - **List, then fetch in parallel.** GraphQL pages with opaque cursors, so pages
   can't be fanned out up front. A `list_*` job fetches one page of 100 node
@@ -304,7 +321,13 @@ about 700 points of the 5,000-point hourly quota.
   those IDs (loaded with `nodes(ids:)`) and the `list_*` job for the next
   cursor. Listing is sequential, but the expensive fetches run in parallel.
 - **Stable cursors.** Full runs list in creation order, so new items don't
-  shift the pages. With `since`, issues are filtered by GitHub
+  shift the pages.
+- **Creation window.** `created_since`/`created_until` restrict issues, pull
+  requests and releases to a creation period. Listings in creation order
+  skip the nodes before the window and stop paging at its end
+  (`inCreationWindow`); an incremental pull request listing (by update time)
+  only filters by it. Commits are never windowed: incremental planning relies
+  on `repository_commits` holding the whole history. With `since`, issues are filtered by GitHub
   (`filterBy: {since}`). Pull requests have no such filter, so they are listed
   by `UPDATED_AT DESC` and listing stops at the first one older than `since`.
 - **Nested overflow.** Each fetch includes the first page of every nested
@@ -322,9 +345,35 @@ about 700 points of the 5,000-point hourly quota.
   another repository, and their pull request links for this repository are
   not fetched. Enriching in the same collection that mines them avoids this.
   All 1,118 spf13/cobra commits cost 23 queries.
+- **Releases list and store at once.** Releases have no nested data except
+  assets, so `list_releases` stores each page of 100 directly, in creation
+  order. Assets are expensive for GitHub: past roughly 800 to 1,000 assets in
+  one query, it nulls the rest and reports `RESOURCE_LIMITS_EXCEEDED`. The
+  listing selects each release's asset count, and `fetch_release_assets`
+  batches are packed to at most 500 assets, counting up to 100 (the first
+  page) per release. Further pages go through `fetch_connection`. GitHub can't
+  filter or order releases by update time, so `since` doesn't apply and every
+  run lists all of them. They are cheap: the 238 releases and 52,710 assets of
+  adoptium/temurin21-binaries take 3 list queries and 238 asset queries.
+- **Users follow the data.** Profiles can only be fetched once the data that
+  refers to them is stored, so with `users` requested every job that stores
+  logins carries `users: true`. In the same transaction it enqueues fetches
+  for those of its logins that have no `github_users` row yet. Concurrent
+  batches can enqueue the same login before either fetch lands. The upserts
+  converge; the cost is about 25% more lookups (spf13/cobra: 693 lookups for
+  557 users). `plan_users` fetches every login that the repository's data
+  refers to, which also refreshes profiles mined before. `fetch_users` aliases
+  one `repositoryOwner(login:)` per login, like `fetch_commits`.
+- **Bots.** GraphQL drops the `[bot]` suffix of bot logins, and the bare name
+  can belong to a real account (`dependabot` is also an organization). Every
+  actor therefore selects `__typename`, and bot logins are stored with the
+  suffix, as REST spells them. GraphQL can't look up a bot by login, so
+  `fetch_bot` uses REST (`GET /users/{login}`, `core` quota). The client's
+  `Get` shares the GraphQL path's credential rotation and rate-limit handling.
 - **Timeouts split batches.** GitHub aborts queries after 10 seconds (HTTP
-  502). When a batch times out, the worker replaces it with two half-size jobs
-  instead of retrying the same query.
+  502), and it cuts off queries that exceed its resource limits
+  (`RESOURCE_LIMITS_EXCEEDED`). Either way, the worker replaces the batch with
+  two half-size jobs instead of retrying the same query.
 - **Errors.** GraphQL returns errors in a 200 response, so the client
   classifies them:
 
@@ -333,6 +382,7 @@ about 700 points of the 5,000-point hourly quota.
   | `NOT_FOUND` on a path (a deleted node in a batch, a missing repository) | tolerated: the field is `null` and the worker decides what that means |
   | `RATE_LIMITED` with no points left | rotate to the next credential |
   | `RATE_LIMITED` otherwise, or a 403/429 secondary limit | snooze |
+  | `RESOURCE_LIMITS_EXCEEDED`, or a message about a timeout | `ErrQueryTimeout`: the batch is split |
   | `FORBIDDEN` | `ErrPermanent` |
   | anything else | retried |
 - **IDs.** The `Int` `databaseId` field overflows for recent issues, comments
@@ -505,7 +555,9 @@ The API uses huma v2 on chi (`humachi`). The OpenAPI 3.1 spec is served at
 | credentials | `GET/POST /api/credentials`, `POST /api/credentials/{id}/test`, `DELETE /api/credentials/{id}` |
 | collections | `POST/GET /api/collections`, `GET /api/collections/{id}`, `POST /api/collections/{id}/cancel` |
 | git | `POST/GET /api/repositories`, `GET /api/repositories/{id}`, `GET /api/repositories/{id}/commits`, `GET /api/repositories/{id}/commits/{sha}` |
-| github | `GET /api/github/repositories/{id}`, `GET /api/github/repositories/{id}/issues`, `GET /api/github/repositories/{id}/issues/{number}`, `GET /api/github/repositories/{id}/pull-requests`, `GET /api/github/repositories/{id}/pull-requests/{number}`, `GET /api/github/repositories/{id}/commits/{sha}` |
+| dashboards | `GET /api/{platform}/dashboard`, `GET /api/{platform}/dashboard/graph` for every `Dashboarder` (§9.1): `git`, `github` |
+| preview and export | `GET /api/{platform}/preview`, `GET /api/{platform}/preview/{dataset}`, `GET /api/{platform}/export/{dataset}` for every `DatasetProvider` (§9.2): `git`, `github` |
+| github | `GET /api/github/repositories/{id}`, `GET /api/github/repositories/{id}/issues`, `GET /api/github/repositories/{id}/issues/{number}`, `GET /api/github/repositories/{id}/pull-requests`, `GET /api/github/repositories/{id}/pull-requests/{number}`, `GET /api/github/repositories/{id}/commits/{sha}`, `GET /api/github/repositories/{id}/releases`, `GET /api/github/repositories/{id}/releases/{github_id}` |
 | health | `GET /healthz` |
 
 **Schema names.** huma names each OpenAPI schema after its Go type, and the
@@ -529,6 +581,102 @@ status codes:
 | `ErrNotImplemented` | 501 |
 | anything else | 500, logged; the body never contains the internal error |
 
+### 9.1 Dashboards
+
+Every platform's dashboard has the same shape, so the frontend renders all of
+them with one set of components. A platform implements
+`platform.Dashboarder` and computes only the data;
+`platform.RegisterDashboardRoutes`, called by `app` for each `Dashboarder`,
+serves it at fixed paths with fixed inputs. `GET /api/platforms` reports
+`has_dashboard`.
+
+| | `GET /api/{platform}/dashboard` | `GET /api/{platform}/dashboard/graph` |
+|---|---|---|
+| Input | `entity`, `since`, `until` | the same, plus `interval` (`day`, `week`, `month` (default), `year`) |
+| Output | `entity`, `entities`, `cards`, `last_mined_at` | `entity`, `interval`, `buckets`, `graphs` |
+
+- **Entity.** The thing a dashboard can be scoped to, by its ID as a string:
+  a repository for git and GitHub, later a Jira project or a Stack Overflow
+  tag. Unscoped, the dashboard covers all of the platform's data and lists the
+  entities (`{id, name}`) for a selector. An unknown entity is a 404, a
+  malformed one a 422.
+- **Window.** `since` is inclusive and `until` exclusive (RFC 3339). Each
+  platform documents which timestamp they apply to.
+- **Cards** are an ordered list of typed key/value pairs:
+  `{key, label, type, value, windowed}`. `type` is `integer`, `number`,
+  `timestamp` or `text` and says how to read `value`, which is `null` when
+  unknown. `windowed: false` marks snapshots that the window doesn't apply to,
+  such as star counts. Keys are stable snake_case identifiers; labels are for
+  display.
+- **Graphs** share one list of `buckets`: the UTC start date of each interval,
+  without gaps, from `since` (or the earliest data) to `until` (or the latest
+  data). Each graph has `series` of `{key, label, values}`, one value per
+  bucket. A `cumulative` graph holds running totals that include the data
+  before `since`. A graph is capped at `platform.MaxBuckets` (10,000) buckets;
+  beyond that the request is a 422 asking for a larger interval.
+- **Implementation.** A platform loads per-interval values with
+  `date_trunc(interval, t, 'UTC')` (the `Interval` values are `date_trunc`
+  fields) into `platform.Points`, keyed by series, then calls
+  `platform.BuildGraphs` with `GraphSpec`s that name the series. The same
+  series can appear in several graphs, per interval in one and cumulative in
+  another, so queries skip the `since` bound and `BuildGraphs` trims it.
+
+| Platform | Window applies to | Cards | Graphs |
+|---|---|---|---|
+| git | commits' `authored_at` | repositories (unscoped), commits, authors (distinct lower-cased emails), lines added and deleted, first and last `authored_at`, branches, tags | activity (commits, active authors), total commits (cumulative), churn (lines added, deleted) |
+| github | `github_created_at`; `authored_at` for contributors | repositories (unscoped), issues, open issues, pull requests, open and merged pull requests, releases, contributors (as `contributor_count`, §5.3), stars, forks, watchers (snapshots, summed when unscoped) | activity (issues opened and closed, pull requests opened and merged, releases), totals (issues, pull requests; cumulative) |
+
+Commits shared between repositories (forks) count once in unscoped totals.
+"Open" counts are items created in the window that are open now.
+
+### 9.2 Previews and exports
+
+Every mined table is served as a flat **dataset**: previewed a page at a time,
+or exported in full, with the same filters. A platform implements
+`platform.DatasetProvider` and only *describes* its datasets;
+`platform.RegisterDatasetRoutes`, called by `app` for each provider, builds
+the SQL and serves them. `GET /api/platforms` lists each platform's
+`datasets`.
+
+| Endpoint | Output |
+|---|---|
+| `GET /api/{platform}/preview` | `[]DatasetInfo`: name, description, key, time column, and per column its type, filter parameters, and whether it is sortable and searchable |
+| `GET /api/{platform}/preview/{dataset}` | `{platform, dataset, count, limit, offset, results}`; `limit` ≤ 1000 (default 50) |
+| `GET /api/{platform}/export/{dataset}` | `format=csv\|json\|jsonl`, streamed as an attachment; no paging |
+
+- **A dataset** is a `From` clause (with joins), an optional fixed `Where`, an
+  ordered list of `Column`s (name, type, SQL expression), a `Key` that
+  identifies a row and an optional `TimeColumn`. Column names are the table's
+  column names, as everywhere in the API. A few columns are computed
+  (`is_merge`, `kind`, `pull_request_numbers`) and documented as such.
+  `raw_payload` is never included. `Dataset.Validate` checks a definition at
+  registration, and each platform's tests run it.
+- **Filters are derived from the column types**, so every column is
+  filterable without per-dataset code: `col=` (any of the repeated values)
+  for text, booleans and integers, `col_min`/`col_max` for numbers,
+  `col_since`/`col_until` for timestamps, containment for arrays. `since`/
+  `until` apply to the time column, `search` is an `ILIKE` over the searchable
+  columns, and `sort` takes columns with an optional `-`. Long text and JSON
+  aren't filtered or sorted. Unknown parameters are a 422.
+- **Stable order.** The key columns are appended to every sort, so offset
+  pages don't skip or repeat rows. The default sort is the time column,
+  newest first.
+- **The filters differ per dataset**, so huma can't bind them: the input
+  struct's `Resolve` keeps the raw query string, the handler parses it against
+  the columns, and `Dataset.filterDocs` adds every parameter to the OpenAPI
+  operation.
+- **SQL.** Values are always bind parameters; identifiers and expressions come
+  only from the dataset definitions. Rows are built as JSON by PostgreSQL
+  (`json_build_object`, which keeps column order). Each request runs in a
+  read-only, repeatable-read transaction with `TimeZone = 'UTC'`, so the count
+  and the page agree and timestamps are UTC. Previews time out after 30
+  seconds; exports don't.
+- **Exports stream.** The query runs before the response starts, so a bad
+  request is still an error status. Rows are written as they are read and
+  flushed every 1,000 rows, so memory stays flat for any size. CSV writes
+  arrays and JSON as JSON text. A failure mid-stream can only truncate the
+  file, and is logged.
+
 ---
 
 ## 10. Persistence
@@ -539,6 +687,9 @@ status codes:
   `json.RawMessage`; `omit_unused_structs` keeps each package's models limited
   to its own tables.
 - Bulk writes use sqlc `:batchexec` (pipelined) or `unnest()` arrays.
+- The one exception to sqlc is previews and exports (§9.2): their filters
+  and sort are dynamic, so `platform/dataset.go` builds that SQL from the
+  datasets' column definitions, with bind parameters for every value.
 - Migrations are embedded in the binaries. `raisectl migrate up` applies River's
   migrations first, then the app's goose migrations.
 - Table and column naming conventions, every implemented table, and the planned
@@ -549,10 +700,13 @@ status codes:
 
 ## 11. Running it
 
+From the repository root, whose `docker-compose.yaml` runs the backend and the
+frontend:
+
 ```sh
 cp .env.example .env
-go run ./cmd/raisectl keygen          # paste into ENCRYPTION_KEYS
-docker compose up --build             # db, migrate, api (:8000), worker
+(cd backend-go && go run ./cmd/raisectl keygen)   # paste into ENCRYPTION_KEYS
+docker compose up --build             # db, migrate, api (:8000), worker, frontend (:5173)
 docker compose run --rm migrate raisectl user create -username admin -role admin
 ```
 
@@ -560,8 +714,8 @@ Without Docker, set `DATABASE_URL` and `ENCRYPTION_KEYS`, then run
 `make migrate`, `make api` and `make worker`. The worker needs `git` on its
 `PATH`.
 
-Configuration is read from environment variables (see `app/config.go` and
-`.env.example`).
+Configuration is read from environment variables (see `app/config.go` and the
+root `.env.example`).
 
 ---
 
@@ -586,20 +740,45 @@ collection and one 1,118-commit spf13/cobra collection):
   after mining (`OnCommitsMined`) and for commits mined earlier. Verified
   against spf13/cobra: all 1,118 commits were enriched, and 460 of the 462
   squash-merge subjects ending in `(#N)` link to pull request N.
+- GitHub users: profiles of every account the mined data refers to (users,
+  organizations, bots). Verified against spf13/cobra (metadata, commits,
+  releases and pull requests since 2025): all 569 referenced logins resolved
+  (557 users, 12 bots). A users-only re-run refreshed every profile with 6
+  GraphQL queries and 12 REST requests.
+- Dashboards (§9.1) for git and GitHub, with a shared card and time-series
+  format for every platform.
+- Previews and exports (§9.2) of every git and GitHub table. Verified against
+  spf13/cobra: the preview counts matched SQL counts (114 merges, 83 commits
+  since 2024), and CSV, JSON and JSON Lines exports returned every row (1,118
+  commits, 1,920 commit files). The GitHub datasets were exercised with every
+  filter, sort and search on empty tables only.
+- GitHub releases and their assets. Verified against spf13/cobra (27
+  releases), cli/cli (206 releases, 3,822 assets) and
+  adoptium/temurin21-binaries (238 releases, 52,710 assets): every release's
+  stored assets matched its count on GitHub, and a re-run converged to the same
+  rows.
 
 TODO, in rough priority order:
 
-- GitHub: releases, users.
 - Jira and Stack Overflow collection jobs: port from the Python miners using the
   plan → page pattern. Jira can split large ranges with `jobkit.SplitWindows`.
 - GitLab enrichment, plus scoping credentials by host for self-managed
   instances.
-- Dashboards and exports (CSV/JSON/Parquet), served from the API or written by
-  jobs.
+- A date-range endpoint, and Parquet exports or exports written by jobs if
+  streaming CSV/JSON proves too slow for the largest tables (dashboards,
+  previews and exports are done for git and GitHub, §9.1 and §9.2; Jira and
+  Stack Overflow implement `Dashboarder` and `DatasetProvider` with their
+  collection jobs).
 - Keyset pagination for large listings; currently `limit`/`offset`.
 - Diff-on-demand from mirrors, which requires the API to reach the mirror
   volume.
-- Frontend migration from SimpleJWT tokens to cookie sessions (`/api/auth/*`).
+- Frontend migration to this API. The root `docker-compose.yaml` already runs
+  the frontend against it, but the frontend still calls the Django endpoints
+  (`/api/<source>/dashboard/`, `/collect/`, `/export/`, `/api/jobs/`), sends
+  no session, and calls `:8000` cross-origin, for which the API sends no CORS
+  headers. It needs to log in through `/api/auth/*`, move to the collections
+  and data endpoints, and be served from the API's origin (nginx in the
+  `production` profile, or a Vite dev proxy).
 
 ---
 
@@ -616,6 +795,7 @@ TODO, in rough priority order:
 | Drop pydriller; git CLI + custom parser | performance on large histories; no Python dependency |
 | Commits keyed by SHA and shared across repositories | forks are common in mining datasets and are stored once |
 | huma for HTTP | OpenAPI generated from Go types; operation metadata drives authorization |
+| Previews and exports from column definitions, outside sqlc | every table gets filters, search, sorting and CSV/JSON export without per-table handlers; the API stays consistent across platforms, and filters can't be expressed as static sqlc queries |
 | Local accounts, scs sessions + API keys, no JWT | lab-hosted instance with a same-origin SPA; instant revocation; scripts get API keys |
 | Lab-wide credential pool | data is shared across the lab; admins manage quota centrally |
 | Sharded progress counters + periodic reconcile | no hot-row contention; no race on "last job finished" |

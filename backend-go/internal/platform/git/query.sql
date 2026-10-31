@@ -67,3 +67,57 @@ WHERE rc.repository_id = $1 AND rc.sha = $2;
 
 -- name: ListCommitFiles :many
 SELECT * FROM commit_files WHERE sha = $1 ORDER BY path;
+
+-- Dashboard queries. A NULL repository_id means every repository. Commits are
+-- counted once even when several repositories (forks) share them, and the
+-- since/until window applies to authored_at.
+
+-- name: ListDashboardEntities :many
+SELECT id, host, path FROM repositories
+WHERE sqlc.narg(repository_id)::bigint IS NULL OR id = sqlc.narg(repository_id)
+ORDER BY host, path;
+
+-- name: DashboardRepositories :one
+SELECT count(*) AS repository_count, max(mirror_last_synced_at) AS mirror_last_synced_at
+FROM repositories
+WHERE sqlc.narg(repository_id)::bigint IS NULL OR id = sqlc.narg(repository_id);
+
+-- name: DashboardCommits :one
+SELECT count(*) AS commit_count,
+       count(DISTINCT lower(c.author_email)) AS author_count,
+       coalesce(sum(c.lines_added), 0)::bigint AS lines_added,
+       coalesce(sum(c.lines_deleted), 0)::bigint AS lines_deleted,
+       min(c.authored_at) AS first_authored_at,
+       max(c.authored_at) AS last_authored_at
+FROM commits c
+WHERE EXISTS (
+    SELECT 1 FROM repository_commits rc
+    WHERE rc.sha = c.sha
+      AND (sqlc.narg(repository_id)::bigint IS NULL OR rc.repository_id = sqlc.narg(repository_id))
+)
+  AND (sqlc.narg(since)::timestamptz IS NULL OR c.authored_at >= sqlc.narg(since))
+  AND (sqlc.narg(until)::timestamptz IS NULL OR c.authored_at < sqlc.narg(until));
+
+-- name: DashboardRefs :one
+SELECT count(*) FILTER (WHERE name LIKE 'refs/heads/%') AS branch_count,
+       count(*) FILTER (WHERE name LIKE 'refs/tags/%') AS tag_count
+FROM repository_refs
+WHERE sqlc.narg(repository_id)::bigint IS NULL OR repository_id = sqlc.narg(repository_id);
+
+-- name: DashboardCommitActivity :many
+-- Commits per interval up to until. There is no since bound: the dashboard's
+-- cumulative graph needs the history before it.
+SELECT date_trunc(sqlc.arg(interval)::text, c.authored_at, 'UTC')::timestamptz AS bucket,
+       count(*) AS commit_count,
+       count(DISTINCT lower(c.author_email)) AS author_count,
+       coalesce(sum(c.lines_added), 0)::bigint AS lines_added,
+       coalesce(sum(c.lines_deleted), 0)::bigint AS lines_deleted
+FROM commits c
+WHERE EXISTS (
+    SELECT 1 FROM repository_commits rc
+    WHERE rc.sha = c.sha
+      AND (sqlc.narg(repository_id)::bigint IS NULL OR rc.repository_id = sqlc.narg(repository_id))
+)
+  AND (sqlc.narg(until)::timestamptz IS NULL OR c.authored_at < sqlc.narg(until))
+GROUP BY 1
+ORDER BY 1;

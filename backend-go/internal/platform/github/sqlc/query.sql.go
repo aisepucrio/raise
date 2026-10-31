@@ -35,6 +35,203 @@ func (q *Queries) CountContributors(ctx context.Context, repositoryID int64) (Co
 	return i, err
 }
 
+const dashboardActivity = `-- name: DashboardActivity :many
+SELECT 'issues_opened'::text AS series,
+       date_trunc($1::text, github_created_at, 'UTC')::timestamptz AS bucket,
+       count(*) AS value
+FROM github_issues
+WHERE NOT is_pull_request
+  AND ($2::bigint IS NULL OR repository_id = $2)
+  AND ($3::timestamptz IS NULL OR github_created_at < $3)
+GROUP BY 2
+UNION ALL
+SELECT 'issues_closed', date_trunc($1::text, github_closed_at, 'UTC')::timestamptz, count(*)
+FROM github_issues
+WHERE NOT is_pull_request AND github_closed_at IS NOT NULL
+  AND ($2::bigint IS NULL OR repository_id = $2)
+  AND ($3::timestamptz IS NULL OR github_closed_at < $3)
+GROUP BY 2
+UNION ALL
+SELECT 'pull_requests_opened', date_trunc($1::text, github_created_at, 'UTC')::timestamptz, count(*)
+FROM github_pull_requests
+WHERE ($2::bigint IS NULL OR repository_id = $2)
+  AND ($3::timestamptz IS NULL OR github_created_at < $3)
+GROUP BY 2
+UNION ALL
+SELECT 'pull_requests_merged', date_trunc($1::text, github_merged_at, 'UTC')::timestamptz, count(*)
+FROM github_pull_requests
+WHERE is_merged AND github_merged_at IS NOT NULL
+  AND ($2::bigint IS NULL OR repository_id = $2)
+  AND ($3::timestamptz IS NULL OR github_merged_at < $3)
+GROUP BY 2
+UNION ALL
+SELECT 'releases', date_trunc($1::text, github_created_at, 'UTC')::timestamptz, count(*)
+FROM github_releases
+WHERE ($2::bigint IS NULL OR repository_id = $2)
+  AND ($3::timestamptz IS NULL OR github_created_at < $3)
+GROUP BY 2
+ORDER BY 1, 2
+`
+
+type DashboardActivityParams struct {
+	Interval     string     `json:"interval"`
+	RepositoryID *int64     `json:"repository_id"`
+	Until        *time.Time `json:"until"`
+}
+
+type DashboardActivityRow struct {
+	Series string    `json:"series"`
+	Bucket time.Time `json:"bucket"`
+	Value  int64     `json:"value"`
+}
+
+// Events per interval up to until, one series per event. There is no since
+// bound: the dashboard's cumulative graph needs the history before it.
+func (q *Queries) DashboardActivity(ctx context.Context, arg DashboardActivityParams) ([]DashboardActivityRow, error) {
+	rows, err := q.db.Query(ctx, dashboardActivity, arg.Interval, arg.RepositoryID, arg.Until)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []DashboardActivityRow
+	for rows.Next() {
+		var i DashboardActivityRow
+		if err := rows.Scan(&i.Series, &i.Bucket, &i.Value); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const dashboardCounts = `-- name: DashboardCounts :one
+SELECT
+    (SELECT count(*) FROM github_issues i
+     WHERE NOT i.is_pull_request
+       AND ($1::bigint IS NULL OR i.repository_id = $1)
+       AND ($2::timestamptz IS NULL OR i.github_created_at >= $2)
+       AND ($3::timestamptz IS NULL OR i.github_created_at < $3)) AS issue_count,
+    (SELECT count(*) FROM github_issues i
+     WHERE NOT i.is_pull_request AND i.state = 'open'
+       AND ($1::bigint IS NULL OR i.repository_id = $1)
+       AND ($2::timestamptz IS NULL OR i.github_created_at >= $2)
+       AND ($3::timestamptz IS NULL OR i.github_created_at < $3)) AS open_issue_count,
+    (SELECT count(*) FROM github_pull_requests pr
+     WHERE ($1::bigint IS NULL OR pr.repository_id = $1)
+       AND ($2::timestamptz IS NULL OR pr.github_created_at >= $2)
+       AND ($3::timestamptz IS NULL OR pr.github_created_at < $3)) AS pull_request_count,
+    (SELECT count(*) FROM github_pull_requests pr
+     WHERE pr.state = 'open'
+       AND ($1::bigint IS NULL OR pr.repository_id = $1)
+       AND ($2::timestamptz IS NULL OR pr.github_created_at >= $2)
+       AND ($3::timestamptz IS NULL OR pr.github_created_at < $3)) AS open_pull_request_count,
+    (SELECT count(*) FROM github_pull_requests pr
+     WHERE pr.is_merged
+       AND ($1::bigint IS NULL OR pr.repository_id = $1)
+       AND ($2::timestamptz IS NULL OR pr.github_created_at >= $2)
+       AND ($3::timestamptz IS NULL OR pr.github_created_at < $3)) AS merged_pull_request_count,
+    (SELECT count(*) FROM github_releases r
+     WHERE ($1::bigint IS NULL OR r.repository_id = $1)
+       AND ($2::timestamptz IS NULL OR r.github_created_at >= $2)
+       AND ($3::timestamptz IS NULL OR r.github_created_at < $3)) AS release_count,
+    -- Like CountContributors, over the window and across repositories.
+    (SELECT count(DISTINCT coalesce(g.author_login, lower(c.author_email)))
+     FROM commits c
+     LEFT JOIN github_commits g ON g.sha = c.sha
+     WHERE EXISTS (
+         SELECT 1 FROM repository_commits rc
+         JOIN repository_remotes rr ON rr.repository_id = rc.repository_id AND rr.platform = 'github'
+         WHERE rc.sha = c.sha
+           AND ($1::bigint IS NULL OR rc.repository_id = $1))
+       AND ($2::timestamptz IS NULL OR c.authored_at >= $2)
+       AND ($3::timestamptz IS NULL OR c.authored_at < $3)) AS contributor_count
+`
+
+type DashboardCountsParams struct {
+	RepositoryID *int64     `json:"repository_id"`
+	Since        *time.Time `json:"since"`
+	Until        *time.Time `json:"until"`
+}
+
+type DashboardCountsRow struct {
+	IssueCount             int64 `json:"issue_count"`
+	OpenIssueCount         int64 `json:"open_issue_count"`
+	PullRequestCount       int64 `json:"pull_request_count"`
+	OpenPullRequestCount   int64 `json:"open_pull_request_count"`
+	MergedPullRequestCount int64 `json:"merged_pull_request_count"`
+	ReleaseCount           int64 `json:"release_count"`
+	ContributorCount       int64 `json:"contributor_count"`
+}
+
+func (q *Queries) DashboardCounts(ctx context.Context, arg DashboardCountsParams) (DashboardCountsRow, error) {
+	row := q.db.QueryRow(ctx, dashboardCounts, arg.RepositoryID, arg.Since, arg.Until)
+	var i DashboardCountsRow
+	err := row.Scan(
+		&i.IssueCount,
+		&i.OpenIssueCount,
+		&i.PullRequestCount,
+		&i.OpenPullRequestCount,
+		&i.MergedPullRequestCount,
+		&i.ReleaseCount,
+		&i.ContributorCount,
+	)
+	return i, err
+}
+
+const dashboardLastMinedAt = `-- name: DashboardLastMinedAt :one
+SELECT greatest(
+    (SELECT max(last_mined_at) FROM github_repositories
+     WHERE $1::bigint IS NULL OR repository_id = $1),
+    (SELECT max(last_mined_at) FROM github_issues
+     WHERE $1::bigint IS NULL OR repository_id = $1),
+    (SELECT max(last_mined_at) FROM github_releases
+     WHERE $1::bigint IS NULL OR repository_id = $1),
+    (SELECT max(g.last_mined_at) FROM github_commits g
+     JOIN repository_commits rc ON rc.sha = g.sha
+     WHERE $1::bigint IS NULL OR rc.repository_id = $1)
+) AS last_mined_at
+`
+
+func (q *Queries) DashboardLastMinedAt(ctx context.Context, repositoryID *int64) (interface{}, error) {
+	row := q.db.QueryRow(ctx, dashboardLastMinedAt, repositoryID)
+	var last_mined_at interface{}
+	err := row.Scan(&last_mined_at)
+	return last_mined_at, err
+}
+
+const dashboardRepositories = `-- name: DashboardRepositories :one
+SELECT count(*) AS repository_count,
+       coalesce(sum(star_count), 0)::bigint AS star_count,
+       coalesce(sum(fork_count), 0)::bigint AS fork_count,
+       coalesce(sum(watcher_count), 0)::bigint AS watcher_count
+FROM github_repositories
+WHERE $1::bigint IS NULL OR repository_id = $1
+`
+
+type DashboardRepositoriesRow struct {
+	RepositoryCount int64 `json:"repository_count"`
+	StarCount       int64 `json:"star_count"`
+	ForkCount       int64 `json:"fork_count"`
+	WatcherCount    int64 `json:"watcher_count"`
+}
+
+// Snapshot totals of the mined metadata. The sums are meaningless when
+// repository_count is 0.
+func (q *Queries) DashboardRepositories(ctx context.Context, repositoryID *int64) (DashboardRepositoriesRow, error) {
+	row := q.db.QueryRow(ctx, dashboardRepositories, repositoryID)
+	var i DashboardRepositoriesRow
+	err := row.Scan(
+		&i.RepositoryCount,
+		&i.StarCount,
+		&i.ForkCount,
+		&i.WatcherCount,
+	)
+	return i, err
+}
+
 const deleteStaleCommitPullRequests = `-- name: DeleteStaleCommitPullRequests :exec
 DELETE FROM github_commit_pull_requests g
 WHERE g.repository_id = $1
@@ -252,6 +449,64 @@ func (q *Queries) GetPullRequest(ctx context.Context, arg GetPullRequestParams) 
 	return i, err
 }
 
+const getRelease = `-- name: GetRelease :one
+SELECT github_id, github_node_id, tag_name, name, body, tag_commit_sha, is_draft, is_prerelease, is_latest,
+       author_login, reaction_counts, asset_count, github_created_at, github_updated_at,
+       github_published_at, first_mined_at, last_mined_at
+FROM github_releases
+WHERE repository_id = $1 AND github_id = $2
+`
+
+type GetReleaseParams struct {
+	RepositoryID int64 `json:"repository_id"`
+	GithubID     int64 `json:"github_id"`
+}
+
+type GetReleaseRow struct {
+	GithubID          int64           `json:"github_id"`
+	GithubNodeID      string          `json:"github_node_id"`
+	TagName           string          `json:"tag_name"`
+	Name              *string         `json:"name"`
+	Body              *string         `json:"body"`
+	TagCommitSha      *string         `json:"tag_commit_sha"`
+	IsDraft           bool            `json:"is_draft"`
+	IsPrerelease      bool            `json:"is_prerelease"`
+	IsLatest          bool            `json:"is_latest"`
+	AuthorLogin       *string         `json:"author_login"`
+	ReactionCounts    json.RawMessage `json:"reaction_counts"`
+	AssetCount        int32           `json:"asset_count"`
+	GithubCreatedAt   time.Time       `json:"github_created_at"`
+	GithubUpdatedAt   time.Time       `json:"github_updated_at"`
+	GithubPublishedAt *time.Time      `json:"github_published_at"`
+	FirstMinedAt      time.Time       `json:"first_mined_at"`
+	LastMinedAt       time.Time       `json:"last_mined_at"`
+}
+
+func (q *Queries) GetRelease(ctx context.Context, arg GetReleaseParams) (GetReleaseRow, error) {
+	row := q.db.QueryRow(ctx, getRelease, arg.RepositoryID, arg.GithubID)
+	var i GetReleaseRow
+	err := row.Scan(
+		&i.GithubID,
+		&i.GithubNodeID,
+		&i.TagName,
+		&i.Name,
+		&i.Body,
+		&i.TagCommitSha,
+		&i.IsDraft,
+		&i.IsPrerelease,
+		&i.IsLatest,
+		&i.AuthorLogin,
+		&i.ReactionCounts,
+		&i.AssetCount,
+		&i.GithubCreatedAt,
+		&i.GithubUpdatedAt,
+		&i.GithubPublishedAt,
+		&i.FirstMinedAt,
+		&i.LastMinedAt,
+	)
+	return i, err
+}
+
 const getRepository = `-- name: GetRepository :one
 SELECT repository_id, github_id, github_node_id, full_name, description, homepage_url, default_branch,
        primary_language, language_bytes, topic_names, license_spdx_id, visibility, is_fork, is_archived,
@@ -333,6 +588,59 @@ func (q *Queries) GetRepository(ctx context.Context, repositoryID int64) (GetRep
 	return i, err
 }
 
+const getUserByLogin = `-- name: GetUserByLogin :one
+SELECT github_id, github_node_id, login, account_type, name, company, location, email, blog_url,
+       is_site_admin, follower_count, following_count, public_repository_count, github_created_at,
+       github_updated_at, first_mined_at, last_mined_at
+FROM github_users
+WHERE lower(login) = lower($1)
+`
+
+type GetUserByLoginRow struct {
+	GithubID              int64     `json:"github_id"`
+	GithubNodeID          string    `json:"github_node_id"`
+	Login                 string    `json:"login"`
+	AccountType           string    `json:"account_type"`
+	Name                  *string   `json:"name"`
+	Company               *string   `json:"company"`
+	Location              *string   `json:"location"`
+	Email                 *string   `json:"email"`
+	BlogUrl               *string   `json:"blog_url"`
+	IsSiteAdmin           bool      `json:"is_site_admin"`
+	FollowerCount         *int32    `json:"follower_count"`
+	FollowingCount        *int32    `json:"following_count"`
+	PublicRepositoryCount int32     `json:"public_repository_count"`
+	GithubCreatedAt       time.Time `json:"github_created_at"`
+	GithubUpdatedAt       time.Time `json:"github_updated_at"`
+	FirstMinedAt          time.Time `json:"first_mined_at"`
+	LastMinedAt           time.Time `json:"last_mined_at"`
+}
+
+func (q *Queries) GetUserByLogin(ctx context.Context, login string) (GetUserByLoginRow, error) {
+	row := q.db.QueryRow(ctx, getUserByLogin, login)
+	var i GetUserByLoginRow
+	err := row.Scan(
+		&i.GithubID,
+		&i.GithubNodeID,
+		&i.Login,
+		&i.AccountType,
+		&i.Name,
+		&i.Company,
+		&i.Location,
+		&i.Email,
+		&i.BlogUrl,
+		&i.IsSiteAdmin,
+		&i.FollowerCount,
+		&i.FollowingCount,
+		&i.PublicRepositoryCount,
+		&i.GithubCreatedAt,
+		&i.GithubUpdatedAt,
+		&i.FirstMinedAt,
+		&i.LastMinedAt,
+	)
+	return i, err
+}
+
 const insertCommitPullRequests = `-- name: InsertCommitPullRequests :exec
 INSERT INTO github_commit_pull_requests (repository_id, sha, pull_request_number)
 SELECT $1, unnest($2::text[]), unnest($3::integer[])
@@ -375,6 +683,43 @@ func (q *Queries) ListCommitPullRequestNumbers(ctx context.Context, arg ListComm
 			return nil, err
 		}
 		items = append(items, pull_request_number)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listDashboardEntities = `-- name: ListDashboardEntities :many
+
+SELECT repository_id, owner, name FROM repository_remotes
+WHERE platform = 'github'
+  AND ($1::bigint IS NULL OR repository_id = $1)
+ORDER BY lower(owner), lower(name)
+`
+
+type ListDashboardEntitiesRow struct {
+	RepositoryID int64  `json:"repository_id"`
+	Owner        string `json:"owner"`
+	Name         string `json:"name"`
+}
+
+// Dashboard queries. A NULL repository_id means every repository hosted on
+// GitHub. The since/until window applies to github_created_at, and to
+// authored_at for commits.
+func (q *Queries) ListDashboardEntities(ctx context.Context, repositoryID *int64) ([]ListDashboardEntitiesRow, error) {
+	rows, err := q.db.Query(ctx, listDashboardEntities, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListDashboardEntitiesRow
+	for rows.Next() {
+		var i ListDashboardEntitiesRow
+		if err := rows.Scan(&i.RepositoryID, &i.Owner, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -859,6 +1204,176 @@ func (q *Queries) ListPullRequests(ctx context.Context, arg ListPullRequestsPara
 	return items, nil
 }
 
+const listReleaseAssets = `-- name: ListReleaseAssets :many
+SELECT github_node_id, name, content_type, size_bytes, download_count, download_url, digest,
+       uploader_login, github_created_at, github_updated_at, first_mined_at, last_mined_at
+FROM github_release_assets
+WHERE release_github_id = $1
+ORDER BY github_created_at, github_node_id
+`
+
+type ListReleaseAssetsRow struct {
+	GithubNodeID    string    `json:"github_node_id"`
+	Name            string    `json:"name"`
+	ContentType     string    `json:"content_type"`
+	SizeBytes       int64     `json:"size_bytes"`
+	DownloadCount   int32     `json:"download_count"`
+	DownloadUrl     string    `json:"download_url"`
+	Digest          *string   `json:"digest"`
+	UploaderLogin   *string   `json:"uploader_login"`
+	GithubCreatedAt time.Time `json:"github_created_at"`
+	GithubUpdatedAt time.Time `json:"github_updated_at"`
+	FirstMinedAt    time.Time `json:"first_mined_at"`
+	LastMinedAt     time.Time `json:"last_mined_at"`
+}
+
+func (q *Queries) ListReleaseAssets(ctx context.Context, releaseGithubID int64) ([]ListReleaseAssetsRow, error) {
+	rows, err := q.db.Query(ctx, listReleaseAssets, releaseGithubID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListReleaseAssetsRow
+	for rows.Next() {
+		var i ListReleaseAssetsRow
+		if err := rows.Scan(
+			&i.GithubNodeID,
+			&i.Name,
+			&i.ContentType,
+			&i.SizeBytes,
+			&i.DownloadCount,
+			&i.DownloadUrl,
+			&i.Digest,
+			&i.UploaderLogin,
+			&i.GithubCreatedAt,
+			&i.GithubUpdatedAt,
+			&i.FirstMinedAt,
+			&i.LastMinedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listReleases = `-- name: ListReleases :many
+SELECT github_id, github_node_id, tag_name, name, tag_commit_sha, is_draft, is_prerelease, is_latest,
+       author_login, reaction_counts, asset_count, github_created_at, github_updated_at,
+       github_published_at, first_mined_at, last_mined_at
+FROM github_releases
+WHERE repository_id = $1
+ORDER BY github_created_at DESC, github_id DESC
+LIMIT $2 OFFSET $3
+`
+
+type ListReleasesParams struct {
+	RepositoryID int64 `json:"repository_id"`
+	Limit        int32 `json:"limit"`
+	Offset       int32 `json:"offset"`
+}
+
+type ListReleasesRow struct {
+	GithubID          int64           `json:"github_id"`
+	GithubNodeID      string          `json:"github_node_id"`
+	TagName           string          `json:"tag_name"`
+	Name              *string         `json:"name"`
+	TagCommitSha      *string         `json:"tag_commit_sha"`
+	IsDraft           bool            `json:"is_draft"`
+	IsPrerelease      bool            `json:"is_prerelease"`
+	IsLatest          bool            `json:"is_latest"`
+	AuthorLogin       *string         `json:"author_login"`
+	ReactionCounts    json.RawMessage `json:"reaction_counts"`
+	AssetCount        int32           `json:"asset_count"`
+	GithubCreatedAt   time.Time       `json:"github_created_at"`
+	GithubUpdatedAt   time.Time       `json:"github_updated_at"`
+	GithubPublishedAt *time.Time      `json:"github_published_at"`
+	FirstMinedAt      time.Time       `json:"first_mined_at"`
+	LastMinedAt       time.Time       `json:"last_mined_at"`
+}
+
+func (q *Queries) ListReleases(ctx context.Context, arg ListReleasesParams) ([]ListReleasesRow, error) {
+	rows, err := q.db.Query(ctx, listReleases, arg.RepositoryID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListReleasesRow
+	for rows.Next() {
+		var i ListReleasesRow
+		if err := rows.Scan(
+			&i.GithubID,
+			&i.GithubNodeID,
+			&i.TagName,
+			&i.Name,
+			&i.TagCommitSha,
+			&i.IsDraft,
+			&i.IsPrerelease,
+			&i.IsLatest,
+			&i.AuthorLogin,
+			&i.ReactionCounts,
+			&i.AssetCount,
+			&i.GithubCreatedAt,
+			&i.GithubUpdatedAt,
+			&i.GithubPublishedAt,
+			&i.FirstMinedAt,
+			&i.LastMinedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRepositoryLogins = `-- name: ListRepositoryLogins :many
+SELECT DISTINCT l.login::text AS login
+FROM (
+    SELECT r.owner_login AS login FROM github_repositories r WHERE r.repository_id = $1
+    UNION ALL SELECT i.author_login FROM github_issues i WHERE i.repository_id = $1
+    UNION ALL SELECT unnest(i.assignee_logins) FROM github_issues i WHERE i.repository_id = $1
+    UNION ALL SELECT p.merged_by_login FROM github_pull_requests p WHERE p.repository_id = $1
+    UNION ALL SELECT unnest(p.requested_reviewer_logins) FROM github_pull_requests p WHERE p.repository_id = $1
+    UNION ALL SELECT rv.reviewer_login FROM github_pull_request_reviews rv WHERE rv.repository_id = $1
+    UNION ALL SELECT rvc.author_login FROM github_pull_request_review_comments rvc WHERE rvc.repository_id = $1
+    UNION ALL SELECT ic.author_login FROM github_issue_comments ic WHERE ic.repository_id = $1
+    UNION ALL SELECT e.actor_login FROM github_issue_events e WHERE e.repository_id = $1
+    UNION ALL SELECT rl.author_login FROM github_releases rl WHERE rl.repository_id = $1
+    UNION ALL SELECT a.uploader_login FROM github_release_assets a WHERE a.repository_id = $1
+    UNION ALL SELECT g.author_login FROM github_commits g JOIN repository_commits rc ON rc.sha = g.sha WHERE rc.repository_id = $1
+    UNION ALL SELECT g.committer_login FROM github_commits g JOIN repository_commits rc ON rc.sha = g.sha WHERE rc.repository_id = $1
+) l
+WHERE l.login IS NOT NULL
+ORDER BY 1
+`
+
+// Every account the repository's mined GitHub data refers to.
+func (q *Queries) ListRepositoryLogins(ctx context.Context, repositoryID int64) ([]string, error) {
+	rows, err := q.db.Query(ctx, listRepositoryLogins, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var login string
+		if err := rows.Scan(&login); err != nil {
+			return nil, err
+		}
+		items = append(items, login)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listUnenrichedCommits = `-- name: ListUnenrichedCommits :many
 SELECT rc.sha
 FROM repository_commits rc
@@ -881,6 +1396,34 @@ func (q *Queries) ListUnenrichedCommits(ctx context.Context, repositoryID int64)
 			return nil, err
 		}
 		items = append(items, sha)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listUnminedLogins = `-- name: ListUnminedLogins :many
+SELECT DISTINCT l::text AS login
+FROM unnest($1::text[]) l
+WHERE NOT EXISTS (SELECT 1 FROM github_users u WHERE lower(u.login) = lower(l))
+ORDER BY 1
+`
+
+// The given logins that have no github_users row yet.
+func (q *Queries) ListUnminedLogins(ctx context.Context, logins []string) ([]string, error) {
+	rows, err := q.db.Query(ctx, listUnminedLogins, logins)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var login string
+		if err := rows.Scan(&login); err != nil {
+			return nil, err
+		}
+		items = append(items, login)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

@@ -15,6 +15,7 @@ import (
 	"raise/internal/credential"
 	"raise/internal/db"
 	"raise/internal/httpapi"
+	"raise/internal/platform"
 )
 
 const version = "0.1.0"
@@ -58,6 +59,12 @@ func RunAPI(ctx context.Context, cfg Config) error {
 	collSvc.RegisterRoutes(api)
 	for _, p := range registry.All() {
 		p.RegisterRoutes(api)
+		if d, ok := p.(platform.Dashboarder); ok {
+			platform.RegisterDashboardRoutes(api, d)
+		}
+		if d, ok := p.(platform.DatasetProvider); ok {
+			platform.RegisterDatasetRoutes(api, pool, d)
+		}
 	}
 
 	srv := &http.Server{

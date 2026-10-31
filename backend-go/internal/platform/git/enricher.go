@@ -42,6 +42,11 @@ type CloneAuth struct {
 }
 
 type EnrichRequest struct {
-	Resources []string   `json:"resources"`
-	Since     *time.Time `json:"since,omitempty"`
+	Resources []string `json:"resources"`
+	// Since limits a re-run to items updated since then (incremental mining).
+	Since *time.Time `json:"since,omitempty"`
+	// CreatedSince (inclusive) and CreatedUntil (exclusive) limit the
+	// collection to items created in that window, for a dataset of a period.
+	CreatedSince *time.Time `json:"created_since,omitempty"`
+	CreatedUntil *time.Time `json:"created_until,omitempty"`
 }

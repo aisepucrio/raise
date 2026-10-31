@@ -15,6 +15,8 @@ type PlatformInfo struct {
 	ID              platform.ID               `json:"id"`
 	CredentialKinds []platform.CredentialKind `json:"credential_kinds"`
 	CanCollect      bool                      `json:"can_collect" doc:"Accepts collections via POST /api/collections"`
+	HasDashboard    bool                      `json:"has_dashboard" doc:"Serves GET /api/{id}/dashboard and /api/{id}/dashboard/graph"`
+	Datasets        []string                  `json:"datasets" doc:"Datasets served at GET /api/{id}/preview/{dataset} and /api/{id}/export/{dataset}"`
 }
 
 func (s *Service) RegisterRoutes(api huma.API) {
@@ -26,11 +28,17 @@ func (s *Service) RegisterRoutes(api huma.API) {
 	}, func(ctx context.Context, _ *struct{}) (*struct{ Body []PlatformInfo }, error) {
 		var out []PlatformInfo
 		for _, p := range s.registry.All() {
-			info := PlatformInfo{ID: p.ID(), CredentialKinds: []platform.CredentialKind{}}
+			info := PlatformInfo{ID: p.ID(), CredentialKinds: []platform.CredentialKind{}, Datasets: []string{}}
 			if c, ok := p.(platform.Credentialed); ok {
 				info.CredentialKinds = c.CredentialKinds()
 			}
 			_, info.CanCollect = p.(platform.Source)
+			_, info.HasDashboard = p.(platform.Dashboarder)
+			if d, ok := p.(platform.DatasetProvider); ok {
+				for _, ds := range d.Datasets() {
+					info.Datasets = append(info.Datasets, ds.Name)
+				}
+			}
 			out = append(out, info)
 		}
 		return &struct{ Body []PlatformInfo }{out}, nil

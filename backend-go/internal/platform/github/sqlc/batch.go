@@ -18,6 +18,58 @@ var (
 	ErrBatchAlreadyClosed = errors.New("batch already closed")
 )
 
+const deleteUserLoginConflicts = `-- name: DeleteUserLoginConflicts :batchexec
+DELETE FROM github_users
+WHERE lower(login) = lower($1) AND github_id <> $2
+`
+
+type DeleteUserLoginConflictsBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type DeleteUserLoginConflictsParams struct {
+	Login    string `json:"login"`
+	GithubID int64  `json:"github_id"`
+}
+
+// Logins are unique, but a login freed by a rename can be taken by another
+// account. The stale row loses it; it is re-mined if still referenced.
+func (q *Queries) DeleteUserLoginConflicts(ctx context.Context, arg []DeleteUserLoginConflictsParams) *DeleteUserLoginConflictsBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.Login,
+			a.GithubID,
+		}
+		batch.Queue(deleteUserLoginConflicts, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &DeleteUserLoginConflictsBatchResults{br, len(arg), false}
+}
+
+func (b *DeleteUserLoginConflictsBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *DeleteUserLoginConflictsBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
 const insertIssueEvent = `-- name: InsertIssueEvent :batchexec
 INSERT INTO github_issue_events (
     github_node_id, repository_id, issue_number, event_type, actor_login, commit_sha, github_created_at, raw_payload
@@ -771,6 +823,300 @@ func (b *UpsertPullRequestReviewCommentBatchResults) Exec(f func(int, error)) {
 }
 
 func (b *UpsertPullRequestReviewCommentBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
+const upsertRelease = `-- name: UpsertRelease :batchexec
+INSERT INTO github_releases (
+    github_id, github_node_id, repository_id, tag_name, name, body, tag_commit_sha, is_draft,
+    is_prerelease, is_latest, author_login, reaction_counts, asset_count, github_created_at,
+    github_updated_at, github_published_at, raw_payload
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+ON CONFLICT (github_id) DO UPDATE SET
+    github_node_id      = EXCLUDED.github_node_id,
+    repository_id       = EXCLUDED.repository_id,
+    tag_name            = EXCLUDED.tag_name,
+    name                = EXCLUDED.name,
+    body                = EXCLUDED.body,
+    tag_commit_sha      = EXCLUDED.tag_commit_sha,
+    is_draft            = EXCLUDED.is_draft,
+    is_prerelease       = EXCLUDED.is_prerelease,
+    is_latest           = EXCLUDED.is_latest,
+    author_login        = EXCLUDED.author_login,
+    reaction_counts     = EXCLUDED.reaction_counts,
+    asset_count         = EXCLUDED.asset_count,
+    github_created_at   = EXCLUDED.github_created_at,
+    github_updated_at   = EXCLUDED.github_updated_at,
+    github_published_at = EXCLUDED.github_published_at,
+    raw_payload         = EXCLUDED.raw_payload,
+    last_mined_at       = now()
+WHERE github_releases.github_updated_at <= EXCLUDED.github_updated_at
+`
+
+type UpsertReleaseBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type UpsertReleaseParams struct {
+	GithubID          int64           `json:"github_id"`
+	GithubNodeID      string          `json:"github_node_id"`
+	RepositoryID      int64           `json:"repository_id"`
+	TagName           string          `json:"tag_name"`
+	Name              *string         `json:"name"`
+	Body              *string         `json:"body"`
+	TagCommitSha      *string         `json:"tag_commit_sha"`
+	IsDraft           bool            `json:"is_draft"`
+	IsPrerelease      bool            `json:"is_prerelease"`
+	IsLatest          bool            `json:"is_latest"`
+	AuthorLogin       *string         `json:"author_login"`
+	ReactionCounts    json.RawMessage `json:"reaction_counts"`
+	AssetCount        int32           `json:"asset_count"`
+	GithubCreatedAt   time.Time       `json:"github_created_at"`
+	GithubUpdatedAt   time.Time       `json:"github_updated_at"`
+	GithubPublishedAt *time.Time      `json:"github_published_at"`
+	RawPayload        json.RawMessage `json:"raw_payload"`
+}
+
+// is_latest, reaction counts and asset counts change without updatedAt moving,
+// so equal timestamps update too.
+func (q *Queries) UpsertRelease(ctx context.Context, arg []UpsertReleaseParams) *UpsertReleaseBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.GithubID,
+			a.GithubNodeID,
+			a.RepositoryID,
+			a.TagName,
+			a.Name,
+			a.Body,
+			a.TagCommitSha,
+			a.IsDraft,
+			a.IsPrerelease,
+			a.IsLatest,
+			a.AuthorLogin,
+			a.ReactionCounts,
+			a.AssetCount,
+			a.GithubCreatedAt,
+			a.GithubUpdatedAt,
+			a.GithubPublishedAt,
+			a.RawPayload,
+		}
+		batch.Queue(upsertRelease, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &UpsertReleaseBatchResults{br, len(arg), false}
+}
+
+func (b *UpsertReleaseBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *UpsertReleaseBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
+const upsertReleaseAsset = `-- name: UpsertReleaseAsset :batchexec
+INSERT INTO github_release_assets (
+    github_node_id, repository_id, release_github_id, name, content_type, size_bytes, download_count,
+    download_url, digest, uploader_login, github_created_at, github_updated_at, raw_payload
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+ON CONFLICT (github_node_id) DO UPDATE SET
+    repository_id     = EXCLUDED.repository_id,
+    release_github_id = EXCLUDED.release_github_id,
+    name              = EXCLUDED.name,
+    content_type      = EXCLUDED.content_type,
+    size_bytes        = EXCLUDED.size_bytes,
+    download_count    = EXCLUDED.download_count,
+    download_url      = EXCLUDED.download_url,
+    digest            = EXCLUDED.digest,
+    uploader_login    = EXCLUDED.uploader_login,
+    github_created_at = EXCLUDED.github_created_at,
+    github_updated_at = EXCLUDED.github_updated_at,
+    raw_payload       = EXCLUDED.raw_payload,
+    last_mined_at     = now()
+WHERE github_release_assets.github_updated_at <= EXCLUDED.github_updated_at
+`
+
+type UpsertReleaseAssetBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type UpsertReleaseAssetParams struct {
+	GithubNodeID    string          `json:"github_node_id"`
+	RepositoryID    int64           `json:"repository_id"`
+	ReleaseGithubID int64           `json:"release_github_id"`
+	Name            string          `json:"name"`
+	ContentType     string          `json:"content_type"`
+	SizeBytes       int64           `json:"size_bytes"`
+	DownloadCount   int32           `json:"download_count"`
+	DownloadUrl     string          `json:"download_url"`
+	Digest          *string         `json:"digest"`
+	UploaderLogin   *string         `json:"uploader_login"`
+	GithubCreatedAt time.Time       `json:"github_created_at"`
+	GithubUpdatedAt time.Time       `json:"github_updated_at"`
+	RawPayload      json.RawMessage `json:"raw_payload"`
+}
+
+// Download counts change without updatedAt moving, so equal timestamps update too.
+func (q *Queries) UpsertReleaseAsset(ctx context.Context, arg []UpsertReleaseAssetParams) *UpsertReleaseAssetBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.GithubNodeID,
+			a.RepositoryID,
+			a.ReleaseGithubID,
+			a.Name,
+			a.ContentType,
+			a.SizeBytes,
+			a.DownloadCount,
+			a.DownloadUrl,
+			a.Digest,
+			a.UploaderLogin,
+			a.GithubCreatedAt,
+			a.GithubUpdatedAt,
+			a.RawPayload,
+		}
+		batch.Queue(upsertReleaseAsset, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &UpsertReleaseAssetBatchResults{br, len(arg), false}
+}
+
+func (b *UpsertReleaseAssetBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *UpsertReleaseAssetBatchResults) Close() error {
+	b.closed = true
+	return b.br.Close()
+}
+
+const upsertUser = `-- name: UpsertUser :batchexec
+INSERT INTO github_users (
+    github_id, github_node_id, login, account_type, name, company, location, email, blog_url,
+    is_site_admin, follower_count, following_count, public_repository_count, github_created_at,
+    github_updated_at, raw_payload
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+ON CONFLICT (github_id) DO UPDATE SET
+    github_node_id          = EXCLUDED.github_node_id,
+    login                   = EXCLUDED.login,
+    account_type            = EXCLUDED.account_type,
+    name                    = EXCLUDED.name,
+    company                 = EXCLUDED.company,
+    location                = EXCLUDED.location,
+    email                   = EXCLUDED.email,
+    blog_url                = EXCLUDED.blog_url,
+    is_site_admin           = EXCLUDED.is_site_admin,
+    follower_count          = EXCLUDED.follower_count,
+    following_count         = EXCLUDED.following_count,
+    public_repository_count = EXCLUDED.public_repository_count,
+    github_created_at       = EXCLUDED.github_created_at,
+    github_updated_at       = EXCLUDED.github_updated_at,
+    raw_payload             = EXCLUDED.raw_payload,
+    last_mined_at           = now()
+WHERE github_users.github_updated_at <= EXCLUDED.github_updated_at
+`
+
+type UpsertUserBatchResults struct {
+	br     pgx.BatchResults
+	tot    int
+	closed bool
+}
+
+type UpsertUserParams struct {
+	GithubID              int64           `json:"github_id"`
+	GithubNodeID          string          `json:"github_node_id"`
+	Login                 string          `json:"login"`
+	AccountType           string          `json:"account_type"`
+	Name                  *string         `json:"name"`
+	Company               *string         `json:"company"`
+	Location              *string         `json:"location"`
+	Email                 *string         `json:"email"`
+	BlogUrl               *string         `json:"blog_url"`
+	IsSiteAdmin           bool            `json:"is_site_admin"`
+	FollowerCount         *int32          `json:"follower_count"`
+	FollowingCount        *int32          `json:"following_count"`
+	PublicRepositoryCount int32           `json:"public_repository_count"`
+	GithubCreatedAt       time.Time       `json:"github_created_at"`
+	GithubUpdatedAt       time.Time       `json:"github_updated_at"`
+	RawPayload            json.RawMessage `json:"raw_payload"`
+}
+
+// Follower counts change without updatedAt moving, so equal timestamps update too.
+func (q *Queries) UpsertUser(ctx context.Context, arg []UpsertUserParams) *UpsertUserBatchResults {
+	batch := &pgx.Batch{}
+	for _, a := range arg {
+		vals := []interface{}{
+			a.GithubID,
+			a.GithubNodeID,
+			a.Login,
+			a.AccountType,
+			a.Name,
+			a.Company,
+			a.Location,
+			a.Email,
+			a.BlogUrl,
+			a.IsSiteAdmin,
+			a.FollowerCount,
+			a.FollowingCount,
+			a.PublicRepositoryCount,
+			a.GithubCreatedAt,
+			a.GithubUpdatedAt,
+			a.RawPayload,
+		}
+		batch.Queue(upsertUser, vals...)
+	}
+	br := q.db.SendBatch(ctx, batch)
+	return &UpsertUserBatchResults{br, len(arg), false}
+}
+
+func (b *UpsertUserBatchResults) Exec(f func(int, error)) {
+	defer b.br.Close()
+	for t := 0; t < b.tot; t++ {
+		if b.closed {
+			if f != nil {
+				f(t, ErrBatchAlreadyClosed)
+			}
+			continue
+		}
+		_, err := b.br.Exec()
+		if f != nil {
+			f(t, err)
+		}
+	}
+}
+
+func (b *UpsertUserBatchResults) Close() error {
 	b.closed = true
 	return b.br.Close()
 }

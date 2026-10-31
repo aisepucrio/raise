@@ -128,6 +128,9 @@ erDiagram
     github_pull_requests ||--o{ github_pull_request_review_comments : has
     commits ||--o| github_commits : "enriched by"
     repositories ||--o{ github_commit_pull_requests : "enriched by"
+    repositories ||--o{ github_releases : "enriched by"
+    github_releases ||--o{ github_release_assets : has
+    github_users ||--o{ github_issues : "referenced by *_login"
     repositories ||--o{ gitlab_issues : "enriched by"
     jira_sites ||--o{ jira_issues : hosts
     stackoverflow_questions ||--o{ stackoverflow_answers : has
@@ -347,26 +350,31 @@ commits were last planned.
 
 GitHub data is mined through the GraphQL API. Every GitHub table except
 `github_commits` (keyed by SHA, like `commits`) and `github_users` is keyed by
-`repository_id` (directly or through a GitHub ID), and all of them follow the mined-data conventions (`github_*_at`,
+`repository_id` or carries it, and all of them follow the mined-data conventions (`github_*_at`,
 `first_mined_at`, `last_mined_at`, `raw_payload`). People are referenced by
 `*_login`.
 
 - **IDs.** `github_id` is GitHub's numeric database ID (GraphQL
-  `fullDatabaseId`, the same value the REST API calls `id`). `github_node_id`
-  is the GraphQL global node ID.
+  `fullDatabaseId`, or `databaseId` where there is no `fullDatabaseId`; the
+  same value the REST API calls `id`). `github_node_id` is the GraphQL global
+  node ID.
 - **`raw_payload`** is the GraphQL node as Raise requested it, minus nested
   connections that have their own tables (comments, timeline items, commits,
-  reviews, review threads). It holds every field Raise selects but doesn't
+  reviews, review threads, release assets). It holds every field Raise selects but doesn't
   model as a column, such as `url`, `lastEditedAt` and `activeLockReason`.
 - **Enumerations** that GraphQL returns in upper case (`OPEN`, `NOT_PLANNED`,
   `APPROVED`, `PUBLIC`) are stored in lower case, matching the REST API. The
   exception is `author_association` (`OWNER`, `MEMBER`, `CONTRIBUTOR`, …),
   which is upper case in both APIs.
 - **Deleted accounts** (GitHub's "ghost") have a `NULL` login.
+- **Bot logins** carry the `[bot]` suffix, as in the REST API
+  (`dependabot[bot]`). GraphQL omits it, and the bare name can belong to a
+  real account (`dependabot` is also an organization), so Raise restores it.
+  `raw_payload` keeps GraphQL's form.
 
 ### `github_repositories` ✅
 
-Migrations: `00005_github.sql`, `00007_github_repository_metadata.sql`.
+Migration: `00005_github.sql`.
 Repository metadata, with one row per repository. Re-mining overwrites it with
 the current snapshot.
 
@@ -558,7 +566,7 @@ project-board moves) are not mined. The mined types are listed in
 
 ### `github_commits` ✅
 
-Migration: `00006_github_commits.sql`. GitHub's view of a mined commit: links
+Migration: `00005_github.sql`. GitHub's view of a mined commit: links
 git identities to GitHub accounts. Like `commits`, rows are keyed by SHA and
 shared between forks. Filled by the `commits` resource, either right after
 each mined batch (`OnCommitsMined`) or for commits mined earlier. GitHub
@@ -576,7 +584,7 @@ any time), so every fetch overwrites the row.
 
 ### `github_commit_pull_requests` ✅
 
-Migration: `00006_github_commits.sql`. The pull requests that introduced each
+Migration: `00005_github.sql`. The pull requests that introduced each
 commit into the repository (GraphQL `associatedPullRequests`). For a commit on
 the default branch that is the pull request that merged it; for other commits
 GitHub also lists open pull requests containing them. Pull requests of other
@@ -589,33 +597,86 @@ key, as in `github_pull_request_commits`.
 | `repository_id`, `sha`, `pull_request_number` | `bigint`, `text`, `integer` | | Primary key; also indexed on (`repository_id`, `pull_request_number`) |
 | `first_mined_at` | `timestamptz` | | |
 
-### `github_releases` 📝
+### `github_releases` ✅
 
-| Column | Type | Description |
-|---|---|---|
-| `github_id` | `bigint` | Primary key |
-| `repository_id` | `bigint` | |
-| `tag_name`, `name`, `body` | `text` | |
-| `target_commitish` | `text` | |
-| `is_draft`, `is_prerelease` | `boolean` | |
-| `author_login` | `text` | |
-| `github_created_at`, `github_published_at` | `timestamptz` | |
-| `raw_payload`, `first_mined_at`, `last_mined_at` | | |
+Migration: `00005_github.sql`. Releases, including drafts when a
+pooled credential has push access (GitHub hides them otherwise). Releases are
+listed in creation order, which also returns releases whose tag was deleted;
+GitHub's REST API and default GraphQL order leave those out. Re-mining
+overwrites a release unless the stored row is newer. Releases deleted from
+GitHub are kept.
 
-### `github_users` 📝
+| Column | Type | Null | Description |
+|---|---|:-:|---|
+| `github_id` | `bigint` | | Primary key |
+| `github_node_id` | `text` | | |
+| `repository_id` | `bigint` | | → `repositories.id`; indexed with `github_created_at` |
+| `tag_name` | `text` | | |
+| `name` | `text` | ✓ | `NULL` when empty (GitHub then shows the tag name) |
+| `body` | `text` | ✓ | Markdown release notes; `NULL` when empty |
+| `tag_commit_sha` | `text` | ✓ | Commit the tag points to; `NULL` for drafts whose tag doesn't exist yet and for releases whose tag was deleted. Not a foreign key |
+| `is_draft`, `is_prerelease` | `boolean` | | |
+| `is_latest` | `boolean` | | The repository's "Latest" release when mined |
+| `author_login` | `text` | ✓ | |
+| `reaction_counts` | `jsonb` | | As in `github_issues` |
+| `asset_count` | `integer` | | |
+| `github_created_at`, `github_updated_at` | `timestamptz` | | `github_created_at` is when the release (or draft) was created, not the tag |
+| `github_published_at` | `timestamptz` | ✓ | `NULL` for drafts |
+| `raw_payload` | `jsonb` | | Includes `url` and `immutable` |
+| `first_mined_at`, `last_mined_at` | `timestamptz` | | |
 
-Profiles of people referenced by `*_login` columns. Mined on demand.
+GraphQL has no `target_commitish` (the branch a new tag is created from), so
+the planned column was replaced by `tag_commit_sha`.
 
-| Column | Type | Description |
-|---|---|---|
-| `github_id` | `bigint` | Primary key (stable across renames) |
-| `login` | `text` | Current login; unique |
-| `name`, `company`, `location`, `email`, `blog_url` | `text` | |
-| `account_type` | `text` | `User`, `Organization`, `Bot` |
-| `is_site_admin` | `boolean` | |
-| `follower_count`, `following_count`, `public_repository_count` | `integer` | |
-| `github_created_at`, `github_updated_at` | `timestamptz` | |
-| `raw_payload`, `first_mined_at`, `last_mined_at` | | |
+### `github_release_assets` ✅
+
+Migration: `00005_github.sql`. Files attached to releases. GraphQL
+gives assets no numeric ID, so they are keyed by node ID. Download counts
+change without `github_updated_at` moving, so every re-mine refreshes them.
+Assets deleted from GitHub are kept.
+
+| Column | Type | Null | Description |
+|---|---|:-:|---|
+| `github_node_id` | `text` | | Primary key |
+| `repository_id` | `bigint` | | → `repositories.id` |
+| `release_github_id` | `bigint` | | → `github_releases.github_id` (not a foreign key); indexed |
+| `name` | `text` | | File name |
+| `content_type` | `text` | | |
+| `size_bytes` | `bigint` | | |
+| `download_count` | `integer` | | |
+| `download_url` | `text` | | |
+| `digest` | `text` | ✓ | e.g. `sha256:…`; `NULL` when GitHub reports none |
+| `uploader_login` | `text` | ✓ | |
+| `github_created_at`, `github_updated_at` | `timestamptz` | | |
+| `raw_payload` | `jsonb` | | |
+| `first_mined_at`, `last_mined_at` | `timestamptz` | | |
+
+### `github_users` ✅
+
+Migration: `00005_github.sql`. Profiles of the accounts that `*_login` columns
+refer to, one row per account. They aren't tied to a repository. Re-mining
+overwrites a row with the current profile. Join on
+`lower(login) = lower(<table>.<role>_login)`, since GitHub logins are
+case-insensitive.
+
+Users and organizations come from GraphQL (`repositoryOwner`). Bots come from
+the REST API, because GraphQL can't look them up by login. Logins that don't
+resolve get no row: renamed or deleted accounts, and mannequins (placeholders
+for imported authors).
+
+| Column | Type | Null | Description |
+|---|---|:-:|---|
+| `github_id` | `bigint` | | Primary key (stable across renames) |
+| `github_node_id` | `text` | | For bots, the REST `node_id` (it may be a legacy ID) |
+| `login` | `text` | | Unique, case-insensitively. Taking a login freed by a rename removes the stale row that had it. Bots keep the login they are referenced by: REST can name them differently (it calls `copilot-pull-request-reviewer[bot]` "Copilot") |
+| `account_type` | `text` | | `User`, `Organization` or `Bot` |
+| `name`, `company`, `location`, `email`, `blog_url` | `text` | ✓ | `NULL` when empty. `email` is the public email only. `blog_url` is the website (GraphQL `websiteUrl`, REST `blog`). Organizations have no `company` |
+| `is_site_admin` | `boolean` | | GitHub staff; `false` for organizations |
+| `follower_count`, `following_count` | `integer` | ✓ | `NULL` for organizations |
+| `public_repository_count` | `integer` | | Public repositories the account owns, forks included |
+| `github_created_at`, `github_updated_at` | `timestamptz` | | |
+| `raw_payload` | `jsonb` | | GraphQL node (includes `bio`, `twitterUsername`, `pronouns`, `isHireable`; organizations: `description`, `isVerified`), or the REST response for bots |
+| `first_mined_at`, `last_mined_at` | `timestamptz` | | |
 
 ---
 
@@ -1027,9 +1088,13 @@ GROUP BY c.id ORDER BY c.id DESC;
 
 1. **Follow the [naming conventions](#naming-conventions).** If the table is
    listed as 📝 planned here, start from that design.
-2. **Add a migration** in `internal/db/migrations/`, numbered after the latest,
-   with `-- +goose Up` and `-- +goose Down` sections. Never edit a migration
-   that has been applied anywhere outside development; add a new one instead.
+2. **Change the migrations** in `internal/db/migrations/`. There is one
+   migration per module (`00004_git.sql`, `00005_github.sql`, …), each with
+   `-- +goose Up` and `-- +goose Down` sections. No production database exists
+   yet, so edit the owning module's migration in place, or add one for a new
+   module, numbered after the latest; then recreate your local database. Once
+   a migration has been applied outside development, never edit it: add a new
+   one instead.
 3. **Add queries** to the owning package's `query.sql` and run
    `make generate`. Never edit the generated `sqlc/` code.
 4. **Update this document** in the same change: move the table to ✅ with its

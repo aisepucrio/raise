@@ -1,100 +1,83 @@
+# Raise: the Go backend (backend-go/) and the frontend (frontend/).
+#
+#   cp .env.example .env    # then set ENCRYPTION_KEYS (cd backend-go && make keygen)
+#   docker compose up --build
+#   docker compose run --rm -it migrate raisectl user create -username admin -role admin
+#
+# The API listens on :8000 and the frontend dev server on :5173. With
+# `--profile production`, nginx also serves the frontend build and proxies
+# /api/ on :8080. This file is for development: the database uses fixed
+# credentials and its port is published. See backend-go/README.md#production.
 name: raise
 
-services:
-  raiseapi:
-    build: ./backend/
-    volumes:
-      - static_volume_raise:/app/static
-    ports:
-      - "8000:8000"
-    depends_on:
-      - db_raise
-    environment:
-      IS_DEBUG: ${IS_DEBUG}
-      DJANGO_DB_HOST: db
-      DJANGO_DB_PORT: 5432
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      DJANGO_SUPERUSER_USER: ${DJANGO_SUPERUSER_USER}
-      DJANGO_SUPERUSER_PASSWORD: ${DJANGO_SUPERUSER_PASSWORD}
-      DJANGO_SUPERUSER_EMAIL: ${DJANGO_SUPERUSER_EMAIL}
-      JIRA_API_TOKEN: ${JIRA_API_TOKEN}
-      JIRA_URL: ${JIRA_URL}
-      JIRA_EMAIL: ${JIRA_EMAIL}
-      GITHUB_TOKENS: ${GITHUB_TOKENS}
-      STACK_API_KEY: ${STACK_API_KEY}
-      STACK_ACCESS_TOKEN: ${STACK_ACCESS_TOKEN}
-    restart: unless-stopped
+x-backend: &backend
+  build: ./backend-go
+  env_file: .env
+  environment:
+    DATABASE_URL: postgres://raise:raise@db:5432/raise?sslmode=disable
+    GIT_MIRROR_DIR: /data/mirrors
+  depends_on:
+    migrate:
+      condition: service_completed_successfully
+  restart: unless-stopped
 
-  frontend:
-    build:
-      context: ./frontend
-    env_file:
-      - .env
-    ports:
-      - "5173:5173"
-    volumes:
-      - frontend_dist:/app/dist
-    depends_on:
-      - raiseapi
-    environment:
-      IS_DEBUG: ${IS_DEBUG}
-      VITE_API_URL: ${VITE_API_URL}
-    restart: unless-stopped
-      
-  db_raise:
+services:
+  db:
     image: postgres:18-alpine
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    ports:
-      - "5432:5432"
-    volumes:
-      - pg_raise:/var/lib/postgresql/
+      POSTGRES_DB: raise
+      POSTGRES_USER: raise
+      POSTGRES_PASSWORD: raise
+    # 5433 avoids clashing with a Postgres already running on the host.
+    ports: ["5433:5432"]
+    volumes: [pg:/var/lib/postgresql]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "raise"]
+      interval: 2s
+      retries: 30
+    restart: unless-stopped
+
+  migrate:
+    build: ./backend-go
+    command: ["raisectl", "migrate", "up"]
+    environment:
+      DATABASE_URL: postgres://raise:raise@db:5432/raise?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    <<: *backend
+    command: ["api"]
+    ports: ["8000:8000"]
+
+  worker:
+    <<: *backend
+    command: ["worker"]
+    volumes: [mirrors:/data/mirrors]
+
+  frontend:
+    build: ./frontend
+    # Only what the frontend needs: .env also holds the backend's secrets.
+    environment:
+      IS_DEBUG: ${IS_DEBUG:-True}
+      VITE_API_URL: ${VITE_API_URL:-}
+    ports: ["5173:5173"]
+    volumes: [frontend_dist:/app/dist]
+    depends_on: [api]
     restart: unless-stopped
 
   nginx:
     image: nginx:alpine
     volumes:
-      - static_volume_raise:/app/static
       - frontend_dist:/app/dist
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
-    ports:
-      - "8080:8080"
-    depends_on:
-      - raiseapi
-      - frontend
-    profiles:
-      - production
+    ports: ["8080:8080"]
+    depends_on: [api, frontend]
+    profiles: [production]
     restart: unless-stopped
 
-  redis:
-    image: redis:latest
-    ports:
-      - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 30s
-      retries: 3
-
-  worker:
-    build: ./backend/
-    command: uv run celery -A dataminer_api worker --loglevel=info
-    env_file:
-      - .env
-    environment:
-      GITHUB_TOKENS: ${GITHUB_TOKENS}
-    depends_on:
-      redis:
-        condition: service_healthy
-
 volumes:
-  pg_raise:
-    driver: local
-  static_volume_raise:
-    driver: local
+  pg:
+  mirrors:
   frontend_dist:
-    driver: local

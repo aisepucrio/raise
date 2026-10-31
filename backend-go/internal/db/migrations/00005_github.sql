@@ -21,6 +21,10 @@ CREATE TABLE github_repositories (
     fork_count              integer     NOT NULL,
     open_issue_count        integer     NOT NULL,
     open_pull_request_count integer     NOT NULL,
+    owner_login             text        NOT NULL,
+    owner_type              text        NOT NULL,
+    label_count             integer     NOT NULL,
+    release_count           integer     NOT NULL,
     github_created_at       timestamptz NOT NULL,
     github_updated_at       timestamptz NOT NULL,
     github_pushed_at        timestamptz,
@@ -172,7 +176,103 @@ CREATE TABLE github_issue_events (
 );
 CREATE INDEX ON github_issue_events (repository_id, issue_number);
 
+-- GitHub's view of a commit, shared between forks like commits itself.
+CREATE TABLE github_commits (
+    sha                   text        PRIMARY KEY REFERENCES commits (sha) ON DELETE CASCADE,
+    github_node_id        text        NOT NULL,
+    author_login          text,
+    committer_login       text,
+    is_signature_verified boolean     NOT NULL,
+    raw_payload           jsonb       NOT NULL,
+    first_mined_at        timestamptz NOT NULL DEFAULT now(),
+    last_mined_at         timestamptz NOT NULL DEFAULT now()
+);
+
+-- Pull requests that introduced each commit into a repository. sha is not a
+-- foreign key, matching github_pull_request_commits.
+CREATE TABLE github_commit_pull_requests (
+    repository_id       bigint      NOT NULL REFERENCES repositories (id) ON DELETE CASCADE,
+    sha                 text        NOT NULL,
+    pull_request_number integer     NOT NULL,
+    first_mined_at      timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (repository_id, sha, pull_request_number)
+);
+CREATE INDEX ON github_commit_pull_requests (repository_id, pull_request_number);
+
+CREATE TABLE github_releases (
+    github_id           bigint      PRIMARY KEY,
+    github_node_id      text        NOT NULL,
+    repository_id       bigint      NOT NULL REFERENCES repositories (id) ON DELETE CASCADE,
+    tag_name            text        NOT NULL,
+    name                text,
+    body                text,
+    tag_commit_sha      text,
+    is_draft            boolean     NOT NULL,
+    is_prerelease       boolean     NOT NULL,
+    is_latest           boolean     NOT NULL,
+    author_login        text,
+    reaction_counts     jsonb       NOT NULL,
+    asset_count         integer     NOT NULL,
+    github_created_at   timestamptz NOT NULL,
+    github_updated_at   timestamptz NOT NULL,
+    github_published_at timestamptz,
+    raw_payload         jsonb       NOT NULL,
+    first_mined_at      timestamptz NOT NULL DEFAULT now(),
+    last_mined_at       timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX ON github_releases (repository_id, github_created_at);
+
+-- Release assets have no numeric ID in GraphQL, so they are keyed by node ID.
+CREATE TABLE github_release_assets (
+    github_node_id    text        PRIMARY KEY,
+    repository_id     bigint      NOT NULL REFERENCES repositories (id) ON DELETE CASCADE,
+    release_github_id bigint      NOT NULL,
+    name              text        NOT NULL,
+    content_type      text        NOT NULL,
+    size_bytes        bigint      NOT NULL,
+    download_count    integer     NOT NULL,
+    download_url      text        NOT NULL,
+    digest            text,
+    uploader_login    text,
+    github_created_at timestamptz NOT NULL,
+    github_updated_at timestamptz NOT NULL,
+    raw_payload       jsonb       NOT NULL,
+    first_mined_at    timestamptz NOT NULL DEFAULT now(),
+    last_mined_at     timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX ON github_release_assets (release_github_id);
+
+-- Profiles of the accounts that *_login columns refer to. Not keyed by
+-- repository: an account is the same everywhere.
+CREATE TABLE github_users (
+    github_id               bigint      PRIMARY KEY,
+    github_node_id          text        NOT NULL,
+    login                   text        NOT NULL,
+    account_type            text        NOT NULL,
+    name                    text,
+    company                 text,
+    location                text,
+    email                   text,
+    blog_url                text,
+    is_site_admin           boolean     NOT NULL,
+    follower_count          integer,
+    following_count         integer,
+    public_repository_count integer     NOT NULL,
+    github_created_at       timestamptz NOT NULL,
+    github_updated_at       timestamptz NOT NULL,
+    raw_payload             jsonb       NOT NULL,
+    first_mined_at          timestamptz NOT NULL DEFAULT now(),
+    last_mined_at           timestamptz NOT NULL DEFAULT now()
+);
+-- GitHub logins are case-insensitive.
+CREATE UNIQUE INDEX github_users_login_key ON github_users (lower(login));
+
 -- +goose Down
+DROP TABLE github_users;
+DROP TABLE github_release_assets;
+DROP TABLE github_releases;
+DROP TABLE github_commit_pull_requests;
+DROP TABLE github_commits;
 DROP TABLE github_issue_events;
 DROP TABLE github_issue_comments;
 DROP TABLE github_pull_request_review_comments;

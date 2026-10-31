@@ -44,11 +44,13 @@ share one PostgreSQL database.
 
 ## Quick start (Docker Compose)
 
+The Compose file and `.env` live at the **repository root**, shared with the
+frontend. From the root:
+
 ```sh
-cd backend-go
 cp .env.example .env
-make keygen                     # prints e.g. 1:R9B24XWw…; paste it into ENCRYPTION_KEYS in .env
-docker compose up --build -d    # db, migrations, api on :8000, worker
+(cd backend-go && make keygen)  # prints e.g. 1:R9B24XWw…; paste it into ENCRYPTION_KEYS in .env
+docker compose up --build -d    # db, migrations, api on :8000, worker, frontend on :5173
 docker compose run --rm -it migrate raisectl user create -username admin -role admin
 ```
 
@@ -65,26 +67,26 @@ If you don't have Go installed, generate the key with Docker instead:
 ### Option A: everything in Docker
 
 This is the [Quick start](#quick-start-docker-compose). After code changes,
-rebuild with `docker compose up --build -d`. Logs:
+rebuild from the repository root with `docker compose up --build -d`. Logs:
 `docker compose logs -f api worker`.
 
 ### Option B: Postgres in Docker, Go on the host (faster iteration)
 
 ```sh
+cp .env.example .env            # at the repository root; set ENCRYPTION_KEYS (make keygen)
 cd backend-go
-cp .env.example .env            # set ENCRYPTION_KEYS (make keygen)
-make db                         # Postgres 18 on localhost:5433
+make db                         # Postgres 18 on localhost:5433, from the root docker-compose.yaml
 
-set -a; source .env; set +a     # export .env into the shell; the binaries don't read .env themselves
+set -a; source ../.env; set +a  # export .env into the shell; the binaries don't read .env themselves
 make migrate                    # River + app migrations
 make user USERNAME=admin ROLE=admin
 
 make api                        # terminal 1: http://localhost:8000
-make worker                     # terminal 2 (run `set -a; source .env; set +a` there too)
+make worker                     # terminal 2 (run `set -a; source ../.env; set +a` there too)
 ```
 
-With the `.env.example` defaults, mirrors are written to `./data/mirrors`, which
-git ignores.
+With the `.env.example` defaults, mirrors are written to `backend-go/data/mirrors`,
+which git ignores.
 
 ### Common tasks
 
@@ -96,17 +98,21 @@ git ignores.
 | `make build` | Build `api`, `worker` and `raisectl` into `./bin/` |
 | `go run ./cmd/raisectl migrate status` | Show which migrations are applied |
 | `go run ./cmd/raisectl migrate down` | Roll back the latest app migration |
+| `make reset-db` | Development only: drop everything in the compose database (mined data, users, credentials, jobs) and re-apply the migrations. Needs `DATABASE_URL` set to the compose database |
 
 ### Database changes
 
 1. Follow the naming conventions in [database.md](database.md#naming-conventions).
    If the table is listed there as planned, implement that design.
-2. Add a migration to `internal/db/migrations/`, numbered after the latest
-   (e.g. `00006_github_pull_requests.sql`), with `-- +goose Up` and
-   `-- +goose Down` sections.
+2. Edit the owning module's migration in `internal/db/migrations/` (one per
+   module: `00004_git.sql`, `00005_github.sql`, …), or add one for a new
+   module, numbered after the latest (e.g. `00006_gitlab.sql`). No
+   production database exists yet, so migrations are edited in place; once
+   one is deployed, add new migrations instead.
 3. Put queries in the owning package's `query.sql`. A new package also needs an
    entry in `sqlc.yaml`.
-4. Run `make generate`, then `make migrate`.
+4. Run `make generate`, then `make reset-db` (an edited migration doesn't
+   re-run on a database that already applied it).
 5. Update database.md: mark the table ✅ implemented (it may be 📝 planned), or edit
    its columns.
 
@@ -125,8 +131,8 @@ See architecture.md §4.3. In short:
 
 ## Production
 
-The provided `compose.yaml` is for development: it publishes the database port
-and uses fixed credentials. In production, run the same Docker image with the
+The repository's `docker-compose.yaml` is for development: it publishes the
+database port and uses fixed credentials. In production, run the same Docker image with the
 changes below.
 
 ### 1. Build the image
@@ -134,6 +140,11 @@ changes below.
 ```sh
 docker build -t raise-backend:<version> backend-go/
 ```
+
+`.dockerignore` is an allowlist: only `go.mod`, `go.sum`, `cmd/` and
+`internal/` are sent to Docker, so `.env` and the mirrors never reach the image
+or its build cache. If the build ever needs another top-level file or
+directory, re-include it there.
 
 The image contains `api`, `worker`, `raisectl` and `git`. It runs as a non-root
 user (`raise`, uid 10001). The default command is `api`; for the other binaries,
@@ -309,7 +320,7 @@ re-test one later, use `POST /api/credentials/{id}/test`.
 Adding several tokens per platform increases throughput: jobs spread their
 requests across tokens based on remaining quota.
 
-### Mining a repository
+### Mining repositories
 
 ```sh
 curl -b cookies -H 'Content-Type: application/json' -d '{
@@ -322,6 +333,24 @@ curl -b cookies -H 'Content-Type: application/json' -d '{
 }' http://localhost:8000/api/collections
 ```
 
+- **Repositories:** `url` or `repository_id` for one, `urls` and
+  `repository_ids` for several, in any combination (up to 1,000; duplicates
+  are mined once). Unknown URLs are registered. The collection does the same
+  for every repository, and its progress covers all of them:
+
+  ```sh
+  curl -b cookies -H 'Content-Type: application/json' -d '{
+    "platform": "git",
+    "parameters": {
+      "urls": ["https://github.com/spf13/cobra", "https://github.com/cli/cli"],
+      "repository_ids": [3],
+      "commits": true,
+      "enrich": {"github": {"resources": ["issues", "pull_requests", "releases"],
+                            "created_since": "2024-01-01T00:00:00Z",
+                            "created_until": "2025-01-01T00:00:00Z"}}
+    }
+  }' http://localhost:8000/api/collections
+  ```
 - `commits: true` clones or fetches the repository and mines its history
   locally. No token is needed for public repositories.
 - `enrich` fetches platform data from the forge hosting the repository. It needs
@@ -336,9 +365,29 @@ curl -b cookies -H 'Content-Type: application/json' -d '{
     them. Commits mined by the same collection are enriched as each batch is
     mined. Commits mined earlier, which have no GitHub data yet, are enriched
     too, so `commits` also works without `commits: true`.
+  - `releases`: releases (drafts only if a token has push access), with their
+    assets and download counts. Every run fetches all of them, which is cheap.
+  - `users`: profiles (name, company, location, followers, account type, …)
+    of the users, organizations and bots that the other resources mention.
+    Accounts in data that the same collection mines are fetched as it is
+    stored. Accounts in data mined before are fetched or refreshed too, so
+    `users` on its own refreshes a repository's profiles.
 
-  Add `"since": "2024-01-01T00:00:00Z"` to fetch only issues and pull requests
-  updated since then.
+  Two kinds of date filter apply to issues, pull requests and releases:
+
+  - **`created_since`** (inclusive) and **`created_until`** (exclusive) mine
+    only the items created in that window, for a dataset of a period. GitHub
+    lists them in creation order, so mining stops at `created_until` instead
+    of listing the rest.
+  - **`since`** re-mines only issues and pull requests *updated* since then,
+    to refresh a repository cheaply. It doesn't apply to releases, since GitHub
+    can't filter them by update time. There is no "updated until": stored
+    items are always their latest state.
+
+  They combine: `since` with a creation window refreshes the items of that
+  window that changed. Neither applies to commits, metadata or users; commits
+  are always mined in full, since incremental mining relies on having the
+  whole history.
 - Re-running a collection only mines what's new.
 
 To track progress:
@@ -365,13 +414,109 @@ curl -b cookies http://localhost:8000/api/collections/1
 | `GET /api/github/repositories/{id}/pull-requests?state=&merged=` | GitHub pull requests (the code side) |
 | `GET /api/github/repositories/{id}/pull-requests/{number}` | One pull request with its commits, reviews and review comments |
 | `GET /api/github/repositories/{id}/commits/{sha}` | GitHub's view of a commit: logins, signature and the pull requests that introduced it |
+| `GET /api/github/repositories/{id}/releases?limit=&offset=` | GitHub releases, newest first |
+| `GET /api/github/repositories/{id}/releases/{github_id}` | One release with its notes (`body`) and assets |
+| `GET /api/github/users/{login}` | One account's profile. Case-insensitive; bot logins end in `[bot]` (URL-encoded as `%5Bbot%5D`) |
+
+### Dashboards
+
+Every platform with a dashboard (`has_dashboard` in `GET /api/platforms`;
+today `git` and `github`) serves it in the same format:
+
+```sh
+curl -b cookies 'http://localhost:8000/api/github/dashboard?entity=1&since=2024-01-01T00:00:00Z'
+# {"platform": "github", "entity": {"id": "1", "name": "spf13/cobra"}, "entities": [],
+#  "cards": [{"key": "issues", "label": "Issues", "type": "integer", "value": 120, "windowed": true},
+#            {"key": "stars", "label": "Stars", "type": "integer", "value": 39000, "windowed": false}, …],
+#  "last_mined_at": "2026-10-30T12:00:00Z"}
+
+curl -b cookies 'http://localhost:8000/api/github/dashboard/graph?entity=1&interval=month'
+# {"platform": "github", "entity": {…}, "interval": "month",
+#  "buckets": ["2013-09-01", "2013-10-01", …],
+#  "graphs": [{"key": "activity", "label": "Activity", "cumulative": false,
+#              "series": [{"key": "issues_opened", "label": "Issues opened", "values": [3, 7, …]}, …]}, …]}
+```
+
+- `entity` scopes the dashboard (a repository ID for git and GitHub). Without
+  it, the dashboard covers all of the platform's data and `entities` lists
+  what it can be scoped to.
+- `since` (inclusive) and `until` (exclusive) are RFC 3339 times. Cards with
+  `windowed: false`, such as stars, are current snapshots that ignore them.
+- Cards are typed (`integer`, `number`, `timestamp`, `text`); `value` is
+  `null` when unknown.
+- Every series has one value per entry in `buckets` (UTC interval start
+  dates; weeks start on Monday). `cumulative` graphs hold running totals,
+  including data before `since`. `interval` is `day`, `week`, `month`
+  (default) or `year`; a graph longer than 10,000 buckets is rejected.
+
+Which cards and graphs each platform has, and which timestamp the window
+applies to, is in architecture.md §9.1.
+
+### Previews and exports
+
+Every mined table is also served as a flat **dataset** that can be previewed a
+page at a time and exported in full, with the same filters:
+
+| Endpoint | Returns |
+|---|---|
+| `GET /api/{platform}/preview` | The platform's datasets, with their typed columns, filter parameters, key and time column |
+| `GET /api/{platform}/preview/{dataset}` | A page of rows: `{platform, dataset, count, limit, offset, results}` |
+| `GET /api/{platform}/export/{dataset}?format=csv\|json\|jsonl` | Every matching row, streamed as an attachment |
+
+| Platform | Datasets |
+|---|---|
+| `git` | `repositories`, `commits`, `commit-files`, `refs` |
+| `github` | `repositories`, `issues`, `pull-requests`, `issue-comments`, `issue-events`, `pull-request-commits`, `pull-request-reviews`, `pull-request-review-comments`, `commits`, `releases`, `release-assets`, `users` |
+
+```sh
+# Open bug issues of repository 1 created in 2024, most commented first
+curl -b cookies 'http://localhost:8000/api/github/preview/issues?repository_id=1&state=open&label_names=bug&since=2024-01-01&until=2025-01-01&sort=-comment_count'
+
+# The same rows as CSV
+curl -b cookies -OJ 'http://localhost:8000/api/github/export/issues?format=csv&repository_id=1&state=open&label_names=bug&since=2024-01-01&until=2025-01-01'
+
+# Large commits mentioning "fix"
+curl -b cookies 'http://localhost:8000/api/git/preview/commits?repository_id=1&search=fix&lines_added_min=100&is_merge=false'
+```
+
+Parameters:
+
+- **Paging** (preview only): `limit` (1 to 1,000, default 50) and `offset`.
+  `count` is the number of matching rows across all pages.
+- **`sort`**: comma-separated columns, `-` for descending
+  (`sort=-github_created_at,number`). The default is the time column, newest
+  first. The key columns always break ties, so pages are stable.
+- **`search`**: case-insensitive substring match on the searchable columns
+  (titles, bodies, messages, logins, names, paths).
+- **`since` and `until`**: on the dataset's time column (e.g.
+  `github_created_at`, `authored_at`), RFC 3339 or `YYYY-MM-DD` (midnight UTC),
+  `until` exclusive.
+- **Column filters**, named after the column:
+  - text, booleans and integers: `state=open`; repeat for any of several
+    values (`state=open&state=closed`);
+  - numbers: `star_count_min=`, `star_count_max=` (inclusive);
+  - timestamps: `github_closed_at_since=`, `github_closed_at_until=`;
+  - arrays: `label_names=bug&label_names=ui` keeps rows that have all of them.
+
+  Long text (titles, bodies) is searched rather than filtered, and JSON
+  columns can't be filtered. Unknown parameters are rejected with a 422, so a
+  misspelt filter never silently returns everything.
+
+Rows are flat: one row per table row, without `raw_payload`. Commits and
+their files appear once per repository that contains them, each with its
+`repository_id`. `pull-requests` includes the conversation side of each pull
+request (title, body, labels, …) from `github_issues`. In CSV, arrays and JSON
+values are written as JSON text and timestamps in UTC. Exports aren't paged
+and stream for as long as the client reads; use filters to narrow them.
 
 Response fields use the same names as the database columns described in
 [database.md](database.md). For example, `github_created_at` is when an issue
 was opened on GitHub, while `first_mined_at` is when Raise first fetched it.
 For analyses that the API doesn't cover, query PostgreSQL directly with the
-same names. The exceptions are values computed from other tables when
-requested, such as `contributor_count`: the distinct authors of the mined
+same names. The exceptions are values computed when requested: the datasets'
+`is_merge` (git commits with two or more parents), `kind` (git refs: `branch`
+or `tag`) and `pull_request_numbers` (GitHub commits, from
+`github_commit_pull_requests`), and `contributor_count`: the distinct authors of the mined
 commits, by GitHub login, or by email for authors without one. It covers every
 mined branch, while GitHub counts only the default branch. Enrich `commits`
 for accurate counts, since without logins an author with several emails counts
@@ -382,7 +527,12 @@ more than once.
 - **Git:** commit mining.
 - **GitHub** (GraphQL API): repository metadata, issues and pull requests
   with comments, timeline events, PR commits, reviews and review comments, and
-  commit enrichment (logins, signatures, introducing pull requests).
+  commit enrichment (logins, signatures, introducing pull requests),
+  releases with their assets, and the profiles of the accounts involved.
+- **Dashboards:** cards and time-series graphs for git and GitHub, in a
+  format shared by all platforms.
+- **Previews and exports:** every git and GitHub table, with filters, search
+  and sorting, as JSON pages or CSV, JSON and JSON Lines downloads.
 - **All platforms:** credential testing.
 
 Jira, Stack Overflow and GitLab mining are still to be built; starting those

@@ -337,3 +337,257 @@ SELECT pull_request_number
 FROM github_commit_pull_requests
 WHERE repository_id = $1 AND sha = $2
 ORDER BY pull_request_number;
+
+-- name: UpsertRelease :batchexec
+-- is_latest, reaction counts and asset counts change without updatedAt moving,
+-- so equal timestamps update too.
+INSERT INTO github_releases (
+    github_id, github_node_id, repository_id, tag_name, name, body, tag_commit_sha, is_draft,
+    is_prerelease, is_latest, author_login, reaction_counts, asset_count, github_created_at,
+    github_updated_at, github_published_at, raw_payload
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+ON CONFLICT (github_id) DO UPDATE SET
+    github_node_id      = EXCLUDED.github_node_id,
+    repository_id       = EXCLUDED.repository_id,
+    tag_name            = EXCLUDED.tag_name,
+    name                = EXCLUDED.name,
+    body                = EXCLUDED.body,
+    tag_commit_sha      = EXCLUDED.tag_commit_sha,
+    is_draft            = EXCLUDED.is_draft,
+    is_prerelease       = EXCLUDED.is_prerelease,
+    is_latest           = EXCLUDED.is_latest,
+    author_login        = EXCLUDED.author_login,
+    reaction_counts     = EXCLUDED.reaction_counts,
+    asset_count         = EXCLUDED.asset_count,
+    github_created_at   = EXCLUDED.github_created_at,
+    github_updated_at   = EXCLUDED.github_updated_at,
+    github_published_at = EXCLUDED.github_published_at,
+    raw_payload         = EXCLUDED.raw_payload,
+    last_mined_at       = now()
+WHERE github_releases.github_updated_at <= EXCLUDED.github_updated_at;
+
+-- name: UpsertReleaseAsset :batchexec
+-- Download counts change without updatedAt moving, so equal timestamps update too.
+INSERT INTO github_release_assets (
+    github_node_id, repository_id, release_github_id, name, content_type, size_bytes, download_count,
+    download_url, digest, uploader_login, github_created_at, github_updated_at, raw_payload
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+ON CONFLICT (github_node_id) DO UPDATE SET
+    repository_id     = EXCLUDED.repository_id,
+    release_github_id = EXCLUDED.release_github_id,
+    name              = EXCLUDED.name,
+    content_type      = EXCLUDED.content_type,
+    size_bytes        = EXCLUDED.size_bytes,
+    download_count    = EXCLUDED.download_count,
+    download_url      = EXCLUDED.download_url,
+    digest            = EXCLUDED.digest,
+    uploader_login    = EXCLUDED.uploader_login,
+    github_created_at = EXCLUDED.github_created_at,
+    github_updated_at = EXCLUDED.github_updated_at,
+    raw_payload       = EXCLUDED.raw_payload,
+    last_mined_at     = now()
+WHERE github_release_assets.github_updated_at <= EXCLUDED.github_updated_at;
+
+-- name: ListReleases :many
+SELECT github_id, github_node_id, tag_name, name, tag_commit_sha, is_draft, is_prerelease, is_latest,
+       author_login, reaction_counts, asset_count, github_created_at, github_updated_at,
+       github_published_at, first_mined_at, last_mined_at
+FROM github_releases
+WHERE repository_id = $1
+ORDER BY github_created_at DESC, github_id DESC
+LIMIT $2 OFFSET $3;
+
+-- name: GetRelease :one
+SELECT github_id, github_node_id, tag_name, name, body, tag_commit_sha, is_draft, is_prerelease, is_latest,
+       author_login, reaction_counts, asset_count, github_created_at, github_updated_at,
+       github_published_at, first_mined_at, last_mined_at
+FROM github_releases
+WHERE repository_id = $1 AND github_id = $2;
+
+-- name: ListReleaseAssets :many
+SELECT github_node_id, name, content_type, size_bytes, download_count, download_url, digest,
+       uploader_login, github_created_at, github_updated_at, first_mined_at, last_mined_at
+FROM github_release_assets
+WHERE release_github_id = $1
+ORDER BY github_created_at, github_node_id;
+
+-- name: ListRepositoryLogins :many
+-- Every account the repository's mined GitHub data refers to.
+SELECT DISTINCT l.login::text AS login
+FROM (
+    SELECT r.owner_login AS login FROM github_repositories r WHERE r.repository_id = sqlc.arg(repository_id)
+    UNION ALL SELECT i.author_login FROM github_issues i WHERE i.repository_id = sqlc.arg(repository_id)
+    UNION ALL SELECT unnest(i.assignee_logins) FROM github_issues i WHERE i.repository_id = sqlc.arg(repository_id)
+    UNION ALL SELECT p.merged_by_login FROM github_pull_requests p WHERE p.repository_id = sqlc.arg(repository_id)
+    UNION ALL SELECT unnest(p.requested_reviewer_logins) FROM github_pull_requests p WHERE p.repository_id = sqlc.arg(repository_id)
+    UNION ALL SELECT rv.reviewer_login FROM github_pull_request_reviews rv WHERE rv.repository_id = sqlc.arg(repository_id)
+    UNION ALL SELECT rvc.author_login FROM github_pull_request_review_comments rvc WHERE rvc.repository_id = sqlc.arg(repository_id)
+    UNION ALL SELECT ic.author_login FROM github_issue_comments ic WHERE ic.repository_id = sqlc.arg(repository_id)
+    UNION ALL SELECT e.actor_login FROM github_issue_events e WHERE e.repository_id = sqlc.arg(repository_id)
+    UNION ALL SELECT rl.author_login FROM github_releases rl WHERE rl.repository_id = sqlc.arg(repository_id)
+    UNION ALL SELECT a.uploader_login FROM github_release_assets a WHERE a.repository_id = sqlc.arg(repository_id)
+    UNION ALL SELECT g.author_login FROM github_commits g JOIN repository_commits rc ON rc.sha = g.sha WHERE rc.repository_id = sqlc.arg(repository_id)
+    UNION ALL SELECT g.committer_login FROM github_commits g JOIN repository_commits rc ON rc.sha = g.sha WHERE rc.repository_id = sqlc.arg(repository_id)
+) l
+WHERE l.login IS NOT NULL
+ORDER BY 1;
+
+-- name: ListUnminedLogins :many
+-- The given logins that have no github_users row yet.
+SELECT DISTINCT l::text AS login
+FROM unnest(sqlc.arg(logins)::text[]) l
+WHERE NOT EXISTS (SELECT 1 FROM github_users u WHERE lower(u.login) = lower(l))
+ORDER BY 1;
+
+-- name: DeleteUserLoginConflicts :batchexec
+-- Logins are unique, but a login freed by a rename can be taken by another
+-- account. The stale row loses it; it is re-mined if still referenced.
+DELETE FROM github_users
+WHERE lower(login) = lower(sqlc.arg(login)) AND github_id <> sqlc.arg(github_id);
+
+-- name: UpsertUser :batchexec
+-- Follower counts change without updatedAt moving, so equal timestamps update too.
+INSERT INTO github_users (
+    github_id, github_node_id, login, account_type, name, company, location, email, blog_url,
+    is_site_admin, follower_count, following_count, public_repository_count, github_created_at,
+    github_updated_at, raw_payload
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+ON CONFLICT (github_id) DO UPDATE SET
+    github_node_id          = EXCLUDED.github_node_id,
+    login                   = EXCLUDED.login,
+    account_type            = EXCLUDED.account_type,
+    name                    = EXCLUDED.name,
+    company                 = EXCLUDED.company,
+    location                = EXCLUDED.location,
+    email                   = EXCLUDED.email,
+    blog_url                = EXCLUDED.blog_url,
+    is_site_admin           = EXCLUDED.is_site_admin,
+    follower_count          = EXCLUDED.follower_count,
+    following_count         = EXCLUDED.following_count,
+    public_repository_count = EXCLUDED.public_repository_count,
+    github_created_at       = EXCLUDED.github_created_at,
+    github_updated_at       = EXCLUDED.github_updated_at,
+    raw_payload             = EXCLUDED.raw_payload,
+    last_mined_at           = now()
+WHERE github_users.github_updated_at <= EXCLUDED.github_updated_at;
+
+-- name: GetUserByLogin :one
+SELECT github_id, github_node_id, login, account_type, name, company, location, email, blog_url,
+       is_site_admin, follower_count, following_count, public_repository_count, github_created_at,
+       github_updated_at, first_mined_at, last_mined_at
+FROM github_users
+WHERE lower(login) = lower(sqlc.arg(login));
+
+-- Dashboard queries. A NULL repository_id means every repository hosted on
+-- GitHub. The since/until window applies to github_created_at, and to
+-- authored_at for commits.
+
+-- name: ListDashboardEntities :many
+SELECT repository_id, owner, name FROM repository_remotes
+WHERE platform = 'github'
+  AND (sqlc.narg(repository_id)::bigint IS NULL OR repository_id = sqlc.narg(repository_id))
+ORDER BY lower(owner), lower(name);
+
+-- name: DashboardRepositories :one
+-- Snapshot totals of the mined metadata. The sums are meaningless when
+-- repository_count is 0.
+SELECT count(*) AS repository_count,
+       coalesce(sum(star_count), 0)::bigint AS star_count,
+       coalesce(sum(fork_count), 0)::bigint AS fork_count,
+       coalesce(sum(watcher_count), 0)::bigint AS watcher_count
+FROM github_repositories
+WHERE sqlc.narg(repository_id)::bigint IS NULL OR repository_id = sqlc.narg(repository_id);
+
+-- name: DashboardCounts :one
+SELECT
+    (SELECT count(*) FROM github_issues i
+     WHERE NOT i.is_pull_request
+       AND (sqlc.narg(repository_id)::bigint IS NULL OR i.repository_id = sqlc.narg(repository_id))
+       AND (sqlc.narg(since)::timestamptz IS NULL OR i.github_created_at >= sqlc.narg(since))
+       AND (sqlc.narg(until)::timestamptz IS NULL OR i.github_created_at < sqlc.narg(until))) AS issue_count,
+    (SELECT count(*) FROM github_issues i
+     WHERE NOT i.is_pull_request AND i.state = 'open'
+       AND (sqlc.narg(repository_id)::bigint IS NULL OR i.repository_id = sqlc.narg(repository_id))
+       AND (sqlc.narg(since)::timestamptz IS NULL OR i.github_created_at >= sqlc.narg(since))
+       AND (sqlc.narg(until)::timestamptz IS NULL OR i.github_created_at < sqlc.narg(until))) AS open_issue_count,
+    (SELECT count(*) FROM github_pull_requests pr
+     WHERE (sqlc.narg(repository_id)::bigint IS NULL OR pr.repository_id = sqlc.narg(repository_id))
+       AND (sqlc.narg(since)::timestamptz IS NULL OR pr.github_created_at >= sqlc.narg(since))
+       AND (sqlc.narg(until)::timestamptz IS NULL OR pr.github_created_at < sqlc.narg(until))) AS pull_request_count,
+    (SELECT count(*) FROM github_pull_requests pr
+     WHERE pr.state = 'open'
+       AND (sqlc.narg(repository_id)::bigint IS NULL OR pr.repository_id = sqlc.narg(repository_id))
+       AND (sqlc.narg(since)::timestamptz IS NULL OR pr.github_created_at >= sqlc.narg(since))
+       AND (sqlc.narg(until)::timestamptz IS NULL OR pr.github_created_at < sqlc.narg(until))) AS open_pull_request_count,
+    (SELECT count(*) FROM github_pull_requests pr
+     WHERE pr.is_merged
+       AND (sqlc.narg(repository_id)::bigint IS NULL OR pr.repository_id = sqlc.narg(repository_id))
+       AND (sqlc.narg(since)::timestamptz IS NULL OR pr.github_created_at >= sqlc.narg(since))
+       AND (sqlc.narg(until)::timestamptz IS NULL OR pr.github_created_at < sqlc.narg(until))) AS merged_pull_request_count,
+    (SELECT count(*) FROM github_releases r
+     WHERE (sqlc.narg(repository_id)::bigint IS NULL OR r.repository_id = sqlc.narg(repository_id))
+       AND (sqlc.narg(since)::timestamptz IS NULL OR r.github_created_at >= sqlc.narg(since))
+       AND (sqlc.narg(until)::timestamptz IS NULL OR r.github_created_at < sqlc.narg(until))) AS release_count,
+    -- Like CountContributors, over the window and across repositories.
+    (SELECT count(DISTINCT coalesce(g.author_login, lower(c.author_email)))
+     FROM commits c
+     LEFT JOIN github_commits g ON g.sha = c.sha
+     WHERE EXISTS (
+         SELECT 1 FROM repository_commits rc
+         JOIN repository_remotes rr ON rr.repository_id = rc.repository_id AND rr.platform = 'github'
+         WHERE rc.sha = c.sha
+           AND (sqlc.narg(repository_id)::bigint IS NULL OR rc.repository_id = sqlc.narg(repository_id)))
+       AND (sqlc.narg(since)::timestamptz IS NULL OR c.authored_at >= sqlc.narg(since))
+       AND (sqlc.narg(until)::timestamptz IS NULL OR c.authored_at < sqlc.narg(until))) AS contributor_count;
+
+-- name: DashboardLastMinedAt :one
+SELECT greatest(
+    (SELECT max(last_mined_at) FROM github_repositories
+     WHERE sqlc.narg(repository_id)::bigint IS NULL OR repository_id = sqlc.narg(repository_id)),
+    (SELECT max(last_mined_at) FROM github_issues
+     WHERE sqlc.narg(repository_id)::bigint IS NULL OR repository_id = sqlc.narg(repository_id)),
+    (SELECT max(last_mined_at) FROM github_releases
+     WHERE sqlc.narg(repository_id)::bigint IS NULL OR repository_id = sqlc.narg(repository_id)),
+    (SELECT max(g.last_mined_at) FROM github_commits g
+     JOIN repository_commits rc ON rc.sha = g.sha
+     WHERE sqlc.narg(repository_id)::bigint IS NULL OR rc.repository_id = sqlc.narg(repository_id))
+) AS last_mined_at;
+
+-- name: DashboardActivity :many
+-- Events per interval up to until, one series per event. There is no since
+-- bound: the dashboard's cumulative graph needs the history before it.
+SELECT 'issues_opened'::text AS series,
+       date_trunc(sqlc.arg(interval)::text, github_created_at, 'UTC')::timestamptz AS bucket,
+       count(*) AS value
+FROM github_issues
+WHERE NOT is_pull_request
+  AND (sqlc.narg(repository_id)::bigint IS NULL OR repository_id = sqlc.narg(repository_id))
+  AND (sqlc.narg(until)::timestamptz IS NULL OR github_created_at < sqlc.narg(until))
+GROUP BY 2
+UNION ALL
+SELECT 'issues_closed', date_trunc(sqlc.arg(interval)::text, github_closed_at, 'UTC')::timestamptz, count(*)
+FROM github_issues
+WHERE NOT is_pull_request AND github_closed_at IS NOT NULL
+  AND (sqlc.narg(repository_id)::bigint IS NULL OR repository_id = sqlc.narg(repository_id))
+  AND (sqlc.narg(until)::timestamptz IS NULL OR github_closed_at < sqlc.narg(until))
+GROUP BY 2
+UNION ALL
+SELECT 'pull_requests_opened', date_trunc(sqlc.arg(interval)::text, github_created_at, 'UTC')::timestamptz, count(*)
+FROM github_pull_requests
+WHERE (sqlc.narg(repository_id)::bigint IS NULL OR repository_id = sqlc.narg(repository_id))
+  AND (sqlc.narg(until)::timestamptz IS NULL OR github_created_at < sqlc.narg(until))
+GROUP BY 2
+UNION ALL
+SELECT 'pull_requests_merged', date_trunc(sqlc.arg(interval)::text, github_merged_at, 'UTC')::timestamptz, count(*)
+FROM github_pull_requests
+WHERE is_merged AND github_merged_at IS NOT NULL
+  AND (sqlc.narg(repository_id)::bigint IS NULL OR repository_id = sqlc.narg(repository_id))
+  AND (sqlc.narg(until)::timestamptz IS NULL OR github_merged_at < sqlc.narg(until))
+GROUP BY 2
+UNION ALL
+SELECT 'releases', date_trunc(sqlc.arg(interval)::text, github_created_at, 'UTC')::timestamptz, count(*)
+FROM github_releases
+WHERE (sqlc.narg(repository_id)::bigint IS NULL OR repository_id = sqlc.narg(repository_id))
+  AND (sqlc.narg(until)::timestamptz IS NULL OR github_created_at < sqlc.narg(until))
+GROUP BY 2
+ORDER BY 1, 2;

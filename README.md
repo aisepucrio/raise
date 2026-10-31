@@ -26,21 +26,25 @@ cd raise
 
 ### 3. Prepare your .env file
 
-Copy the example environment file and fill in the required values:
+Copy the example environment file:
 
 ```sh
 cp .env.example .env
 ```
 
-Open the newly created `.env` file in a text editor. Replace all placeholder values (such as `<YOUR_GITHUB_TOKEN>` and `<https://your-domain.atlassian.net>`) with your actual credentials and configuration values.
+Then generate a credential encryption key and paste it into `ENCRYPTION_KEYS`
+in `.env`:
 
-For example:
+```sh
+docker compose run --rm migrate raisectl keygen
+```
 
-- `GITHUB_TOKENS`: Replace `<YOUR_GITHUB_TOKEN>` with a valid GitHub personal access token.
-- `JIRA_URL`: Replace `<https://your-domain.atlassian.net>` with your actual JIRA instance URL.
-- Update any other variables as needed for your environment.
+Back this key up: the platform tokens stored in the database can't be
+decrypted without it. The other values in `.env.example` work as they are for
+local use; each one is described in the file.
 
-Save the file after making your changes.
+Platform tokens (GitHub, Jira, Stack Overflow) don't go in `.env`. You add them
+through the API once it is running (step 5).
 
 ### 4. Build and Start the Containers
 
@@ -50,17 +54,40 @@ In the root directory of the project (where the `docker-compose.yaml` file is lo
 docker compose up --build
 ```
 
-If setting up a production environment, run the following command instead:
+This starts PostgreSQL, the [Go backend](backend-go/README.md) (database
+migrations, the API and the mining worker) and the frontend. To also serve
+the frontend build through nginx on port 8080, set `IS_DEBUG=False` in `.env`
+and run:
 
 ```sh
 docker compose --profile production up --build
 ```
 
-Changes to `.env` and to `backend/dataminer_api/settings.py` might be needed to adjust security/host/port configurations to your production needs.
+`docker-compose.yaml` is meant for development. For production settings
+(HTTPS, secrets, reverse proxy), see the
+[production section of the backend README](backend-go/README.md#production).
 
-### 5. Access the Application
+### 5. Create an admin and add tokens
 
-Once the containers are running, you will be able to access our web interface via [http://localhost:5173]() and our API via [http://localhost:8000]().
+Create the first user:
+
+```sh
+docker compose run --rm -it migrate raisectl user create -username admin -role admin
+```
+
+Then log in and add a GitHub token as described in
+[Adding platform credentials](backend-go/README.md#adding-platform-credentials-admin) in the backend README.
+
+### 6. Access the Application
+
+The API runs at <http://localhost:8000>, with interactive docs at
+<http://localhost:8000/api/docs>. The web interface runs at
+<http://localhost:5173>.
+
+> **Note:** the web interface still targets the previous Django API and has
+> not been migrated to the Go backend yet, so its pages can't load data. Use
+> the API directly in the meantime. The migration is tracked in
+> [backend-go/architecture.md](backend-go/architecture.md) §12.
 
 ---
 If you encounter any issues, please open an issue in the repository.

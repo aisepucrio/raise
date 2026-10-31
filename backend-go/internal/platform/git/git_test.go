@@ -163,3 +163,13 @@ func TestNormalizeURL(t *testing.T) {
 		}
 	}
 }
+
+// ---- datasets.go ----
+
+func TestDatasetsAreValid(t *testing.T) {
+	for _, d := range (&Platform{}).Datasets() {
+		if err := d.Validate(); err != nil {
+			t.Error(err)
+		}
+	}
+}

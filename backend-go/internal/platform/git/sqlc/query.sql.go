@@ -7,7 +7,150 @@ package sqlc
 
 import (
 	"context"
+	"time"
 )
+
+const dashboardCommitActivity = `-- name: DashboardCommitActivity :many
+SELECT date_trunc($1::text, c.authored_at, 'UTC')::timestamptz AS bucket,
+       count(*) AS commit_count,
+       count(DISTINCT lower(c.author_email)) AS author_count,
+       coalesce(sum(c.lines_added), 0)::bigint AS lines_added,
+       coalesce(sum(c.lines_deleted), 0)::bigint AS lines_deleted
+FROM commits c
+WHERE EXISTS (
+    SELECT 1 FROM repository_commits rc
+    WHERE rc.sha = c.sha
+      AND ($2::bigint IS NULL OR rc.repository_id = $2)
+)
+  AND ($3::timestamptz IS NULL OR c.authored_at < $3)
+GROUP BY 1
+ORDER BY 1
+`
+
+type DashboardCommitActivityParams struct {
+	Interval     string     `json:"interval"`
+	RepositoryID *int64     `json:"repository_id"`
+	Until        *time.Time `json:"until"`
+}
+
+type DashboardCommitActivityRow struct {
+	Bucket       time.Time `json:"bucket"`
+	CommitCount  int64     `json:"commit_count"`
+	AuthorCount  int64     `json:"author_count"`
+	LinesAdded   int64     `json:"lines_added"`
+	LinesDeleted int64     `json:"lines_deleted"`
+}
+
+// Commits per interval up to until. There is no since bound: the dashboard's
+// cumulative graph needs the history before it.
+func (q *Queries) DashboardCommitActivity(ctx context.Context, arg DashboardCommitActivityParams) ([]DashboardCommitActivityRow, error) {
+	rows, err := q.db.Query(ctx, dashboardCommitActivity, arg.Interval, arg.RepositoryID, arg.Until)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []DashboardCommitActivityRow
+	for rows.Next() {
+		var i DashboardCommitActivityRow
+		if err := rows.Scan(
+			&i.Bucket,
+			&i.CommitCount,
+			&i.AuthorCount,
+			&i.LinesAdded,
+			&i.LinesDeleted,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const dashboardCommits = `-- name: DashboardCommits :one
+SELECT count(*) AS commit_count,
+       count(DISTINCT lower(c.author_email)) AS author_count,
+       coalesce(sum(c.lines_added), 0)::bigint AS lines_added,
+       coalesce(sum(c.lines_deleted), 0)::bigint AS lines_deleted,
+       min(c.authored_at) AS first_authored_at,
+       max(c.authored_at) AS last_authored_at
+FROM commits c
+WHERE EXISTS (
+    SELECT 1 FROM repository_commits rc
+    WHERE rc.sha = c.sha
+      AND ($1::bigint IS NULL OR rc.repository_id = $1)
+)
+  AND ($2::timestamptz IS NULL OR c.authored_at >= $2)
+  AND ($3::timestamptz IS NULL OR c.authored_at < $3)
+`
+
+type DashboardCommitsParams struct {
+	RepositoryID *int64     `json:"repository_id"`
+	Since        *time.Time `json:"since"`
+	Until        *time.Time `json:"until"`
+}
+
+type DashboardCommitsRow struct {
+	CommitCount     int64       `json:"commit_count"`
+	AuthorCount     int64       `json:"author_count"`
+	LinesAdded      int64       `json:"lines_added"`
+	LinesDeleted    int64       `json:"lines_deleted"`
+	FirstAuthoredAt interface{} `json:"first_authored_at"`
+	LastAuthoredAt  interface{} `json:"last_authored_at"`
+}
+
+func (q *Queries) DashboardCommits(ctx context.Context, arg DashboardCommitsParams) (DashboardCommitsRow, error) {
+	row := q.db.QueryRow(ctx, dashboardCommits, arg.RepositoryID, arg.Since, arg.Until)
+	var i DashboardCommitsRow
+	err := row.Scan(
+		&i.CommitCount,
+		&i.AuthorCount,
+		&i.LinesAdded,
+		&i.LinesDeleted,
+		&i.FirstAuthoredAt,
+		&i.LastAuthoredAt,
+	)
+	return i, err
+}
+
+const dashboardRefs = `-- name: DashboardRefs :one
+SELECT count(*) FILTER (WHERE name LIKE 'refs/heads/%') AS branch_count,
+       count(*) FILTER (WHERE name LIKE 'refs/tags/%') AS tag_count
+FROM repository_refs
+WHERE $1::bigint IS NULL OR repository_id = $1
+`
+
+type DashboardRefsRow struct {
+	BranchCount int64 `json:"branch_count"`
+	TagCount    int64 `json:"tag_count"`
+}
+
+func (q *Queries) DashboardRefs(ctx context.Context, repositoryID *int64) (DashboardRefsRow, error) {
+	row := q.db.QueryRow(ctx, dashboardRefs, repositoryID)
+	var i DashboardRefsRow
+	err := row.Scan(&i.BranchCount, &i.TagCount)
+	return i, err
+}
+
+const dashboardRepositories = `-- name: DashboardRepositories :one
+SELECT count(*) AS repository_count, max(mirror_last_synced_at) AS mirror_last_synced_at
+FROM repositories
+WHERE $1::bigint IS NULL OR id = $1
+`
+
+type DashboardRepositoriesRow struct {
+	RepositoryCount    int64       `json:"repository_count"`
+	MirrorLastSyncedAt interface{} `json:"mirror_last_synced_at"`
+}
+
+func (q *Queries) DashboardRepositories(ctx context.Context, repositoryID *int64) (DashboardRepositoriesRow, error) {
+	row := q.db.QueryRow(ctx, dashboardRepositories, repositoryID)
+	var i DashboardRepositoriesRow
+	err := row.Scan(&i.RepositoryCount, &i.MirrorLastSyncedAt)
+	return i, err
+}
 
 const deleteRefs = `-- name: DeleteRefs :exec
 DELETE FROM repository_refs WHERE repository_id = $1
@@ -203,6 +346,42 @@ func (q *Queries) ListCommits(ctx context.Context, arg ListCommitsParams) ([]Com
 			&i.FilesChanged,
 			&i.FirstMinedAt,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listDashboardEntities = `-- name: ListDashboardEntities :many
+
+SELECT id, host, path FROM repositories
+WHERE $1::bigint IS NULL OR id = $1
+ORDER BY host, path
+`
+
+type ListDashboardEntitiesRow struct {
+	ID   int64  `json:"id"`
+	Host string `json:"host"`
+	Path string `json:"path"`
+}
+
+// Dashboard queries. A NULL repository_id means every repository. Commits are
+// counted once even when several repositories (forks) share them, and the
+// since/until window applies to authored_at.
+func (q *Queries) ListDashboardEntities(ctx context.Context, repositoryID *int64) ([]ListDashboardEntitiesRow, error) {
+	rows, err := q.db.Query(ctx, listDashboardEntities, repositoryID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListDashboardEntitiesRow
+	for rows.Next() {
+		var i ListDashboardEntitiesRow
+		if err := rows.Scan(&i.ID, &i.Host, &i.Path); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

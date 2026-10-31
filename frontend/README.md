@@ -1,132 +1,134 @@
-# Frontend general organization and how to create a new module
+# Raise frontend
 
-This README centralizes the frontend architecture and the flow to create a new source (full module of `overview + collect + preview + date`).
+The React single-page application for Raise, a repository and mining tool for
+software-engineering data. It lets users configure collections, monitor jobs,
+view summary charts, and preview or export mined data from GitHub, Jira, and
+Stack Overflow.
 
-## Prerequisites
+**The current frontend targets the legacy Django/Celery backend in
+[`backend/`](../backend/). It is not yet compatible with `backend-go/`; changing
+`VITE_API_URL` alone is insufficient.** See
+[ARCHITECTURE.md](ARCHITECTURE.md) for the code organisation, current API
+contracts, known gaps, and migration checklist.
 
-- **Node.js** (v18 or higher recommended) — required to run the project and install dependencies. If you don't have it installed, download it from [https://nodejs.org](https://nodejs.org).
+## Requirements
 
-## Stack and quick setup
+- Node.js **22.12 or newer** on the Node 22 line, or a newer supported Node
+  version. The Docker image uses Node 22; the locked Vite tooling requires
+  `^20.19.0 || >=22.12.0` (the previous Node 18 recommendation is obsolete).
+- npm and the committed [`package-lock.json`](package-lock.json).
+- A running legacy API for data-backed screens. Vite and Storybook can run
+  independently, but Vite does not supply mock API responses.
 
-- `React + Vite` -> SPA application base.
-- `react-router-dom` -> page routing.
-- `@tanstack/react-query` -> cache, loading, and date synchronization.
-- `axios` -> HTTP client for API.
-- `Tailwind + internal components` -> reusable UI.
-- `Storybook` -> component catalog/visual validation.
+## Local development
 
-Main scripts:
+From the repository root:
 
-- `npm run dev` -> starts local environment.
-- `npm run build` -> creates production build.
-- `npm run storybook` -> starts component visual documentation.
-
-Environment variable (set in .env):
-
-- `VITE_API_URL` -> API base URL consumed in `src/date/api/apiClient.ts` - backend route.
-
-## Application execution map (main files)
-
-- `src/main.tsx` -> injects `ThemeProvider` (light/dark theme), `QueryClientProvider` (tanstack query), `RouterProvider` (routing), and `Toast` (alerts); consumes `queryClient` through the `@/data` barrel.
-- `src/router.tsx` -> defines routes `/overview`, `/collect`, `/preview`, and `/jobs`.
-- `src/layout.tsx` -> renders base structure `Sidebar + Outlet`.
-- `src/sidebar/Sidebar.tsx` -> sidebar configuration and page-switching logic; uses URL `source/section` as single source of truth.
-- `src/pages/OverviewPage.tsx` -> picks overview module by current `source`.
-- `src/pages/CollectPage.tsx` -> picks collect module by current `source`.
-- `src/pages/PreviewPage.tsx` -> picks preview module by `source + section`.
-- `src/pages/JobsPage.tsx` -> lists global jobs and executes stop/restart actions.
-- `src/pages/NotFound.tsx` -> app 404 fallback.
-- `src/date/index.ts` -> single date layer entry point for pages and components (`hooks`, `types`, `queryClient`, helpers, and section types).
-
-## Routes and query params (navigation source)
-
-- `source` -> defines which integration is active (`github`, `jira`, `stackoverflow`).
-- `section` -> defines which preview subarea is active (only in `/preview`).
-
-![Figure1-README](public/Figure1-README.png)
-
-Files that control the rule:
-
-- `src/sources/index.ts` -> global contract of ids, labels, defaults, and sections by source.
-- `src/lib/source-section-resolver.ts` -> normalizes invalid `source/section` into valid values.
-- `src/sidebar/Sidebar.tsx` and `src/sidebar/sidebarNavigation.ts` -> preserve `source`, keep `section` only in preview and removes it outside, and also auto-fix invalid URL with `replace`.
-
-## Folder organization (architectural view)
-
-```txt
-src/
-  components/ -> shared UI (cards, tables, filters, modals, etc.), each component is in its own folder and has Storybook documentation.
-  pages/      -> route pages (overview, collect, preview, jobs)
-  sidebar/    -> side navigation and URL rules
-  sources/    -> UI modules by source
-  date/       -> API + React Query layer + domain modules by source (communication with backend)
-  lib/        -> support utilities (resolvers, theme, helpers)
+```sh
+cd frontend
+npm ci
 ```
 
-## Component pattern + Storybook
+Create `frontend/.env.local` with the API origin, for example:
 
-To keep documentation and usage consistency:
+```dotenv
+VITE_API_URL=http://localhost:8000
+```
 
-- Every shared component must be in `src/components/<component-name>/`.
-- Inside the folder, keep at least `<Component>.tsx` (implementation), `<Component>.stories.tsx` (Storybook documentation/usage), and `index.ts` (export only what should be exposed externally).
-- External imports must point to the folder barrel (`@/components/<component-name>`), avoiding direct imports of internal files.
+Then start Vite:
 
-## `src/date` layer (backend + cache)
+```sh
+npm run dev
+```
 
-### `src/date/api`
+Open `http://localhost:5173` (or the port Vite reports if that port is occupied).
+The script binds to `0.0.0.0`. The legacy backend must allow the browser's
+frontend origin for cross-origin requests; there is no Vite API proxy configured.
+See the [repository README](../README.md) for legacy stack setup.
 
-- `apiClient.ts` -> instantiates axios with base URL and interceptor that returns `res.data`.
-- `endpoints.ts` -> centralizes dashboard, preview, collect, and jobs HTTP routes.
+### Configuration
 
-### `src/date/query`
+| Variable | Purpose |
+|---|---|
+| `VITE_API_URL` | Axios base URL. Use an origin such as `http://localhost:8000`, **without `/api`**: endpoint paths already include `/api/`. If unset, requests use the frontend origin, which requires an API reverse proxy. |
+| `IS_DEBUG` | Used only by the container's `run.sh`. The exact string `False` selects the build watcher; any other value selects the Vite dev server. |
 
-- `client.ts` -> configures the app single `QueryClient`.
-- `keys.ts` -> generates standardized query keys by source + jobs keys.
-- `invalidation.ts` -> centralizes reusable invalidators (for example: jobs).
-- `errors.ts` -> normalizes error objects into user-friendly message.
+Vite embeds `VITE_*` values into the browser bundle at build time. Restart the
+dev server after changing an env file; rebuild a production bundle after changing
+its API URL. These values are public: backend mining credentials belong on the
+backend, never in frontend environment variables.
 
-### `src/date/modules`
+## Commands and checks
 
-Each domain follows the same pattern:
+Run these from `frontend/`:
 
-- `<source>Types.ts` -> centralizes params, payload, and response contracts.
-- `<source>Service.ts` -> contains only HTTP calls for each domain endpoint.
-- `<source>Queries.ts` -> encapsulates `useQuery` with standardized `queryKey` - queries are operations used to fetch/read information.
-- `<source>Mutations.ts` -> encapsulates `useMutation` and post-action invalidations - mutations are operations used to create, edit, or removes information.
-- `index.ts` -> aggregates and re-exports module `queries`, `mutations`, and `types`.
+| Command | Purpose |
+|---|---|
+| `npm run dev` | Vite development server, normally port 5173. |
+| `npm run build` | Build static assets into `dist/`. |
+| `npm run preview` | Serve the built `dist/` locally, normally port 4173. Run the build first. |
+| `npm run start` | Run `vite build --watch`; writes `dist/` as files change. **Does not start an HTTP server.** |
+| `npm test` | Run Vitest once in the Node environment. |
+| `npm run test:watch` | Run Vitest in watch mode. |
+| `npm run lint` | Run the current ESLint configuration. |
+| `npm run storybook` | Start the component catalogue on port 6006. |
+| `npm run build-storybook` | Build the static catalogue into `storybook-static/`. |
 
-Consumption barrel:
+For frontend changes, run `npm test`, `npm run build`, and `npm run lint`.
+For shared UI changes, also inspect the relevant Storybook stories.
 
-- `src/date/index.ts` -> is the single consumption point for pages/components: re-exports query/mutation hooks, module types, `section` types, `queryClient`, and error helper.
-- UI import pattern -> always prefer `@/data`; avoid direct imports from `@/data/modules/*`, `@/data/api/*`, and `@/data/query/*`.
+Checks have limits: `build` runs Vite without a TypeScript type-checking step,
+and ESLint currently targets only `.js`/`.jsx`, not `.ts`/`.tsx`. The current
+unit suite covers collection URL parsers; it does not test rendered pages,
+HTTP contracts, or end-to-end flows. See the architecture document's
+[known gaps](ARCHITECTURE.md#8-known-gaps-and-validation-limits).
 
-Default flow:
+## Using the application
 
-`Component/Page (imports from "@/data")` -> `Query/Mutation hook` -> `Service` -> `endpoints + apiClient` -> `Backend`
+| Route | Purpose |
+|---|---|
+| `/` or `/overview?source=github` | Summary cards and time-series charts; filter by repository, project, or tag and dates. |
+| `/collect?source=github` | Configure and start mining. Successful submission opens Jobs. |
+| `/preview?source=github&section=issues` | Browse server-paginated data, search, sort, hide columns, inspect cells, and request exports. |
+| `/jobs` | Global collection-job list, refreshed every five seconds, with stop/restart actions based on status. |
 
-## `src/sources` layer (UI by source)
+Supported `source` values are `github`, `jira`, and `stackoverflow`. The default
+is GitHub. Preview sections and URL normalisation are documented in
+[ARCHITECTURE.md](ARCHITECTURE.md#3-routing-and-state).
 
-This layer role:
+## Containers and serving the build
 
-- `Overview` -> filters + chart + metric cards.
-- `Collect` -> input form and collection trigger.
-- `Preview` -> paginated table with search, sorting, export, and filters.
+The root [`docker-compose.yaml`](../docker-compose.yaml) runs the frontend
+together with the [Go backend](../backend-go/README.md). It reads the root
+`.env` but passes only `VITE_API_URL` and `IS_DEBUG` to the frontend
+container, and publishes port 5173 for development. The frontend still calls
+the legacy Django endpoints, so it can't load data from the Go backend until
+it is migrated (see [backend-go/architecture.md](../backend-go/architecture.md) §12).
+The [frontend Dockerfile](Dockerfile) uses Node 22 Alpine; [`run.sh`](run.sh)
+runs `npm install` on startup before selecting dev server or build watcher.
 
-Core files:
+In the Compose production profile, nginx serves the shared `frontend_dist`
+volume on port 8080. Set `IS_DEBUG=False` so the frontend writes `dist/` and
+start the profile from the repository root:
 
-- `src/sources/index.ts` -> typed contract for sources/sections/labels/defaults (used so the whole frontend has only one standardized consumption source).
-- `src/sources/registry.ts` -> registry that links source to real UI components (used for mapping in OverviewPage, CollectPage, and PreviewPage).
+```sh
+docker compose --profile production up --build
+```
 
-Shared logic functions, reused by multiple sources:
+[`nginx.conf`](../nginx.conf) falls back to `index.html` for client-side routes
+and proxies `/api/` to the Go API (`api:8000`). For that same-origin setup, leave
+`VITE_API_URL` empty when building. An absolute API URL bypasses that proxy.
 
-- `sources/shared/AllShared.ts` -> generic option helpers for selects.
-- `sources/shared/OverviewShared.ts` -> overview filter/card/series builders.
-- `sources/shared/CollectShared.ts` -> collection tag and feedback helpers.
-- `sources/shared/PreviewShared.ts` -> preview table, sort, export, and feedback helpers.
+For another static host, serve `dist/`, provide an `index.html` fallback for
+routes such as `/preview`, and route API requests to the configured backend.
+`npm run preview` is a local build check, not the production serving setup.
 
-Composed components used directly to build pages:
+## Where to read next
 
-- `src/components/overview/*` -> overview-specific components that already group smaller blocks (filters, layout, chart, and metrics) for each module to configure.
-- `src/components/collect/*` -> collect-specific components that already group smaller blocks (header, tags, dates, and actions) for each module to configure.
-- `src/components/preview/*` -> preview-specific components that already group smaller blocks (header, table, modal, and export) for each module to configure.
-- `Recurring pattern, not mandatory` -> the project usually follows this model to speed up new modules, but each source can deviate from it when it makes sense.
+- [Frontend architecture and migration notes](ARCHITECTURE.md).
+- [Go backend setup and configuration](../backend-go/README.md).
+- [Go backend architecture and HTTP conventions](../backend-go/architecture.md).
+- [Go database schema and field naming](../backend-go/database.md).
+
+Keep this README in sync with commands, configuration, and serving changes;
+update ARCHITECTURE.md when routes, source modules, or API contracts change.

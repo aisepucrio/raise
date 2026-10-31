@@ -1,0 +1,14 @@
+# Allowlist: the build context holds only what the Dockerfile compiles, so
+# secrets (.env), mirrors (data/) and local binaries never reach the image or
+# its build cache. If the build needs a new top-level file or directory,
+# re-include it here.
+*
+!go.mod
+!go.sum
+!cmd/
+!internal/
+
+# Never send these, even if they appear under an included directory.
+**/.env
+**/.env.*
+**/.DS_Store
