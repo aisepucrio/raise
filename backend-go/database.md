@@ -111,6 +111,7 @@ erDiagram
     users ||--o{ credentials : adds
     credentials ||--o{ credential_quotas : "rate limits"
     collections ||--o{ collection_progress : "sharded counters"
+    collections ||--o{ collection_job_errors : "failed attempts"
 
     repositories ||--o{ repository_remotes : "hosted on"
     repositories ||--o{ repository_refs : "branches/tags"
@@ -257,6 +258,27 @@ per collection to avoid write contention. **Sum over shards to read.**
 | `jobs_expected` | `bigint` | | Jobs enqueued for the collection (grows as jobs fan out) |
 | `jobs_done` | `bigint` | | Jobs completed |
 | `jobs_failed` | `bigint` | | Jobs cancelled or out of retries |
+
+### `collection_job_errors` ✅
+
+Migration: `00003_collections.sql`. One row per failed attempt of a
+collection's jobs, written by the job middleware (`jobkit`) as the attempt
+fails. River deletes its own job rows after a retention period (by default a
+day for finished jobs, a week for failed ones), so this is the collection's
+lasting log. Snoozes (rate limiting) are not failures and aren't recorded.
+Served by `GET /api/collections/{id}/errors`.
+
+| Column | Type | Null | Description |
+|---|---|:-:|---|
+| `id` | `bigserial` | | Primary key; also the log's order |
+| `collection_id` | `bigint` | | → `collections.id` |
+| `job_id` | `bigint` | | River's job ID (`river_job.id`); not a foreign key, since River deletes its rows |
+| `job_kind` | `text` | | e.g. `github.fetch_issues` |
+| `job_args` | `jsonb` | | The job's arguments: what it was working on |
+| `attempt` | `integer` | | 1 for the first attempt |
+| `is_final` | `boolean` | | The job was given up (cancelled or out of retries) and counts in `jobs_failed`; otherwise it was retried |
+| `error` | `text` | | The error message, cut to 4,000 bytes |
+| `created_at` | `timestamptz` | | When the attempt failed |
 
 ---
 

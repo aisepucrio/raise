@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 
 import { CollectFormModal } from "@/components/collect";
+import { SelectionButton } from "@/components/selection-button";
+import { useRepositoriesQuery } from "@/data";
 import { FormInput } from "@/components/form";
 import { parseGithubUrl } from "@/sources/shared/parseCollectUrl";
 import { containsItemIgnoreCase } from "@/sources/shared/CollectShared";
@@ -29,6 +31,12 @@ export default function GithubCollectModal({
   onAddRepository,
 }: GithubCollectModalProps) {
   const addRepositoryInputRef = useRef<HTMLInputElement | null>(null);
+  // Repositories Raise already knows, to refresh them without typing.
+  const repositoriesQuery = useRepositoriesQuery();
+  const knownRepositories = (repositoriesQuery.data ?? [])
+    .filter((repository) => repository.host === "github.com")
+    .map((repository) => repository.path)
+    .filter((path) => !containsItemIgnoreCase(repositories, path));
   const [repositoryInput, setRepositoryInput] = useState("");
   const [addRepositoryError, setAddRepositoryError] = useState<string | null>(
     null,
@@ -49,7 +57,9 @@ export default function GithubCollectModal({
     }
 
     if (!isValidRepositoryName(normalizedRepository)) {
-      setAddRepositoryError("Invalid format. Use owner/repo or paste a GitHub URL.");
+      setAddRepositoryError(
+        "Invalid format. Use owner/repo or paste a GitHub URL.",
+      );
       return;
     }
 
@@ -84,6 +94,29 @@ export default function GithubCollectModal({
         placeholder="owner/repo or paste a GitHub URL"
         error={addRepositoryError ?? undefined}
       />
+
+      {knownRepositories.length > 0 ? (
+        <div className="mt-4 space-y-2">
+          <p className="text-xs font-semibold text-(--color-secondary)">
+            Or pick one already in Raise
+          </p>
+          <div className="flex max-h-40 flex-wrap gap-2 overflow-auto">
+            {knownRepositories.map((path) => (
+              <SelectionButton
+                key={path}
+                size="sm"
+                fullWidth={false}
+                pressed={false}
+                text={path}
+                onPressedChange={() => {
+                  onAddRepository(path);
+                  onClose();
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      ) : null}
     </CollectFormModal>
   );
 }

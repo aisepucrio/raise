@@ -9,6 +9,9 @@ SELECT * FROM users WHERE id = $1;
 -- name: GetUserByUsername :one
 SELECT * FROM users WHERE lower(username) = lower($1);
 
+-- name: HasUsers :one
+SELECT EXISTS (SELECT 1 FROM users);
+
 -- name: ListUsers :many
 SELECT * FROM users ORDER BY username;
 

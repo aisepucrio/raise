@@ -7,6 +7,8 @@ export type ModalShellProps = {
   title: string;
   subtitle?: string;
   initialFocusRef?: { current: HTMLElement | null };
+  // "lg" for long content such as logs; it scrolls inside the dialog.
+  size?: "md" | "lg";
   children: ReactNode;
 };
 
@@ -16,6 +18,7 @@ export function ModalShell({
   title,
   subtitle,
   initialFocusRef,
+  size = "md",
   children,
 }: ModalShellProps) {
   const titleId = useId();
@@ -55,7 +58,11 @@ export function ModalShell({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="w-full max-w-md rounded-xl border-2 border-(--color-secondary-soft) bg-(--color-primary) p-4 shadow-lg"
+        className={
+          size === "lg"
+            ? "flex max-h-[85dvh] w-full max-w-3xl flex-col rounded-xl border-2 border-(--color-secondary-soft) bg-(--color-primary) p-4 shadow-lg"
+            : "w-full max-w-md rounded-xl border-2 border-(--color-secondary-soft) bg-(--color-primary) p-4 shadow-lg"
+        }
         onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="mb-3 flex items-start justify-between gap-2">

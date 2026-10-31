@@ -453,6 +453,14 @@ detect that they were the last one.
 its pending jobs (looked up by metadata). Running jobs finish their current
 unit of work.
 
+**Error log.** The same middleware that counts progress records every failed
+attempt (not snoozes) in `collection_job_errors`: kind, arguments, attempt,
+whether it was final, and the message. River deletes job rows after its
+retention period, so this table is what explains a `partial` collection
+later, and it also shows retried failures of `completed` ones. Like progress,
+it is best-effort: a failed insert is logged and never fails the job.
+`GET /api/collections/{id}/errors` serves it, oldest first.
+
 ---
 
 ## 7. Credentials (token management)
@@ -536,9 +544,13 @@ instance.
   without metadata they require `viewer`. The OpenAPI `security` section is
   generated from the same metadata, so the docs can't drift from what's
   enforced.
-- **Bootstrap.** There's no self-signup. Create the first admin with
-  `raisectl user create -username admin -role admin`; admins then manage users
-  via `/api/users`.
+- **Bootstrap.** There's no self-signup. On startup the API creates the first
+  admin from `ADMIN_USERNAME`/`ADMIN_PASSWORD` (`auth.Service.BootstrapAdmin`),
+  but only while the `users` table is empty, so the variables never override
+  a changed password. If two API processes race, the loser's insert conflicts
+  and is ignored. `raisectl user create -username admin -role admin` does the
+  same by hand. Admins then manage users via `/api/users`; each user changes
+  their own password via `POST /api/auth/password`.
 
 ---
 
@@ -553,9 +565,9 @@ The API uses huma v2 on chi (`humachi`). The OpenAPI 3.1 spec is served at
 | users (admin) | `GET/POST /api/users`, `PATCH /api/users/{id}` |
 | platforms | `GET /api/platforms` |
 | credentials | `GET/POST /api/credentials`, `POST /api/credentials/{id}/test`, `DELETE /api/credentials/{id}` |
-| collections | `POST/GET /api/collections`, `GET /api/collections/{id}`, `POST /api/collections/{id}/cancel` |
+| collections | `POST/GET /api/collections`, `GET /api/collections/{id}`, `GET /api/collections/{id}/errors`, `POST /api/collections/{id}/cancel` |
 | git | `POST/GET /api/repositories`, `GET /api/repositories/{id}`, `GET /api/repositories/{id}/commits`, `GET /api/repositories/{id}/commits/{sha}` |
-| dashboards | `GET /api/{platform}/dashboard`, `GET /api/{platform}/dashboard/graph` for every `Dashboarder` (§9.1): `git`, `github` |
+| dashboards | `GET /api/{platform}/dashboard`, `GET /api/{platform}/dashboard/graph`, `GET /api/{platform}/dashboard/date-range` for every `Dashboarder` (§9.1): `git`, `github` |
 | preview and export | `GET /api/{platform}/preview`, `GET /api/{platform}/preview/{dataset}`, `GET /api/{platform}/export/{dataset}` for every `DatasetProvider` (§9.2): `git`, `github` |
 | github | `GET /api/github/repositories/{id}`, `GET /api/github/repositories/{id}/issues`, `GET /api/github/repositories/{id}/issues/{number}`, `GET /api/github/repositories/{id}/pull-requests`, `GET /api/github/repositories/{id}/pull-requests/{number}`, `GET /api/github/repositories/{id}/commits/{sha}`, `GET /api/github/repositories/{id}/releases`, `GET /api/github/repositories/{id}/releases/{github_id}` |
 | health | `GET /healthz` |
@@ -590,10 +602,10 @@ them with one set of components. A platform implements
 serves it at fixed paths with fixed inputs. `GET /api/platforms` reports
 `has_dashboard`.
 
-| | `GET /api/{platform}/dashboard` | `GET /api/{platform}/dashboard/graph` |
-|---|---|---|
-| Input | `entity`, `since`, `until` | the same, plus `interval` (`day`, `week`, `month` (default), `year`) |
-| Output | `entity`, `entities`, `cards`, `last_mined_at` | `entity`, `interval`, `buckets`, `graphs` |
+| | `GET /api/{platform}/dashboard` | `GET /api/{platform}/dashboard/graph` | `GET /api/{platform}/dashboard/date-range` |
+|---|---|---|---|
+| Input | `entity`, `since`, `until` | the same, plus `interval` (`day`, `week`, `month` (default), `year`) | `entity` |
+| Output | `entity`, `entities`, `cards`, `last_mined_at` | `entity`, `interval`, `buckets`, `graphs` | `entity`, `first_at`, `last_at` |
 
 - **Entity.** The thing a dashboard can be scoped to, by its ID as a string:
   a repository for git and GitHub, later a Jira project or a Stack Overflow
@@ -614,6 +626,9 @@ serves it at fixed paths with fixed inputs. `GET /api/platforms` reports
   bucket. A `cumulative` graph holds running totals that include the data
   before `since`. A graph is capped at `platform.MaxBuckets` (10,000) buckets;
   beyond that the request is a 422 asking for a larger interval.
+- **Date range.** `first_at` and `last_at` are the earliest and latest values
+  of the timestamp the window applies to, in scope (`null` without data), so a
+  UI can bound its date pickers. They ignore `since` and `until`.
 - **Implementation.** A platform loads per-interval values with
   `date_trunc(interval, t, 'UTC')` (the `Interval` values are `date_trunc`
   fields) into `platform.Points`, keyed by series, then calls
@@ -621,10 +636,10 @@ serves it at fixed paths with fixed inputs. `GET /api/platforms` reports
   series can appear in several graphs, per interval in one and cumulative in
   another, so queries skip the `since` bound and `BuildGraphs` trims it.
 
-| Platform | Window applies to | Cards | Graphs |
+| Platform | Window applies to (and date range of) | Cards | Graphs |
 |---|---|---|---|
 | git | commits' `authored_at` | repositories (unscoped), commits, authors (distinct lower-cased emails), lines added and deleted, first and last `authored_at`, branches, tags | activity (commits, active authors), total commits (cumulative), churn (lines added, deleted) |
-| github | `github_created_at`; `authored_at` for contributors | repositories (unscoped), issues, open issues, pull requests, open and merged pull requests, releases, contributors (as `contributor_count`, §5.3), stars, forks, watchers (snapshots, summed when unscoped) | activity (issues opened and closed, pull requests opened and merged, releases), totals (issues, pull requests; cumulative) |
+| github | `github_created_at`; `authored_at` for contributors. The date range covers issues (pull requests included) and releases | repositories (unscoped), issues, open issues, pull requests, open and merged pull requests, releases, contributors (as `contributor_count`, §5.3), stars, forks, watchers (snapshots, summed when unscoped) | activity (issues opened and closed, pull requests opened and merged, releases), totals (issues, pull requests; cumulative) |
 
 Commits shared between repositories (forks) count once in unscoped totals.
 "Open" counts are items created in the window that are open now.
@@ -707,7 +722,7 @@ frontend:
 cp .env.example .env
 (cd backend-go && go run ./cmd/raisectl keygen)   # paste into ENCRYPTION_KEYS
 docker compose up --build             # db, migrate, api (:8000), worker, frontend (:5173)
-docker compose run --rm migrate raisectl user create -username admin -role admin
+# the api creates the first admin from ADMIN_USERNAME/ADMIN_PASSWORD in .env
 ```
 
 Without Docker, set `DATABASE_URL` and `ENCRYPTION_KEYS`, then run
@@ -724,7 +739,8 @@ root `.env.example`).
 Implemented and verified end-to-end against Postgres (one Hello-World
 collection and one 1,118-commit spf13/cobra collection):
 
-- Auth: login, roles, API keys, CSRF, admin user management, raisectl bootstrap.
+- Auth: login, roles, API keys, CSRF, admin user management, first admin from
+  the environment or raisectl.
 - Credentials: encrypted storage, per-platform tests, leasing with quota
   tracking.
 - Collections: transactional start, sharded progress, reconcile, cancel.
@@ -764,21 +780,18 @@ TODO, in rough priority order:
   plan → page pattern. Jira can split large ranges with `jobkit.SplitWindows`.
 - GitLab enrichment, plus scoping credentials by host for self-managed
   instances.
-- A date-range endpoint, and Parquet exports or exports written by jobs if
-  streaming CSV/JSON proves too slow for the largest tables (dashboards,
-  previews and exports are done for git and GitHub, §9.1 and §9.2; Jira and
-  Stack Overflow implement `Dashboarder` and `DatasetProvider` with their
-  collection jobs).
+- Parquet exports or exports written by jobs if streaming CSV/JSON proves too
+  slow for the largest tables (dashboards, date ranges, previews and exports
+  are done for git and GitHub, §9.1 and §9.2; Jira and Stack Overflow
+  implement `Dashboarder` and `DatasetProvider` with their collection jobs).
 - Keyset pagination for large listings; currently `limit`/`offset`.
 - Diff-on-demand from mirrors, which requires the API to reach the mirror
   volume.
-- Frontend migration to this API. The root `docker-compose.yaml` already runs
-  the frontend against it, but the frontend still calls the Django endpoints
-  (`/api/<source>/dashboard/`, `/collect/`, `/export/`, `/api/jobs/`), sends
-  no session, and calls `:8000` cross-origin, for which the API sends no CORS
-  headers. It needs to log in through `/api/auth/*`, move to the collections
-  and data endpoints, and be served from the API's origin (nginx in the
-  `production` profile, or a Vite dev proxy).
+- Frontend: the GitHub screens, login, admin user registration, credential
+  management, password change and the collections (Jobs) screen use this API,
+  served from one origin (Vite's dev proxy, or nginx). Still to do there: the
+  API-key screen, and the Jira and Stack Overflow screens, which are hidden until their jobs exist
+  (frontend/ARCHITECTURE.md §9).
 
 ---
 

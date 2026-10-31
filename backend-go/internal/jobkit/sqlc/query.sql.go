@@ -7,7 +7,36 @@ package sqlc
 
 import (
 	"context"
+	"encoding/json"
 )
+
+const addJobError = `-- name: AddJobError :exec
+INSERT INTO collection_job_errors (collection_id, job_id, job_kind, job_args, attempt, is_final, error)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+`
+
+type AddJobErrorParams struct {
+	CollectionID int64           `json:"collection_id"`
+	JobID        int64           `json:"job_id"`
+	JobKind      string          `json:"job_kind"`
+	JobArgs      json.RawMessage `json:"job_args"`
+	Attempt      int32           `json:"attempt"`
+	IsFinal      bool            `json:"is_final"`
+	Error        string          `json:"error"`
+}
+
+func (q *Queries) AddJobError(ctx context.Context, arg AddJobErrorParams) error {
+	_, err := q.db.Exec(ctx, addJobError,
+		arg.CollectionID,
+		arg.JobID,
+		arg.JobKind,
+		arg.JobArgs,
+		arg.Attempt,
+		arg.IsFinal,
+		arg.Error,
+	)
+	return err
+}
 
 const addProgress = `-- name: AddProgress :exec
 INSERT INTO collection_progress (collection_id, shard, jobs_expected, jobs_done, jobs_failed)

@@ -27,7 +27,7 @@ export const jiraService = {
     params?: JiraOverviewParams,
     options?: RequestOptions,
   ): Promise<DashboardOverviewResponse> =>
-    api.get<DashboardOverviewResponse>(endpoints.dashboard(SOURCE), {
+    api.get<DashboardOverviewResponse>(endpoints.legacy.dashboard(SOURCE), {
       params,
       signal: options?.signal,
     }) as Promise<DashboardOverviewResponse>,
@@ -37,7 +37,7 @@ export const jiraService = {
     params: JiraDateRangeParams,
     options?: RequestOptions,
   ): Promise<ApiDateRangeResponse> =>
-    api.get<ApiDateRangeResponse>(endpoints.dateRange(SOURCE), {
+    api.get<ApiDateRangeResponse>(endpoints.legacy.dateRange(SOURCE), {
       params,
       signal: options?.signal,
     }) as Promise<ApiDateRangeResponse>,
@@ -47,7 +47,7 @@ export const jiraService = {
     params: DashboardGraphParams<{ project_id?: string }>,
     options?: RequestOptions,
   ): Promise<DashboardGraphResponse> =>
-    api.get<DashboardGraphResponse>(endpoints.dashboardGraph(SOURCE), {
+    api.get<DashboardGraphResponse>(endpoints.legacy.dashboardGraph(SOURCE), {
       params,
       signal: options?.signal,
     }) as Promise<DashboardGraphResponse>,
@@ -58,7 +58,7 @@ export const jiraService = {
     params: JiraPreviewParams,
     options?: RequestOptions,
   ): Promise<JiraPreviewResponse> =>
-    api.get<JiraPreviewResponse>(endpoints.previewList(SOURCE, section), {
+    api.get<JiraPreviewResponse>(endpoints.legacy.previewList(SOURCE, section), {
       params,
       signal: options?.signal,
     }) as Promise<JiraPreviewResponse>,
@@ -66,7 +66,7 @@ export const jiraService = {
   // Preview export: exports in the current standard format (json).
   exportPreview: (options?: RequestOptions) =>
     api.post(
-      endpoints.export(SOURCE),
+      endpoints.legacy.export(SOURCE),
       { format: "json" },
       {
         responseType: "blob",
@@ -76,5 +76,5 @@ export const jiraService = {
 
   // Collect: starts Jira collection via standardized endpoint.
   collect: (body: JiraCollectBody, options?: RequestOptions) =>
-    api.post(endpoints.collect(SOURCE), body, { signal: options?.signal }),
+    api.post(endpoints.legacy.collect(SOURCE), body, { signal: options?.signal }),
 };

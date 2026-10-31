@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { invalidateJobsQueries } from "../../query/invalidation";
+import { invalidateCollectionQueries } from "../../query/invalidation";
 import { stackoverflowService } from "./stackoverflowService";
 import type { StackOverflowCollectBody } from "./stackoverflowTypes";
 
@@ -10,7 +10,7 @@ export function useStackOverflowCollectMutation() {
   return useMutation({
     mutationFn: (body: StackOverflowCollectBody) =>
       stackoverflowService.collect(body),
-    onSuccess: () => invalidateJobsQueries(queryClient),
+    onSuccess: () => invalidateCollectionQueries(queryClient),
   });
 }
 

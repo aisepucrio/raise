@@ -46,6 +46,13 @@ func RunAPI(ctx context.Context, cfg Config) error {
 
 	sessions := auth.NewSessionManager(pool, cfg.SecureCookies)
 	authSvc := auth.NewService(pool, sessions)
+	created, err := authSvc.BootstrapAdmin(ctx, cfg.AdminUsername, cfg.AdminPassword)
+	if err != nil {
+		return fmt.Errorf("creating the first admin from ADMIN_USERNAME: %w", err)
+	}
+	if created {
+		logger.Info("created the first admin from ADMIN_USERNAME", "username", cfg.AdminUsername)
+	}
 	credSvc := credential.NewService(pool, keys, registry)
 	collSvc := collection.NewService(pool, riverClient, registry)
 

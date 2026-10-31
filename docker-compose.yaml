@@ -1,10 +1,11 @@
 # Raise: the Go backend (backend-go/) and the frontend (frontend/).
 #
 #   cp .env.example .env    # then set ENCRYPTION_KEYS (cd backend-go && make keygen)
+#                           # and ADMIN_PASSWORD, the first admin's password
 #   docker compose up --build
-#   docker compose run --rm -it migrate raisectl user create -username admin -role admin
 #
-# The API listens on :8000 and the frontend dev server on :5173. With
+# The API listens on :8000 and the frontend dev server on :5173, which proxies
+# /api/ to the API so the browser uses one origin. With
 # `--profile production`, nginx also serves the frontend build and proxies
 # /api/ on :8080. This file is for development: the database uses fixed
 # credentials and its port is published. See backend-go/README.md#production.
@@ -62,6 +63,8 @@ services:
     environment:
       IS_DEBUG: ${IS_DEBUG:-True}
       VITE_API_URL: ${VITE_API_URL:-}
+      # The Vite dev server proxies /api/ here, so the browser stays on :5173.
+      API_PROXY_TARGET: http://api:8000
     ports: ["5173:5173"]
     volumes: [frontend_dist:/app/dist]
     depends_on: [api]

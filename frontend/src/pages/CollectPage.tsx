@@ -1,7 +1,9 @@
 import { PageHeader } from "@/components/page-header";
 import { useSearchParams } from "react-router-dom";
 import { resolveSourceId } from "@/lib/source-section-resolver";
+import { isSourceAvailable } from "@/sources";
 import { sourceUiModules } from "@/sources/registry";
+import SourceUnavailable from "./SourceUnavailable";
 
 export default function CollectPage() {
   const [searchParams] = useSearchParams();
@@ -16,7 +18,11 @@ export default function CollectPage() {
       />
 
       <div className="min-h-0 flex-1 overflow-auto">
-        <CollectModule />
+        {isSourceAvailable(source) ? (
+          <CollectModule />
+        ) : (
+          <SourceUnavailable source={source} />
+        )}
       </div>
     </section>
   );

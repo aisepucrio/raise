@@ -135,6 +135,7 @@ func TestDashboardFilter(t *testing.T) {
 type fakeDashboard struct {
 	dashboard DashboardFilter
 	graph     GraphFilter
+	dateRange DashboardFilter
 }
 
 func (*fakeDashboard) ID() ID                               { return "fake" }
@@ -150,6 +151,12 @@ func (d *fakeDashboard) Dashboard(_ context.Context, f DashboardFilter) (Dashboa
 func (d *fakeDashboard) DashboardGraphs(_ context.Context, f GraphFilter) (DashboardGraphs, error) {
 	d.graph = f
 	return BuildGraphs(f, nil, Points{})
+}
+
+func (d *fakeDashboard) DashboardDateRange(_ context.Context, f DashboardFilter) (DashboardDateRange, error) {
+	d.dateRange = f
+	first := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	return DashboardDateRange{FirstAt: &first}, nil
 }
 
 func TestDashboardRoutes(t *testing.T) {
@@ -185,6 +192,18 @@ func TestDashboardRoutes(t *testing.T) {
 	}
 	if resp := api.Get("/api/fake/dashboard?since=2024-02-01T00:00:00Z&until=2024-01-01T00:00:00Z"); resp.Code != 422 {
 		t.Errorf("since after until: got %d, want 422", resp.Code)
+	}
+
+	resp = api.Get("/api/fake/dashboard/date-range?entity=7")
+	if resp.Code != 200 {
+		t.Fatalf("date range: %d %s", resp.Code, resp.Body)
+	}
+	var dr DashboardDateRange
+	if err := json.Unmarshal(resp.Body.Bytes(), &dr); err != nil {
+		t.Fatal(err)
+	}
+	if dr.Platform != "fake" || dr.FirstAt == nil || dr.LastAt != nil || d.dateRange.Entity != "7" {
+		t.Errorf("date range: %+v, filter %+v", dr, d.dateRange)
 	}
 }
 

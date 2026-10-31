@@ -1,51 +1,82 @@
-import { useState } from "react";
-
 import { SelectionButton } from "@/components/selection-button";
-import type { GithubCollectType } from "@/data";
+import type { GithubCollectType } from "./githubCollectParameters";
 
-// Optional GitHub types; metadata is always fixed in the final payload.
-export type GithubOptionalCollectType = Exclude<GithubCollectType, "metadata" | "all">;
-
-const OPTIONAL_COLLECT_OPTIONS: ReadonlyArray<{
-  collectType: GithubOptionalCollectType;
+type CollectOption = {
+  collectType: GithubCollectType;
   label: string;
-}> = [
-  { collectType: "issues", label: "Issues" },
-  { collectType: "pull_requests", label: "Pull requests" },
-  { collectType: "branches", label: "Branches" },
-  { collectType: "commits", label: "Commits" },
-];
-
-export type GithubCollectTypesSectionProps = {
-  onOptionalTypesChange: (types: GithubOptionalCollectType[]) => void;
 };
 
-export function GithubCollectTypesSection({
-  onOptionalTypesChange,
-}: GithubCollectTypesSectionProps) {
-  // Local state for extra types selected by the user.
-  const [selectedOptionalTypes, setSelectedOptionalTypes] = useState<
-    GithubOptionalCollectType[]
-  >([]);
+// Mined from a local clone: needs no token.
+const REPOSITORY_OPTIONS: readonly CollectOption[] = [
+  { collectType: "git_commits", label: "Commits (history, branches, tags)" },
+];
 
-  const allOptionalTypesSelected = OPTIONAL_COLLECT_OPTIONS.every(
-    ({ collectType }) => selectedOptionalTypes.includes(collectType),
+// Fetched from the GitHub API: needs a GitHub token under Credentials.
+const GITHUB_OPTIONS: readonly CollectOption[] = [
+  {
+    collectType: "metadata",
+    label: "Repository details (stars, languages, …)",
+  },
+  { collectType: "issues", label: "Issues" },
+  { collectType: "pull_requests", label: "Pull requests" },
+  { collectType: "commits", label: "Commit authors and PR links" },
+  { collectType: "releases", label: "Releases" },
+  { collectType: "users", label: "User profiles" },
+];
+
+const ALL_OPTIONS = [...REPOSITORY_OPTIONS, ...GITHUB_OPTIONS];
+
+export type GithubCollectTypesSectionProps = {
+  selectedTypes: readonly GithubCollectType[];
+  onSelectedTypesChange: (types: GithubCollectType[]) => void;
+};
+
+function OptionGroup({
+  title,
+  options,
+  selectedTypes,
+  onToggle,
+}: {
+  title: string;
+  options: readonly CollectOption[];
+  selectedTypes: readonly GithubCollectType[];
+  onToggle: (type: GithubCollectType) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <h4 className="text-sm font-semibold text-(--color-secondary)">
+        {title}
+      </h4>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {options.map(({ collectType, label }) => (
+          <SelectionButton
+            key={collectType}
+            size="sm"
+            pressed={selectedTypes.includes(collectType)}
+            text={label}
+            onPressedChange={() => onToggle(collectType)}
+          />
+        ))}
+      </div>
+    </div>
   );
-  const selectedCollectTypesCount = 1 + selectedOptionalTypes.length;
+}
 
-  // Updates local state and propagates changes to the parent screen.
-  function updateOptionalTypes(nextTypes: GithubOptionalCollectType[]) {
-    setSelectedOptionalTypes(nextTypes);
-    onOptionalTypesChange(nextTypes);
-  }
+// What to mine, grouped by where it comes from. Every option is optional; at
+// least one must be picked. The page warns when GitHub options lack a token.
+export function GithubCollectTypesSection({
+  selectedTypes,
+  onSelectedTypesChange,
+}: GithubCollectTypesSectionProps) {
+  const allSelected = ALL_OPTIONS.every(({ collectType }) =>
+    selectedTypes.includes(collectType),
+  );
 
-  // Toggles an individual option.
-  function handleToggleOptionalType(type: GithubOptionalCollectType) {
-    const isSelected = selectedOptionalTypes.includes(type);
-    updateOptionalTypes(
-      isSelected
-        ? selectedOptionalTypes.filter((currentType) => currentType !== type)
-        : [...selectedOptionalTypes, type],
+  function handleToggle(type: GithubCollectType) {
+    onSelectedTypesChange(
+      selectedTypes.includes(type)
+        ? selectedTypes.filter((current) => current !== type)
+        : [...selectedTypes, type],
     );
   }
 
@@ -54,55 +85,45 @@ export function GithubCollectTypesSection({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="space-y-1">
           <h3 className="text-sm font-semibold text-(--color-secondary)">
-            Collection Scope
+            What to collect
           </h3>
           <p className="text-xs text-(--color-secondary-muted)">
-            Choose which GitHub data types this job should collect.
+            Pick at least one. Running a collection again only adds what's new.
           </p>
         </div>
-      </div>
-
-      <div className="space-y-3 rounded-lg border border-(--color-secondary-soft) p-3">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2">
+          <span className="inline-flex min-h-9 items-center rounded-md border border-(--color-secondary-soft) px-2.5 py-1 text-xs font-medium text-(--color-secondary-muted)">
+            {selectedTypes.length} selected
+          </span>
           <SelectionButton
             size="sm"
             fullWidth={false}
-            pressed={allOptionalTypesSelected}
-            text={allOptionalTypesSelected ? "Clear extras" : "Select all"}
+            pressed={allSelected}
+            text={allSelected ? "Clear all" : "Select all"}
             onPressedChange={(nextPressed) =>
-              updateOptionalTypes(
+              onSelectedTypesChange(
                 nextPressed
-                  ? OPTIONAL_COLLECT_OPTIONS.map(({ collectType }) => collectType)
+                  ? ALL_OPTIONS.map(({ collectType }) => collectType)
                   : [],
               )
             }
           />
-
-          <span className="ml-auto inline-flex min-h-9 items-center rounded-md border border-(--color-secondary-soft) px-2.5 py-1 text-xs font-medium text-(--color-secondary-muted)">
-            {selectedCollectTypesCount} selected
-          </span>
         </div>
+      </div>
 
-        <div className="grid gap-2 sm:grid-cols-2">
-          <div className="pointer-events-none sm:col-span-2">
-            <SelectionButton
-              size="sm"
-              fullWidth
-              pressed
-              text="Metadata (always included)"
-            />
-          </div>
-
-          {OPTIONAL_COLLECT_OPTIONS.map(({ collectType, label }) => (
-            <SelectionButton
-              key={collectType}
-              size="sm"
-              pressed={selectedOptionalTypes.includes(collectType)}
-              text={label}
-              onPressedChange={() => handleToggleOptionalType(collectType)}
-            />
-          ))}
-        </div>
+      <div className="space-y-4 rounded-lg border border-(--color-secondary-soft) p-3">
+        <OptionGroup
+          title="From the git repository"
+          options={REPOSITORY_OPTIONS}
+          selectedTypes={selectedTypes}
+          onToggle={handleToggle}
+        />
+        <OptionGroup
+          title="From GitHub"
+          options={GITHUB_OPTIONS}
+          selectedTypes={selectedTypes}
+          onToggle={handleToggle}
+        />
       </div>
     </section>
   );

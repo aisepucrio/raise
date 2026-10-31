@@ -1,3 +1,7 @@
+-- name: AddJobError :exec
+INSERT INTO collection_job_errors (collection_id, job_id, job_kind, job_args, attempt, is_final, error)
+VALUES ($1, $2, $3, $4, $5, $6, $7);
+
 -- name: AddProgress :exec
 INSERT INTO collection_progress (collection_id, shard, jobs_expected, jobs_done, jobs_failed)
 VALUES ($1, $2, $3, $4, $5)

@@ -184,3 +184,46 @@ func (q *Queries) ListCollections(ctx context.Context, arg ListCollectionsParams
 	}
 	return items, nil
 }
+
+const listJobErrors = `-- name: ListJobErrors :many
+SELECT id, collection_id, job_id, job_kind, job_args, attempt, is_final, error, created_at FROM collection_job_errors
+WHERE collection_id = $1
+ORDER BY id
+LIMIT $2 OFFSET $3
+`
+
+type ListJobErrorsParams struct {
+	CollectionID int64 `json:"collection_id"`
+	Limit        int32 `json:"limit"`
+	Offset       int32 `json:"offset"`
+}
+
+func (q *Queries) ListJobErrors(ctx context.Context, arg ListJobErrorsParams) ([]CollectionJobError, error) {
+	rows, err := q.db.Query(ctx, listJobErrors, arg.CollectionID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CollectionJobError
+	for rows.Next() {
+		var i CollectionJobError
+		if err := rows.Scan(
+			&i.ID,
+			&i.CollectionID,
+			&i.JobID,
+			&i.JobKind,
+			&i.JobArgs,
+			&i.Attempt,
+			&i.IsFinal,
+			&i.Error,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

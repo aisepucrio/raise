@@ -7,115 +7,108 @@ import {
   OverviewStatsSection,
 } from "@/components/overview";
 import {
-  useGithubDateRangeByRepositoryQuery,
-  useGithubGraphQuery,
-  useGithubOverviewQuery,
-  type DashboardOverviewResponse,
-  type GithubOverviewParams,
+  getQueryErrorMessage,
+  mergeDateRanges,
+  toApiSince,
+  toApiUntil,
+  useDashboardDateRangeQuery,
+  useDashboardGraphQuery,
+  useDashboardQuery,
+  type DashboardFilter,
 } from "@/data";
 import {
-  buildOverviewEndpointParams,
-  buildOverviewGraphEndpointParams,
-  buildScopedOverviewMetricCardItems,
-  resolveOverviewGraphPresentation,
+  buildDashboardCardItems,
+  buildLineSeriesFromDashboardGraphs,
   resolveOverviewGraphInterval,
-  type OverviewMetricCardConfig,
+  type DashboardCardPick,
 } from "@/sources/shared/OverviewShared";
 import { buildSelectOptions } from "@/sources/shared/AllShared";
 
-// Cards shown when in repository is selected.
-// Order here matches sidebar visual order in "All repositories" mode.
-const ALL_REPOSITORIES_CARD_CONFIG: readonly OverviewMetricCardConfig<DashboardOverviewResponse>[] =
-  [
-    { title: "Repositories", getValue: (data) => data?.cards?.repositories },
-    { title: "Issues", getValue: (data) => data?.cards?.issues },
-    { title: "Pull Requests", getValue: (data) => data?.cards?.pull_requests },
-    { title: "Commits", getValue: (data) => data?.cards?.commits },
-    { title: "Users", getValue: (data) => data?.cards?.users },
-  ];
-
-// Cards shown for the specific repository.
-const REPOSITORY_CARD_CONFIG: readonly OverviewMetricCardConfig<DashboardOverviewResponse>[] =
-  [
-    { title: "Commits", getValue: (data) => data?.cards?.commits },
-    { title: "Issues", getValue: (data) => data?.cards?.issues },
-    { title: "Pull Requests", getValue: (data) => data?.cards?.pull_requests },
-    { title: "Users", getValue: (data) => data?.cards?.users },
-    { title: "Forks", getValue: (data) => data?.cards?.forks },
-    { title: "Stars", getValue: (data) => data?.cards?.stars },
-  ];
-
+// The GitHub overview combines two Go dashboards scoped to the same
+// repository ID: `github` (issues, pull requests, releases, stars, ...) and
+// `git` (commits, mined locally). Cards are picked by key; labels come from
+// the API.
 export default function GithubOverview() {
   // Filters controlled by this screen only (not stored in the URL).
   const [selectedRepositoryId, setSelectedRepositoryId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  // Catalog used only to build the repository selector.
-  const repositoryCatalogQuery = useGithubOverviewQuery();
-
-  // Adapts API payload to the standard UI option format.
+  // Unscoped GitHub dashboard: its entities are the GitHub-hosted repositories.
+  const repositoryCatalogQuery = useDashboardQuery("github");
   const repositoryOptions = useMemo(
     () => buildSelectOptions(repositoryCatalogQuery.data?.entities),
     [repositoryCatalogQuery.data?.entities],
   );
 
-  // Query parameters for overview cards.
-  const overviewParams = useMemo(
-    () =>
-      buildOverviewEndpointParams<GithubOverviewParams>(
-        {
-          selectedSourceId: selectedRepositoryId,
-          startDate,
-          endDate,
-        },
-        "repository_id",
-      ),
+  const filter = useMemo<DashboardFilter>(
+    () => ({
+      ...(selectedRepositoryId ? { entity: selectedRepositoryId } : {}),
+      ...(startDate ? { since: toApiSince(startDate) } : {}),
+      ...(endDate ? { until: toApiUntil(endDate) } : {}),
+    }),
     [selectedRepositoryId, startDate, endDate],
   );
-  const overviewQuery = useGithubOverviewQuery(overviewParams);
+  const githubQuery = useDashboardQuery("github", filter);
+  const gitQuery = useDashboardQuery("git", filter);
 
-  // The hook itself already:
-  // - normalizes string empty for `undefined`
-  // - only enables the query when there is `repository_id`
-  const dateRangeQuery = useGithubDateRangeByRepositoryQuery(
-    selectedRepositoryId,
+  // Date pickers are bounded by the data of both platforms.
+  const githubRangeQuery = useDashboardDateRangeQuery(
+    "github",
+    selectedRepositoryId || undefined,
+  );
+  const gitRangeQuery = useDashboardDateRangeQuery(
+    "git",
+    selectedRepositoryId || undefined,
+  );
+  const dateBounds = useMemo(
+    () => mergeDateRanges([githubRangeQuery.data, gitRangeQuery.data]),
+    [githubRangeQuery.data, gitRangeQuery.data],
   );
 
-  // Time series uses the same filters plus range-derived interval.
-  const graphParams = useMemo(
+  const graphFilter = useMemo(
+    () => ({
+      ...filter,
+      interval: resolveOverviewGraphInterval(startDate, endDate, dateBounds),
+    }),
+    [filter, startDate, endDate, dateBounds],
+  );
+  const githubGraphQuery = useDashboardGraphQuery("github", graphFilter);
+  const gitGraphQuery = useDashboardGraphQuery("git", graphFilter);
+
+  const graphSeries = useMemo(
     () =>
-      buildOverviewGraphEndpointParams(
-        {
-          selectedSourceId: selectedRepositoryId,
-          startDate,
-          endDate,
-          interval: resolveOverviewGraphInterval(
-            startDate,
-            endDate,
-            dateRangeQuery.data,
-          ),
-        },
-        "repository_id",
-      ),
-    [selectedRepositoryId, startDate, endDate, dateRangeQuery.data],
+      buildLineSeriesFromDashboardGraphs([
+        { graphs: gitGraphQuery.data, key: "activity", series: ["commits"] },
+        { graphs: githubGraphQuery.data, key: "activity" },
+      ]),
+    [gitGraphQuery.data, githubGraphQuery.data],
   );
-  const graphQuery = useGithubGraphQuery(graphParams);
+  const graphError = githubGraphQuery.error ?? gitGraphQuery.error;
 
-  const { graphSeries, graphErrorMessage } = resolveOverviewGraphPresentation(
-    graphQuery,
-    "Failed to load the GitHub chart.",
-  );
-
-  // Scoped mode: a specific repository is selected.
   const isRepositoryScoped = Boolean(selectedRepositoryId);
-  const infoBoxItems = buildScopedOverviewMetricCardItems({
-    overviewData: overviewQuery.data,
-    isOverviewPending: overviewQuery.isPending,
-    isSourceScoped: isRepositoryScoped,
-    allScopeConfig: ALL_REPOSITORIES_CARD_CONFIG,
-    sourceScopeConfig: REPOSITORY_CARD_CONFIG,
-  });
+  const github = githubQuery.data;
+  const git = gitQuery.data;
+  const cardPicks: DashboardCardPick[] = isRepositoryScoped
+    ? [
+        { dashboard: git, key: "commits" },
+        { dashboard: github, key: "issues" },
+        { dashboard: github, key: "pull_requests" },
+        { dashboard: github, key: "contributors" },
+        { dashboard: github, key: "forks" },
+        { dashboard: github, key: "stars" },
+      ]
+    : [
+        { dashboard: github, key: "repositories" },
+        { dashboard: github, key: "issues" },
+        { dashboard: github, key: "pull_requests" },
+        { dashboard: git, key: "commits" },
+        { dashboard: github, key: "contributors" },
+      ];
+  const infoBoxItems = buildDashboardCardItems(
+    cardPicks,
+    githubQuery.isPending || gitQuery.isPending,
+  );
 
   return (
     <OverviewLayout
@@ -132,15 +125,19 @@ export default function GithubOverview() {
           onStartDateChange={setStartDate}
           onEndDateChange={setEndDate}
           isSourceListPending={repositoryCatalogQuery.isPending}
-          dateRange={dateRangeQuery.data}
+          dateRange={dateBounds}
         />
       }
       chart={
         <OverviewChartSection
           title="GitHub Activity"
           data={graphSeries}
-          loading={graphQuery.isPending}
-          error={graphErrorMessage}
+          loading={githubGraphQuery.isPending || gitGraphQuery.isPending}
+          error={
+            graphError
+              ? getQueryErrorMessage(graphError, "Failed to load the GitHub chart.")
+              : null
+          }
           emptyMessage="No series found for the selected filters."
         />
       }

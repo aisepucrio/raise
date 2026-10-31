@@ -53,10 +53,42 @@ for (const source of sourceIds) {
 // - also includes jobs-specific keys
 export const queryKeys = {
   ...sourceQueryKeys,
-  jobs: {
-    // Prefix used to invalidate everything related to jobs.
-    all: ["jobs"] as const,
-    // Key for the main jobs list query.
-    list: () => ["jobs", "list"] as const,
+  auth: {
+    me: () => ["auth", "me"] as const,
+  },
+  users: {
+    all: ["users"] as const,
+  },
+  // Go platform data, keyed by platform rather than frontend source: the
+  // GitHub screens read both `git` and `github`.
+  dashboard: {
+    all: ["dashboard"] as const,
+    cards: (platform: string, params?: unknown) =>
+      ["dashboard", platform, "cards", params ?? null] as const,
+    graph: (platform: string, params?: unknown) =>
+      ["dashboard", platform, "graph", params ?? null] as const,
+    dateRange: (platform: string, params?: unknown) =>
+      ["dashboard", platform, "date-range", params ?? null] as const,
+  },
+  datasets: {
+    all: ["datasets"] as const,
+    catalogue: (platform: string) => ["datasets", platform, "catalogue"] as const,
+    preview: (platform: string, dataset: string, params?: unknown) =>
+      ["datasets", platform, "preview", dataset, params ?? null] as const,
+  },
+  collections: {
+    // Prefix used to invalidate everything related to collections.
+    all: ["collections"] as const,
+    list: () => ["collections", "list"] as const,
+    errors: (id: number) => ["collections", "errors", id] as const,
+  },
+  repositories: {
+    all: ["repositories"] as const,
+  },
+  platforms: {
+    all: ["platforms"] as const,
+  },
+  credentials: {
+    all: ["credentials"] as const,
   },
 };

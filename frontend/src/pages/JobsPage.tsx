@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowUpDown, RefreshCw, RotateCcw, Square } from "lucide-react";
+import {
+  ArrowUpDown,
+  RefreshCw,
+  RotateCcw,
+  ScrollText,
+  Square,
+} from "lucide-react";
 
 import { Button } from "@/components/button";
 import { FormatDateItem } from "@/components/format-date-item";
@@ -21,10 +27,54 @@ import { TablePaginationFooter } from "@/components/table-pagination-footer";
 import { toast } from "@/components/toast";
 import {
   getQueryErrorMessage,
-  useJobsListQuery,
-  useRestartCollectionMutation,
-  useStopJobMutation,
+  hasRole,
+  useCancelCollectionMutation,
+  useCollectionsQuery,
+  useMeQuery,
+  useRepositoriesQuery,
+  useStartCollectionMutation,
+  type Collection,
+  type Repository,
 } from "@/data";
+import CollectionLogModal from "./CollectionLogModal";
+
+// Repositories a collection covers, by name where the ID is known.
+function describeCollectionRepositories(
+  collection: Collection,
+  repositoriesById: Map<number, Repository>,
+) {
+  const { url, urls, repository_id, repository_ids } =
+    collection.parameters as {
+      url?: string;
+      urls?: string[];
+      repository_id?: number;
+      repository_ids?: number[];
+    };
+  const names = new Set<string>();
+  for (const value of [url, ...(urls ?? [])]) {
+    if (value) names.add(value.replace(/^https?:\/\//, ""));
+  }
+  for (const id of [repository_id, ...(repository_ids ?? [])]) {
+    if (id === undefined) continue;
+    const repository = repositoriesById.get(id);
+    names.add(repository ? `${repository.host}/${repository.path}` : `#${id}`);
+  }
+  return [...names].join(", ");
+}
+
+// What a collection mines, e.g. "commits, github: metadata, issues".
+function describeCollectionScope(collection: Collection) {
+  const { commits, enrich } = collection.parameters as {
+    commits?: boolean;
+    enrich?: Record<string, { resources?: string[] }>;
+  };
+  const parts: string[] = [];
+  if (commits) parts.push("commits");
+  for (const [platform, request] of Object.entries(enrich ?? {})) {
+    parts.push(`${platform}: ${(request.resources ?? []).join(", ")}`);
+  }
+  return `#${collection.id} ${collection.platform} · ${parts.join("; ") || "no data selected"}`;
+}
 
 export default function JobsPage() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -34,12 +84,26 @@ export default function JobsPage() {
   const [isActionSyncPending, setIsActionSyncPending] = useState(false);
   const actionLockRef = useRef(false);
 
-  const jobsQuery = useJobsListQuery();
-  const stopJobMutation = useStopJobMutation();
-  const restartCollectionMutation = useRestartCollectionMutation();
+  // The collection whose log is open, by ID so it follows list refreshes.
+  const [logCollectionId, setLogCollectionId] = useState<number | null>(null);
+
+  // Polls while a collection is running.
+  const jobsQuery = useCollectionsQuery();
+  const repositoriesQuery = useRepositoriesQuery();
+  const stopJobMutation = useCancelCollectionMutation();
+  const restartCollectionMutation = useStartCollectionMutation();
+  const { data: currentUser } = useMeQuery();
+  // Cancelling and re-running need the researcher role.
+  const canManage = hasRole(currentUser?.role, "researcher");
+  const repositoriesById = new Map(
+    (repositoriesQuery.data ?? []).map((repository) => [
+      repository.id,
+      repository,
+    ]),
+  );
 
   // Pagination and sorting are purely visual state; they stay on this page only.
-  const jobs = jobsQuery.data?.results ?? [];
+  const jobs = jobsQuery.data ?? [];
   const orderedJobs = isReversed ? [...jobs].reverse() : jobs;
   const totalItems = orderedJobs.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
@@ -52,19 +116,6 @@ export default function JobsPage() {
       setCurrentPage(totalPages);
     }
   }, [currentPage, totalPages]);
-
-  useEffect(() => {
-    // Auto-reloads the list every 5s (independent from manual reload).
-    const intervalId = window.setInterval(() => {
-      // Keeps visual feedback consistent: auto-reload also animates the icon.
-      setReloadIconAnimationKey((value) => value + 1);
-      void jobsQuery.refetch();
-    }, 5000);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [jobsQuery.refetch]);
 
   // Action errors can come from either mutation, so read both and prioritize display.
   const actionError = stopJobMutation.isError
@@ -96,7 +147,7 @@ export default function JobsPage() {
     if (!stopJobMutation.isSuccess) return;
 
     toast.success(undefined, {
-      description: "Task stopped successfully.",
+      description: "Collection cancelled.",
     });
   }, [stopJobMutation.isSuccess]);
 
@@ -105,7 +156,7 @@ export default function JobsPage() {
     if (!restartCollectionMutation.isSuccess) return;
 
     toast.success(undefined, {
-      description: "Task restarted successfully.",
+      description: "Collection started again. It mines only what's new.",
     });
   }, [restartCollectionMutation.isSuccess]);
 
@@ -130,18 +181,24 @@ export default function JobsPage() {
     }
   }
 
-  // Calls stop mutation (locks concurrent actions until runJobAction completes).
-  function handleStopJob(taskId: string) {
+  // Cancels a running collection (locks concurrent actions until runJobAction completes).
+  function handleStopJob(collection: Collection) {
     stopJobMutation.reset();
     restartCollectionMutation.reset();
-    void runJobAction(() => stopJobMutation.mutateAsync(taskId));
+    void runJobAction(() => stopJobMutation.mutateAsync(collection.id));
   }
 
-  // Calls restart mutation (locks concurrent actions until runJobAction completes).
-  function handleRestartJob(taskId: string) {
+  // There is no restart endpoint: a new collection with the same parameters
+  // re-runs it, and mines only what's new.
+  function handleRestartJob(collection: Collection) {
     stopJobMutation.reset();
     restartCollectionMutation.reset();
-    void runJobAction(() => restartCollectionMutation.mutateAsync(taskId));
+    void runJobAction(() =>
+      restartCollectionMutation.mutateAsync({
+        platform: collection.platform,
+        parameters: collection.parameters,
+      }),
+    );
   }
 
   // Reload button handler: triggers refetch and animates the icon.
@@ -156,7 +213,7 @@ export default function JobsPage() {
       {/* Main page header: quick context of what this page shows. */}
       <PageHeader
         title="Jobs"
-        subtitle="Monitor collection jobs, inspect raw records, and run simple retry/stop actions."
+        subtitle="Monitor collections, cancel running ones, or run a finished one again to mine what's new."
       />
 
       {/* Global page actions: visual sorting and list reload. */}
@@ -193,7 +250,10 @@ export default function JobsPage() {
         {/* Listing error: failed to fetch jobs (main page query). */}
         {jobsQuery.isError ? (
           <p className="shrink-0 text-sm text-(--color-red)">
-            {getQueryErrorMessage(jobsQuery.error, "Failed to load jobs.")}
+            {getQueryErrorMessage(
+              jobsQuery.error,
+              "Failed to load collections.",
+            )}
           </p>
         ) : null}
 
@@ -204,8 +264,9 @@ export default function JobsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Project</TableHead>
-                <TableHead className="w-[40%]">Description</TableHead>
+                <TableHead className="w-[35%]">Description</TableHead>
                 <TableHead>Date</TableHead>
+                <TableHead>Progress</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -215,7 +276,7 @@ export default function JobsPage() {
               {/* Initial loading state: occupies a full table row. */}
               {jobsQuery.isPending ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="py-2">
+                  <TableCell colSpan={6} className="py-2">
                     <div className="h-16">
                       <Loader />
                     </div>
@@ -226,8 +287,8 @@ export default function JobsPage() {
               {/* Empty state: query finished with no records. */}
               {!jobsQuery.isPending && paginatedJobs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="py-6 text-center">
-                    No jobs found.
+                  <TableCell colSpan={6} className="py-6 text-center">
+                    No collections yet.
                   </TableCell>
                 </TableRow>
               ) : null}
@@ -237,24 +298,36 @@ export default function JobsPage() {
                 paginatedJobs.map((job) => {
                   // Status component centralizes color/label and exposes valid actions.
                   const statusInfo = getFormatStatusItemInfo(job.status);
-                  const canStop = statusInfo.actions.stopActionActive;
-                  const canRestart = statusInfo.actions.restartActionActive;
+                  const canStop =
+                    canManage && statusInfo.actions.stopActionActive;
+                  const canRestart =
+                    canManage && statusInfo.actions.restartActionActive;
+                  const { jobs_done, jobs_expected, jobs_failed } =
+                    job.progress;
 
                   return (
-                    <TableRow key={job.task_id}>
+                    <TableRow key={job.id}>
                       {/* Project */}
-                      <TableCell className="font-medium">
-                        {job.repository ?? ""}
+                      <TableCell className="max-w-80 whitespace-normal wrap-break-word font-medium">
+                        {describeCollectionRepositories(job, repositoriesById)}
                       </TableCell>
                       {/* Description (wraps line when too long). */}
                       <TableCell className="max-w-160 whitespace-normal wrap-break-word">
-                        {job.operation ?? ""}
+                        {describeCollectionScope(job)}
                       </TableCell>
                       {/* date */}
                       <TableCell>
-                        <FormatDateItem
-                          value={job.created_at_formatted ?? job.created_at}
-                        />
+                        <FormatDateItem value={job.created_at} />
+                      </TableCell>
+                      {/* Jobs settled so far; the expected count grows as jobs fan out. */}
+                      <TableCell>
+                        {jobs_done}/{jobs_expected}
+                        {jobs_failed > 0 ? (
+                          <span className="text-(--color-rose)">
+                            {" "}
+                            ({jobs_failed} failed)
+                          </span>
+                        ) : null}
                       </TableCell>
                       {/* Status */}
                       <TableCell>
@@ -263,14 +336,23 @@ export default function JobsPage() {
                       <TableCell className="text-right">
                         {/* Row actions: shown only when status allows them. */}
                         <div className="flex justify-end gap-2">
+                          {/* Every role can read the log, in any status. */}
+                          <Button
+                            fullWidth={false}
+                            className="w-9 min-h-8.5 px-0 py-0"
+                            icon={<ScrollText />}
+                            aria-label={`View log of collection ${job.id}`}
+                            title="View log"
+                            onClick={() => setLogCollectionId(job.id)}
+                          />
                           {canStop ? (
                             <Button
                               fullWidth={false}
                               className="w-9 min-h-8.5 px-0 py-0"
                               icon={<Square />}
-                              aria-label={`Stop job ${job.task_id}`}
-                              title="Stop job"
-                              onClick={() => void handleStopJob(job.task_id)}
+                              aria-label={`Cancel collection ${job.id}`}
+                              title="Cancel collection"
+                              onClick={() => void handleStopJob(job)}
                               disabled={isRowActionPending}
                             />
                           ) : null}
@@ -280,9 +362,9 @@ export default function JobsPage() {
                               fullWidth={false}
                               className="w-9 min-h-8.5 px-0 py-0"
                               icon={<RotateCcw />}
-                              aria-label={`Restart job ${job.task_id}`}
-                              title="Restart job"
-                              onClick={() => void handleRestartJob(job.task_id)}
+                              aria-label={`Run collection ${job.id} again`}
+                              title="Run again"
+                              onClick={() => void handleRestartJob(job)}
                               disabled={isRowActionPending}
                             />
                           ) : null}
@@ -301,7 +383,7 @@ export default function JobsPage() {
             currentPage={currentPage}
             rowsPerPage={rowsPerPage}
             totalItems={totalItems}
-            itemsLabel="jobs"
+            itemsLabel="collections"
             rowsPerPageSelectId="jobs-rows-per-page"
             onPageChange={setCurrentPage}
             onRowsPerPageChange={(nextRowsPerPage) => {
@@ -311,6 +393,11 @@ export default function JobsPage() {
           />
         </div>
       </section>
+
+      <CollectionLogModal
+        collection={jobs.find((job) => job.id === logCollectionId) ?? null}
+        onClose={() => setLogCollectionId(null)}
+      />
     </section>
   );
 }

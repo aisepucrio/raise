@@ -24,6 +24,12 @@ GROUP BY c.id
 ORDER BY c.id DESC
 LIMIT $1 OFFSET $2;
 
+-- name: ListJobErrors :many
+SELECT * FROM collection_job_errors
+WHERE collection_id = $1
+ORDER BY id
+LIMIT $2 OFFSET $3;
+
 -- name: CancelCollection :execrows
 UPDATE collections SET status = 'canceled', finished_at = now()
 WHERE id = $1 AND status = 'running';

@@ -9,6 +9,29 @@ function extractErrorText(value: unknown): string | null {
     return null;
   }
 
+  // huma problem details: `detail`, plus per-field `errors` on validation.
+  if ("detail" in value) {
+    const detailText = extractErrorText((value as { detail?: unknown }).detail);
+    const fieldErrors = (value as { errors?: unknown }).errors;
+    const fieldText = Array.isArray(fieldErrors)
+      ? fieldErrors
+          .map((fieldError) => {
+            const { message, location } = (fieldError ?? {}) as {
+              message?: unknown;
+              location?: unknown;
+            };
+            if (typeof message !== "string") return null;
+            return typeof location === "string"
+              ? `${location}: ${message}`
+              : message;
+          })
+          .filter(Boolean)
+          .join("; ")
+      : "";
+    if (detailText && fieldText) return `${detailText} (${fieldText})`;
+    if (detailText) return detailText;
+  }
+
   if ("error" in value) {
     const errorText = extractErrorText((value as { error?: unknown }).error);
     if (errorText) return errorText;

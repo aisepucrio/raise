@@ -61,6 +61,22 @@ func (s *Service) RegisterRoutes(api huma.API) {
 	})
 
 	huma.Register(api, huma.Operation{
+		OperationID: "list-collection-errors", Method: http.MethodGet, Path: "/api/collections/{id}/errors",
+		Summary:     "List a collection's failed job attempts",
+		Description: "Every failed attempt of the collection's jobs, oldest first, kept after the job queue deletes its jobs. is_final marks jobs that were given up; the others were retried. Rate-limit snoozes are not errors.",
+		Tags:        tags,
+	}, func(ctx context.Context, in *struct {
+		ID int64 `path:"id"`
+		httpapi.Page
+	}) (*struct{ Body []JobError }, error) {
+		errs, err := s.ListJobErrors(ctx, in.ID, in.Limit, in.Offset)
+		if err != nil {
+			return nil, httpapi.Error(err)
+		}
+		return &struct{ Body []JobError }{errs}, nil
+	})
+
+	huma.Register(api, huma.Operation{
 		OperationID: "cancel-collection", Method: http.MethodPost, Path: "/api/collections/{id}/cancel",
 		Summary: "Cancel a running collection", Tags: tags,
 		Metadata: access.Require(access.Researcher), DefaultStatus: http.StatusNoContent,

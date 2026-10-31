@@ -42,6 +42,7 @@ function buildStatusInfo(
 
 // Single source of truth for status label, color, and enabled actions.
 // JobsPage sends only the status string; this component resolves the rest.
+// Statuses are the Go collection statuses: running, completed, partial, canceled.
 // Button enabled/disabled states are mapped 1-to-1 to cover possible future cases.
 export function getFormatStatusItemInfo(
   status?: string | null,
@@ -49,76 +50,35 @@ export function getFormatStatusItemInfo(
   const normalizedStatus = normalizeStatus(status);
   const rawStatus = typeof status === "string" ? status : "";
 
-  if (normalizedStatus === "STARTED") {
-    return buildStatusInfo(
-      rawStatus,
-      "In Progress",
-      "--color-indigo",
-      {
-        stopActionActive: true,
-        restartActionActive: false,
-      },
-    );
+  // Collection statuses of the Go API. Stop cancels a running collection;
+  // restart runs a settled one again, which mines only what's new.
+  if (normalizedStatus === "RUNNING") {
+    return buildStatusInfo(rawStatus, "In Progress", "--color-indigo", {
+      stopActionActive: true,
+      restartActionActive: false,
+    });
   }
 
-  if (normalizedStatus === "PENDING") {
-    return buildStatusInfo(
-      rawStatus,
-      "In Queue",
-      "--color-amber",
-      {
-        stopActionActive: false,
-        restartActionActive: false,
-      },
-    );
+  if (normalizedStatus === "COMPLETED") {
+    return buildStatusInfo(rawStatus, "Finished", "--color-teal", {
+      stopActionActive: false,
+      restartActionActive: true,
+    });
   }
 
-  if (normalizedStatus === "SUCCESS" || normalizedStatus === "COMPLETED") {
-    return buildStatusInfo(
-      rawStatus,
-      "Finished",
-      "--color-teal",
-      {
-        stopActionActive: false,
-        restartActionActive: false,
-      },
-    );
+  // Settled with some failed jobs.
+  if (normalizedStatus === "PARTIAL") {
+    return buildStatusInfo(rawStatus, "Partial", "--color-amber", {
+      stopActionActive: false,
+      restartActionActive: true,
+    });
   }
 
-  if (normalizedStatus === "FAILURE") {
-    return buildStatusInfo(
-      rawStatus,
-      "Failure",
-      "--color-rose",
-      {
-        stopActionActive: false,
-        restartActionActive: true,
-      },
-    );
-  }
-
-  if (normalizedStatus === "REVOKED") {
-    return buildStatusInfo(
-      rawStatus,
-      "Cancelled",
-      "--color-slate",
-      {
-        stopActionActive: false,
-        restartActionActive: true,
-      },
-    );
-  }
-
-  if (normalizedStatus === "PROGRESS") {
-    return buildStatusInfo(
-      rawStatus,
-      "In Progress",
-      "--color-indigo",
-      {
-        stopActionActive: false,
-        restartActionActive: false,
-      },
-    );
+  if (normalizedStatus === "CANCELED") {
+    return buildStatusInfo(rawStatus, "Cancelled", "--color-slate", {
+      stopActionActive: false,
+      restartActionActive: true,
+    });
   }
 
   // Fallback for unmapped status: short and predictable label.

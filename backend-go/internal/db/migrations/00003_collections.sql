@@ -22,6 +22,22 @@ CREATE TABLE collection_progress (
     PRIMARY KEY (collection_id, shard)
 );
 
+-- Every failed attempt of a collection's jobs, kept after River deletes its
+-- job rows, so a collection's log outlives the queue's retention.
+CREATE TABLE collection_job_errors (
+    id            bigserial PRIMARY KEY,
+    collection_id bigint      NOT NULL REFERENCES collections (id) ON DELETE CASCADE,
+    job_id        bigint      NOT NULL,
+    job_kind      text        NOT NULL,
+    job_args      jsonb       NOT NULL,
+    attempt       integer     NOT NULL,
+    is_final      boolean     NOT NULL,
+    error         text        NOT NULL,
+    created_at    timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX collection_job_errors_collection_idx ON collection_job_errors (collection_id, id);
+
 -- +goose Down
+DROP TABLE collection_job_errors;
 DROP TABLE collection_progress;
 DROP TABLE collections;

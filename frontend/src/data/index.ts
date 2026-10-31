@@ -1,34 +1,70 @@
 // Re-exports hooks and mutations for direct usage via "@/data".
-export * from "./modules/github/githubQueries";
-export * from "./modules/github/githubMutations";
+export * from "./modules/auth/authQueries";
+export * from "./modules/collections/collectionQueries";
+export * from "./modules/credentials/credentialQueries";
+export * from "./modules/dashboard/dashboardQueries";
+export * from "./modules/datasets/datasetQueries";
+export { buildDatasetExportUrl } from "./modules/datasets/datasetService";
 export * from "./modules/jira/jiraQueries";
 export * from "./modules/jira/jiraMutations";
-export * from "./modules/jobs/jobsQueries";
-export * from "./modules/jobs/jobsMutations";
 export * from "./modules/stackoverflow/stackoverflowQueries";
 export * from "./modules/stackoverflow/stackoverflowMutations";
 
 // Re-exports module types from the same shared entry point.
 export type {
   ApiDateRangeResponse,
+  Dashboard,
+  DashboardCard,
+  DashboardDateRange,
   DashboardEntity,
+  DashboardFilter,
+  DashboardGraph,
+  DashboardGraphFilter,
   DashboardGraphInterval,
   DashboardGraphParams,
   DashboardGraphResponse,
+  DashboardGraphs,
   DashboardOverviewResponse,
+  DateBounds,
   DateFilterRange,
   HookQueryOptions,
 } from "./modules/shared";
+export { mergeDateRanges, toApiSince, toApiUntil } from "./modules/shared";
 export type {
-  GithubCollectBody,
-  GithubCollectType,
-  GithubDateRangeParams,
-  GithubExportBody,
-  GithubOverviewParams,
-  GithubPreviewParams,
-  GithubPreviewResponse,
-  GithubPreviewRow,
-} from "./modules/github";
+  ChangePasswordBody,
+  CreateUserBody,
+  LoginBody,
+  User,
+  UserRole,
+} from "./modules/auth";
+export { MIN_PASSWORD_LENGTH, hasRole, userRoles } from "./modules/auth";
+export type {
+  Collection,
+  CollectionJobError,
+  CollectionStatus,
+  GitCollectionParameters,
+  GithubResource,
+  Repository,
+  StartCollectionBody,
+} from "./modules/collections/collectionTypes";
+export type {
+  AddCredentialBody,
+  Credential,
+  CredentialField,
+  CredentialKind,
+  CredentialQuota,
+  CredentialTestResult,
+  PlatformInfo,
+} from "./modules/credentials/credentialTypes";
+export type {
+  DatasetColumn,
+  DatasetExportFormat,
+  DatasetFilters,
+  DatasetInfo,
+  DatasetPage,
+  DatasetPreviewParams,
+  DatasetRow,
+} from "./modules/datasets/datasetTypes";
 export type {
   JiraCollectBody,
   JiraDateRangeParams,
@@ -37,7 +73,6 @@ export type {
   JiraPreviewResponse,
   JiraPreviewRow,
 } from "./modules/jira";
-export type { JobsListItem, JobsListResponse } from "./modules/jobs";
 export type {
   StackOverflowCollectBody,
   StackOverflowCollectFilters,
@@ -47,7 +82,9 @@ export type {
   StackOverflowPreviewResponse,
   StackOverflowPreviewRow,
 } from "./modules/stackoverflow";
-export type { GithubSection, JiraSection, StackOverflowSection } from "./api/endpoints";
+export type { GithubSection, JiraSection, PlatformId, StackOverflowSection } from "./api/endpoints";
+export { endpoints } from "./api/endpoints";
+export { apiUrl, setUnauthorizedHandler } from "./api/apiClient";
 
 // Error helper used by components/screens.
 export { getQueryErrorMessage } from "./query/errors";

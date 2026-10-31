@@ -98,6 +98,15 @@ WHERE EXISTS (
   AND (sqlc.narg(since)::timestamptz IS NULL OR c.authored_at >= sqlc.narg(since))
   AND (sqlc.narg(until)::timestamptz IS NULL OR c.authored_at < sqlc.narg(until));
 
+-- name: DashboardDateRange :one
+SELECT min(c.authored_at) AS first_at, max(c.authored_at) AS last_at
+FROM commits c
+WHERE EXISTS (
+    SELECT 1 FROM repository_commits rc
+    WHERE rc.sha = c.sha
+      AND (sqlc.narg(repository_id)::bigint IS NULL OR rc.repository_id = sqlc.narg(repository_id))
+);
+
 -- name: DashboardRefs :one
 SELECT count(*) FILTER (WHERE name LIKE 'refs/heads/%') AS branch_count,
        count(*) FILTER (WHERE name LIKE 'refs/tags/%') AS tag_count

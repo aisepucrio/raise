@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"math/rand/v2"
 	"time"
+	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
@@ -28,10 +29,12 @@ func NewMiddleware(pool *pgxpool.Pool, logger *slog.Logger) *Middleware {
 
 func (m *Middleware) Work(ctx context.Context, job *rivertype.JobRow, doInner func(context.Context) error) error {
 	start := time.Now()
-	err := MapError(doInner(ctx))
+	jobErr := doInner(ctx)
+	err := MapError(jobErr)
 
 	log := m.logger.With("job_id", job.ID, "kind", job.Kind, "attempt", job.Attempt, "duration", time.Since(start))
 	var done, failed int64
+	var failedAttempt bool
 	switch {
 	case err == nil:
 		done = 1
@@ -39,10 +42,29 @@ func (m *Middleware) Work(ctx context.Context, job *rivertype.JobRow, doInner fu
 	case isSnooze(err):
 		log.Info("job snoozed", "reason", err)
 	case isCancel(err) || job.Attempt >= job.MaxAttempts:
-		failed = 1
+		failed, failedAttempt = 1, true
 		log.Error("job failed permanently", "error", err)
 	default:
+		failedAttempt = true
 		log.Warn("job failed, will retry", "error", err)
+	}
+
+	// Failed attempts (not snoozes, which are routine rate limiting) go to the
+	// collection's log, which outlives River's job retention.
+	if id := CollectionID(job); id != 0 && failedAttempt {
+		lerr := sqlc.New(m.pool).AddJobError(ctx, sqlc.AddJobErrorParams{
+			CollectionID: id,
+			JobID:        job.ID,
+			JobKind:      job.Kind,
+			JobArgs:      job.EncodedArgs,
+			Attempt:      int32(job.Attempt),
+			IsFinal:      failed == 1,
+			Error:        truncateError(jobErr, maxErrorLength),
+		})
+		if lerr != nil {
+			// Like progress, the log is best-effort.
+			log.Error("record job error", "error", lerr)
+		}
 	}
 
 	if id := CollectionID(job); id != 0 && done+failed > 0 {
@@ -58,4 +80,21 @@ func (m *Middleware) Work(ctx context.Context, job *rivertype.JobRow, doInner fu
 		}
 	}
 	return err
+}
+
+// maxErrorLength bounds a logged error message, in bytes.
+const maxErrorLength = 4000
+
+// truncateError returns err's message, cut to at most n bytes on a rune
+// boundary.
+func truncateError(err error, n int) string {
+	msg := err.Error()
+	if len(msg) <= n {
+		return msg
+	}
+	cut := n
+	for cut > 0 && !utf8.RuneStart(msg[cut]) {
+		cut--
+	}
+	return msg[:cut] + " …"
 }

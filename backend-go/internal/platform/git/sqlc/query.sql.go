@@ -115,6 +115,28 @@ func (q *Queries) DashboardCommits(ctx context.Context, arg DashboardCommitsPara
 	return i, err
 }
 
+const dashboardDateRange = `-- name: DashboardDateRange :one
+SELECT min(c.authored_at) AS first_at, max(c.authored_at) AS last_at
+FROM commits c
+WHERE EXISTS (
+    SELECT 1 FROM repository_commits rc
+    WHERE rc.sha = c.sha
+      AND ($1::bigint IS NULL OR rc.repository_id = $1)
+)
+`
+
+type DashboardDateRangeRow struct {
+	FirstAt interface{} `json:"first_at"`
+	LastAt  interface{} `json:"last_at"`
+}
+
+func (q *Queries) DashboardDateRange(ctx context.Context, repositoryID *int64) (DashboardDateRangeRow, error) {
+	row := q.db.QueryRow(ctx, dashboardDateRange, repositoryID)
+	var i DashboardDateRangeRow
+	err := row.Scan(&i.FirstAt, &i.LastAt)
+	return i, err
+}
+
 const dashboardRefs = `-- name: DashboardRefs :one
 SELECT count(*) FILTER (WHERE name LIKE 'refs/heads/%') AS branch_count,
        count(*) FILTER (WHERE name LIKE 'refs/tags/%') AS tag_count

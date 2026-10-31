@@ -10,6 +10,10 @@ type ExportFormatModalProps = {
   onClose: () => void;
   onConfirm: () => void;
   isPending?: boolean;
+  // When given, the dialog says what the export contains: the number of
+  // matching rows and the filters applied (e.g. "Search: fix").
+  rowCount?: number;
+  appliedFilters?: string[];
 };
 
 export function PreviewExportModal({
@@ -19,12 +23,37 @@ export function PreviewExportModal({
   onClose,
   onConfirm,
   isPending = false,
+  rowCount,
+  appliedFilters,
 }: ExportFormatModalProps) {
   if (!open) return null;
 
   return (
     <ModalShell open={open} onClose={onClose} title="Export format">
       <div className="space-y-4">
+        {appliedFilters ? (
+          <div className="space-y-2 rounded-lg border border-(--color-secondary-soft) p-3 text-sm text-(--color-secondary)">
+            <p>
+              {rowCount === undefined
+                ? "Exports every matching row"
+                : `Exports all ${rowCount.toLocaleString("en-US")} matching row${rowCount === 1 ? "" : "s"}`}
+              {appliedFilters.length > 0
+                ? ", with the current filters:"
+                : ". No filters are applied."}
+            </p>
+            {appliedFilters.length > 0 ? (
+              <ul className="list-disc space-y-0.5 pl-5">
+                {appliedFilters.map((filter) => (
+                  <li key={filter}>{filter}</li>
+                ))}
+              </ul>
+            ) : null}
+            <p className="text-xs text-(--color-secondary-muted)">
+              Every column is exported, including hidden ones.
+            </p>
+          </div>
+        ) : null}
+
         {/* Opções de Formato */}
         <div className="space-y-3">
           <label className="flex items-center gap-2 text-sm text-(--color-secondary) cursor-pointer">

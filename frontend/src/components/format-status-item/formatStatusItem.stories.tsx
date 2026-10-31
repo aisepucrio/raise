@@ -19,7 +19,7 @@ const meta = {
     },
   },
   args: {
-    status: "STARTED",
+    status: "running",
   },
   parameters: {
     wrapperSize: "small",
@@ -55,12 +55,10 @@ export const Default: Story = {
 export const StatusList: Story = {
   render: () => {
     const statuses = [
-      "STARTED",
-      "PENDING",
-      "SUCCESS",
-      "FAILURE",
-      "REVOKED",
-      "PROGRESS",
+      "running",
+      "completed",
+      "partial",
+      "canceled",
       "UNKNOWN",
     ];
 

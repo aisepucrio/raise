@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   PreviewCellModal,
@@ -9,74 +9,50 @@ import {
 } from "@/components/preview";
 import { SourceSelectFilter } from "@/components/source-select-filter";
 import { StartEndDateFilter } from "@/components/start-end-datefilter";
+import { toast } from "@/components/toast";
 import {
-  useGithubDateRangeByRepositoryQuery,
-  useGithubExportMutation,
-  useGithubOverviewQuery,
-  useGithubPreviewQuery,
-  type GithubPreviewParams,
-  type GithubSection,
+  buildDatasetExportUrl,
+  mergeDateRanges,
+  useDashboardDateRangeQuery,
+  useDashboardQuery,
+  useDatasetCatalogueQuery,
+  useDatasetPreviewQuery,
+  type DatasetFilters,
 } from "@/data";
 import { buildSelectOptions } from "@/sources/shared/AllShared";
 import {
   isPreviewSortInvalid,
   resolvePreviewOrdering,
   resolvePreviewTableState,
-  runPreviewExportWithFeedback,
   showPreviewErrorToast,
   togglePreviewSortState,
-  type PreviewBuildParamsInput,
 } from "@/sources/shared/PreviewShared";
 
-import { ExportFormat, PreviewExportModal } from "@/components/preview/PreviewExportModal";
-
-export type GithubPreviewDateFilterField = "created_at" | "date";
+import {
+  ExportFormat,
+  PreviewExportModal,
+} from "@/components/preview/PreviewExportModal";
 
 export type GithubPreviewProps = {
   idPrefix: string;
-  previewSection: GithubSection;
+  // The Go dataset behind this section: `git` for commits, `github` otherwise.
+  platform: "git" | "github";
+  dataset: string;
   itemsLabel: string;
   emptyStateMessage: string;
   loadErrorMessage: string;
-  exportTable: string;
-  exportDataType?: string;
-  exportFileNamePrefix: string;
-  exportSuccessMessage?: string;
-  dateFilterField?: GithubPreviewDateFilterField;
-  showDateFilters?: boolean;
 };
 
-function buildDateFilterParams(
-  dateFilterField: GithubPreviewDateFilterField,
-  startDate: string,
-  endDate: string,
-): Partial<GithubPreviewParams> {
-  // Maps the UI date field to the filters accepted by the API.
-  if (dateFilterField === "created_at") {
-    return {
-      ...(startDate ? { github_created_at__gte: startDate } : {}),
-      ...(endDate ? { github_created_at__lte: endDate } : {}),
-    };
-  }
-
-  return {
-    ...(startDate ? { date__gte: startDate } : {}),
-    ...(endDate ? { date__lte: endDate } : {}),
-  };
-}
-
+// A page of one dataset (backend-go architecture.md §9.2). Which filters
+// apply comes from the dataset catalogue: the repository filter needs a
+// `repository_id` column, the date filter a time column.
 export function GithubPreview({
   idPrefix,
-  previewSection,
+  platform,
+  dataset,
   itemsLabel,
   emptyStateMessage,
   loadErrorMessage,
-  exportTable,
-  exportDataType,
-  exportFileNamePrefix,
-  exportSuccessMessage = "GitHub preview exported successfully.",
-  dateFilterField,
-  showDateFilters = true,
 }: GithubPreviewProps) {
   // Screen filters.
   const [selectedSourceId, setSelectedSourceId] = useState("");
@@ -99,93 +75,85 @@ export function GithubPreview({
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [selectedFormat, setSelectedFormat] = useState<ExportFormat>("json");
 
-  const { data: overviewData, isPending: isRepositoryListPending } =
-    useGithubOverviewQuery();
-  const previewExportMutation = useGithubExportMutation();
+  const catalogueQuery = useDatasetCatalogueQuery(platform);
+  const datasetInfo = catalogueQuery.data?.find((d) => d.name === dataset);
+  const columnInfo = useMemo(
+    () => new Map(datasetInfo?.columns.map((c) => [c.name, c]) ?? []),
+    [datasetInfo],
+  );
+  const hasRepositoryFilter = columnInfo.has("repository_id");
+  const hasDateFilter = Boolean(datasetInfo?.time_column);
 
-  // Converts repositories to select options.
+  // Repositories the platform's dashboard can be scoped to.
+  const { data: dashboardData, isPending: isRepositoryListPending } =
+    useDashboardQuery(platform);
   const repositoryOptions = useMemo(
-    () => buildSelectOptions(overviewData?.entities),
-    [overviewData?.entities],
+    () => buildSelectOptions(dashboardData?.entities),
+    [dashboardData?.entities],
   );
 
-  // Fetches the selected repository date range to constrain the date picker.
-  const dateRangeQuery = useGithubDateRangeByRepositoryQuery(
+  // The dashboard's date range bounds the date picker. Its timestamp is the
+  // time column of most datasets (github_created_at, authored_at).
+  const dateRangeQuery = useDashboardDateRangeQuery(
+    platform,
     selectedSourceId || undefined,
-    {
-      enabled: showDateFilters,
-    },
+    { enabled: hasDateFilter },
+  );
+  const dateBounds = useMemo(
+    () => mergeDateRanges([dateRangeQuery.data]),
+    [dateRangeQuery.data],
   );
 
-  // Maps local sort state to the API ordering field.
-  const ordering = useMemo(
-    () => resolvePreviewOrdering(sortState),
-    [sortState],
-  );
+  const sort = useMemo(() => resolvePreviewOrdering(sortState), [sortState]);
 
   // When filters change, return to the first page.
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedSourceId, startDate, endDate, search, ordering]);
+  }, [selectedSourceId, startDate, endDate, search, sort]);
 
-  // Builds request parameters from UI state.
-  const buildPreviewParams = useCallback(
-    ({
-      page,
-      rowsPerPage: nextRowsPerPage,
-      selectedSourceId: nextSelectedSourceId,
-      search: searchTerm,
-      ordering: orderingValue,
-      dateFilters,
-    }: PreviewBuildParamsInput): GithubPreviewParams => ({
-      // Centralizes screen-state conversion into request parameters.
-      page,
-      page_size: nextRowsPerPage,
-      ...(nextSelectedSourceId ? { repository: nextSelectedSourceId } : {}),
-      ...(searchTerm ? { search: searchTerm } : {}),
-      ...(orderingValue ? { ordering: orderingValue } : {}),
-      ...(showDateFilters && dateFilterField && dateFilters
-        ? buildDateFilterParams(
-            dateFilterField,
-            dateFilters.startDate,
-            dateFilters.endDate,
-          )
+  // Filters shared by the preview and the export, so an export is the
+  // currently filtered table.
+  const filters = useMemo<DatasetFilters>(
+    () => ({
+      ...(search ? { search } : {}),
+      ...(sort ? { sort } : {}),
+      // The date inputs are inclusive; the API's until is exclusive, and
+      // accepts YYYY-MM-DD as midnight UTC.
+      ...(hasDateFilter && startDate ? { since: startDate } : {}),
+      ...(hasDateFilter && endDate ? { until: nextDay(endDate) } : {}),
+      ...(hasRepositoryFilter && selectedSourceId
+        ? { columns: { repository_id: selectedSourceId } }
         : {}),
     }),
-    [showDateFilters, dateFilterField],
-  );
-
-  // Memoizes final params to avoid unnecessary queries.
-  const previewParams = useMemo(
-    () =>
-      buildPreviewParams({
-        page: currentPage,
-        rowsPerPage,
-        selectedSourceId,
-        search,
-        ordering,
-        dateFilters: showDateFilters
-          ? {
-              startDate,
-              endDate,
-            }
-          : undefined,
-      }),
     [
-      buildPreviewParams,
-      currentPage,
-      rowsPerPage,
-      selectedSourceId,
       search,
-      ordering,
-      showDateFilters,
+      sort,
+      hasDateFilter,
       startDate,
       endDate,
+      hasRepositoryFilter,
+      selectedSourceId,
     ],
   );
 
-  // Fetches table data using current filters and pagination.
-  const previewQuery = useGithubPreviewQuery(previewSection, previewParams);
+  const previewParams = useMemo(
+    () => ({
+      ...filters,
+      limit: rowsPerPage,
+      offset: (currentPage - 1) * rowsPerPage,
+    }),
+    [filters, rowsPerPage, currentPage],
+  );
+
+  // Waits for the catalogue so unsupported filters are never sent (a 422).
+  const previewQuery = useDatasetPreviewQuery(
+    platform,
+    dataset,
+    previewParams,
+    {
+      enabled: Boolean(datasetInfo),
+    },
+  );
   const rows = previewQuery.data?.results ?? [];
   const totalItems = previewQuery.data?.count ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
@@ -209,37 +177,74 @@ export function GithubPreview({
   }, [sortState, columns, hiddenColumns]);
 
   // Displays preview errors.
+  const loadError = previewQuery.error ?? catalogueQuery.error;
   useEffect(() => {
-    if (!previewQuery.isError) return;
-    showPreviewErrorToast(previewQuery.error, loadErrorMessage);
-  }, [previewQuery.isError, previewQuery.error, loadErrorMessage]);
+    if (!loadError) return;
+    showPreviewErrorToast(loadError, loadErrorMessage);
+  }, [loadError, loadErrorMessage]);
 
-  const requestExportPayload = useCallback(
-    (format: ExportFormat) =>
-      previewExportMutation.mutateAsync({
-        format,
-        table: exportTable,
-        ...(exportDataType ? { date_type: exportDataType } : {}),
-      }),
-    [previewExportMutation, exportTable, exportDataType],
-  );
+  // The filters the export applies, in words, for the export dialog.
+  const appliedFilters = useMemo(() => {
+    const out: string[] = [];
+    if (hasRepositoryFilter && selectedSourceId) {
+      const name = repositoryOptions.find(
+        (o) => o.value === selectedSourceId,
+      )?.label;
+      out.push(`Repository: ${name ?? selectedSourceId}`);
+    }
+    if (hasDateFilter && (startDate || endDate)) {
+      const column = datasetInfo?.time_column ?? "date";
+      out.push(
+        startDate && endDate
+          ? `${column} from ${startDate} to ${endDate}`
+          : startDate
+            ? `${column} from ${startDate}`
+            : `${column} until ${endDate}`,
+      );
+    }
+    if (search) out.push(`Search: "${search}"`);
+    if (sortState) {
+      out.push(
+        `Sorted by ${sortState.field}, ${sortState.direction === "asc" ? "ascending" : "descending"}`,
+      );
+    }
+    return out;
+  }, [
+    hasRepositoryFilter,
+    selectedSourceId,
+    repositoryOptions,
+    hasDateFilter,
+    startDate,
+    endDate,
+    datasetInfo?.time_column,
+    search,
+    sortState,
+  ]);
 
-  // AJUSTADO: Função que gerencia o fluxo de confirmação e repassa extensão/mimeType
-  async function handleConfirmExport() {
-    await runPreviewExportWithFeedback({
-      execute: () => requestExportPayload(selectedFormat),
-      fileNamePrefix: exportFileNamePrefix,
-      successMessage: exportSuccessMessage,
-      extension: selectedFormat,
-      mimeType: selectedFormat === "csv" ? "text/csv" : "application/json",
-    });
-
+  // Exports stream from the API as an attachment; a link downloads them.
+  function handleConfirmExport() {
+    const link = document.createElement("a");
+    link.href = buildDatasetExportUrl(
+      platform,
+      dataset,
+      selectedFormat,
+      filters,
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success(undefined, { description: `Exporting ${itemsLabel}…` });
     setIsExportModalOpen(false);
   }
 
-  // Toggles ascending/descending sort for the clicked column.
+  // Toggles ascending/descending sort for the clicked column. Long text and
+  // JSON columns can't be sorted.
   function handleSort(field: string) {
     if (!field) return;
+    if (columnInfo.get(field)?.sortable === false) {
+      toast.info(undefined, { description: `"${field}" can't be sorted.` });
+      return;
+    }
     setSortState((currentSortState) =>
       togglePreviewSortState(currentSortState, field),
     );
@@ -260,23 +265,24 @@ export function GithubPreview({
         columns={columns}
         hiddenColumns={hiddenColumns}
         onHiddenColumnsChange={setHiddenColumns}
-        onExport={() => setIsExportModalOpen(true)} // AJUSTADO: Abre o modal de formato
-        isExportPending={previewExportMutation.isPending}
+        onExport={() => setIsExportModalOpen(true)}
+        isExportPending={false}
       >
-        {/* GitHub-specific filters. */}
-        <SourceSelectFilter
-          id={`${idPrefix}-source`}
-          label="Repository"
-          value={selectedSourceId}
-          onChange={setSelectedSourceId}
-          options={repositoryOptions}
-          allOptionLabel="All repositories"
-          isOptionsPending={isRepositoryListPending}
-          wrapperClassName="min-w-0 flex-1 xl:min-w-44"
-          className="font-semibold"
-        />
+        {hasRepositoryFilter ? (
+          <SourceSelectFilter
+            id={`${idPrefix}-source`}
+            label="Repository"
+            value={selectedSourceId}
+            onChange={setSelectedSourceId}
+            options={repositoryOptions}
+            allOptionLabel="All repositories"
+            isOptionsPending={isRepositoryListPending}
+            wrapperClassName="min-w-0 flex-1 xl:min-w-44"
+            className="font-semibold"
+          />
+        ) : null}
 
-        {showDateFilters ? (
+        {hasDateFilter ? (
           <div className="shrink-0">
             <StartEndDateFilter
               idPrefix={idPrefix}
@@ -285,7 +291,7 @@ export function GithubPreview({
               onStartDateChange={setStartDate}
               onEndDateChange={setEndDate}
               width="compact"
-              dateRange={dateRangeQuery.data}
+              dateRange={dateBounds}
             />
           </div>
         ) : null}
@@ -319,15 +325,22 @@ export function GithubPreview({
         value={selectedCellValue}
       />
 
-      {/* NOVO: Inclusão do modal de escolha de formato para o GitHub */}
       <PreviewExportModal
         open={isExportModalOpen}
         selectedFormat={selectedFormat}
         onChangeFormat={setSelectedFormat}
         onClose={() => setIsExportModalOpen(false)}
         onConfirm={handleConfirmExport}
-        isPending={previewExportMutation.isPending}
+        rowCount={previewQuery.data?.count}
+        appliedFilters={appliedFilters}
       />
     </PreviewWrapper>
   );
+}
+
+// YYYY-MM-DD of the day after `date`.
+function nextDay(date: string) {
+  const next = new Date(`${date}T00:00:00Z`);
+  next.setUTCDate(next.getUTCDate() + 1);
+  return next.toISOString().slice(0, 10);
 }

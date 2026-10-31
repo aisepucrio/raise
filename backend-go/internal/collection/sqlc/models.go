@@ -18,3 +18,15 @@ type Collection struct {
 	CreatedAt  time.Time       `json:"created_at"`
 	FinishedAt *time.Time      `json:"finished_at"`
 }
+
+type CollectionJobError struct {
+	ID           int64           `json:"id"`
+	CollectionID int64           `json:"collection_id"`
+	JobID        int64           `json:"job_id"`
+	JobKind      string          `json:"job_kind"`
+	JobArgs      json.RawMessage `json:"job_args"`
+	Attempt      int32           `json:"attempt"`
+	IsFinal      bool            `json:"is_final"`
+	Error        string          `json:"error"`
+	CreatedAt    time.Time       `json:"created_at"`
+}

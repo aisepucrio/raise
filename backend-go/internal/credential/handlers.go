@@ -15,7 +15,7 @@ type PlatformInfo struct {
 	ID              platform.ID               `json:"id"`
 	CredentialKinds []platform.CredentialKind `json:"credential_kinds"`
 	CanCollect      bool                      `json:"can_collect" doc:"Accepts collections via POST /api/collections"`
-	HasDashboard    bool                      `json:"has_dashboard" doc:"Serves GET /api/{id}/dashboard and /api/{id}/dashboard/graph"`
+	HasDashboard    bool                      `json:"has_dashboard" doc:"Serves GET /api/{id}/dashboard, /api/{id}/dashboard/graph and /api/{id}/dashboard/date-range"`
 	Datasets        []string                  `json:"datasets" doc:"Datasets served at GET /api/{id}/preview/{dataset} and /api/{id}/export/{dataset}"`
 }
 

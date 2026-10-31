@@ -40,11 +40,16 @@ docker compose run --rm migrate raisectl keygen
 ```
 
 Back this key up: the platform tokens stored in the database can't be
-decrypted without it. The other values in `.env.example` work as they are for
-local use; each one is described in the file.
+decrypted without it.
+
+Also set `ADMIN_PASSWORD` (at least 12 characters; `ADMIN_USERNAME` defaults
+to `admin`). On its first start the API creates this admin account, which you
+log in with in step 5. The API refuses to start with a username and no
+password. The other values in `.env.example` work as they are for local use;
+each one is described in the file.
 
 Platform tokens (GitHub, Jira, Stack Overflow) don't go in `.env`. You add them
-through the API once it is running (step 5).
+in the web interface once it is running (step 5).
 
 ### 4. Build and Start the Containers
 
@@ -67,27 +72,35 @@ docker compose --profile production up --build
 (HTTPS, secrets, reverse proxy), see the
 [production section of the backend README](backend-go/README.md#production).
 
-### 5. Create an admin and add tokens
+### 5. Log in and add tokens
 
-Create the first user:
+Log in to the web interface (step 6) with `ADMIN_USERNAME` and
+`ADMIN_PASSWORD` from `.env`, then change the password under **Change
+password** (the lock next to **Log out**). The `.env` values only matter while
+the database has no users, so editing them later changes nothing.
+
+Add a GitHub token under **Credentials**, or through the API as described in
+[Adding platform credentials](backend-go/README.md#adding-platform-credentials-admin).
+
+Without `ADMIN_USERNAME`/`ADMIN_PASSWORD`, create the first admin with:
 
 ```sh
 docker compose run --rm -it migrate raisectl user create -username admin -role admin
 ```
 
-Then log in and add a GitHub token as described in
-[Adding platform credentials](backend-go/README.md#adding-platform-credentials-admin) in the backend README.
-
 ### 6. Access the Application
 
-The API runs at <http://localhost:8000>, with interactive docs at
-<http://localhost:8000/api/docs>. The web interface runs at
-<http://localhost:5173>.
+The web interface runs at <http://localhost:5173>: log in with the user from
+step 5. Admins register further users under **Users** (there is no
+self-signup). The dev server proxies `/api/` to the API, so leave
+`VITE_API_URL` empty in `.env`.
 
-> **Note:** the web interface still targets the previous Django API and has
-> not been migrated to the Go backend yet, so its pages can't load data. Use
-> the API directly in the meantime. The migration is tracked in
-> [backend-go/architecture.md](backend-go/architecture.md) §12.
+The API runs at <http://localhost:8000>, with interactive docs at
+<http://localhost:8000/api/docs>.
+
+> **Note:** the web interface covers git and GitHub. Jira and Stack Overflow
+> are shown as unavailable until their mining is ported to the Go backend
+> ([backend-go/architecture.md](backend-go/architecture.md) §12).
 
 ---
 If you encounter any issues, please open an issue in the repository.

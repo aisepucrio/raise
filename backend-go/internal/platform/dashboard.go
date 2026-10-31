@@ -28,6 +28,10 @@ type Dashboarder interface {
 	Dashboard(ctx context.Context, f DashboardFilter) (Dashboard, error)
 	// DashboardGraphs returns the graphs, built with BuildGraphs.
 	DashboardGraphs(ctx context.Context, f GraphFilter) (DashboardGraphs, error)
+	// DashboardDateRange returns the earliest and latest values of the
+	// timestamp the dashboard's window applies to, for f.Entity (or all of
+	// the platform's data). f.Since and f.Until are ignored.
+	DashboardDateRange(ctx context.Context, f DashboardFilter) (DashboardDateRange, error)
 }
 
 // DashboardFilter scopes a dashboard. Since is inclusive and Until exclusive;
@@ -124,6 +128,15 @@ type DashboardGraphs struct {
 	Interval Interval         `json:"interval"`
 	Buckets  []string         `json:"buckets" doc:"Start date (UTC) of each interval, shared by every series of every graph. Weeks start on Monday"`
 	Graphs   []DashboardGraph `json:"graphs"`
+}
+
+// DashboardDateRange bounds the data a dashboard window can select, so a UI
+// can limit its date pickers.
+type DashboardDateRange struct {
+	Platform ID               `json:"platform"`
+	Entity   *DashboardEntity `json:"entity" doc:"The entity the range is scoped to; null for all of the platform's data"`
+	FirstAt  *time.Time       `json:"first_at" doc:"Earliest value of the window's timestamp; null when there is no data"`
+	LastAt   *time.Time       `json:"last_at" doc:"Latest value of the window's timestamp (inclusive); null when there is no data"`
 }
 
 type DashboardGraph struct {
@@ -317,8 +330,13 @@ func (in dashboardInput) filter() (DashboardFilter, error) {
 	return f, nil
 }
 
-// RegisterDashboardRoutes serves d's dashboard at /api/{platform}/dashboard
-// and its graphs at /api/{platform}/dashboard/graph.
+type dateRangeInput struct {
+	Entity string `query:"entity" doc:"ID of the entity to scope to (for git and github, a repository ID). Empty for all of the platform's data"`
+}
+
+// RegisterDashboardRoutes serves d's dashboard at /api/{platform}/dashboard,
+// its graphs at /api/{platform}/dashboard/graph and the bounds of its window
+// at /api/{platform}/dashboard/date-range.
 func RegisterDashboardRoutes(api huma.API, d Dashboarder) {
 	id := d.ID()
 	tags := []string{"dashboards"}
@@ -359,6 +377,18 @@ func RegisterDashboardRoutes(api huma.API, d Dashboarder) {
 		}
 		out.Platform = id
 		return &struct{ Body DashboardGraphs }{out}, nil
+	})
+
+	huma.Register(api, huma.Operation{
+		OperationID: string(id) + "-dashboard-date-range", Method: http.MethodGet, Path: "/api/" + string(id) + "/dashboard/date-range",
+		Summary: "Get the earliest and latest " + string(id) + " dashboard data", Tags: tags,
+	}, func(ctx context.Context, in *dateRangeInput) (*struct{ Body DashboardDateRange }, error) {
+		out, err := d.DashboardDateRange(ctx, DashboardFilter{Entity: in.Entity})
+		if err != nil {
+			return nil, httpapi.Error(err)
+		}
+		out.Platform = id
+		return &struct{ Body DashboardDateRange }{out}, nil
 	})
 }
 

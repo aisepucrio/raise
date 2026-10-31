@@ -44,6 +44,19 @@ export const sectionPreviewLabelsBySource: {
   },
 };
 
+// Sources whose Go backend doesn't exist yet, with the reason shown in the UI.
+// Their screens and data modules still target the legacy Django API, so they
+// are replaced by a notice until their collection jobs are ported
+// (backend-go architecture.md §12).
+export const unavailableSourceReasons: Partial<Record<SourceId, string>> = {
+  jira: "Jira mining isn't available in the new backend yet.",
+  stackoverflow: "Stack Overflow mining isn't available in the new backend yet.",
+};
+
+export function isSourceAvailable(source: SourceId) {
+  return !(source in unavailableSourceReasons);
+}
+
 // Default source used when the application starts.
 export const defaultSourceId: SourceId = sourceIds[0];
 
@@ -59,7 +72,9 @@ export const defaultSectionPreviewIdBySource: {
 // maps id and label. useful for dropdowns and forms.
 export const sourceOptions = sourceIds.map((id) => ({
   id,
-  label: sourceLabels[id],
+  label: isSourceAvailable(id)
+    ? sourceLabels[id]
+    : `${sourceLabels[id]} (unavailable)`,
 }));
 
 // maps id and label for sections of preview of each source. useful for dropdowns and forms.

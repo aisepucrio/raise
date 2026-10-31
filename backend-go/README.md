@@ -50,9 +50,14 @@ frontend. From the root:
 ```sh
 cp .env.example .env
 (cd backend-go && make keygen)  # prints e.g. 1:R9B24XWw…; paste it into ENCRYPTION_KEYS in .env
+                                # also set ADMIN_PASSWORD (12+ characters) in .env
 docker compose up --build -d    # db, migrations, api on :8000, worker, frontend on :5173
-docker compose run --rm -it migrate raisectl user create -username admin -role admin
 ```
+
+On its first start, the API creates the admin `ADMIN_USERNAME` (default
+`admin`) with `ADMIN_PASSWORD`. Log in at <http://localhost:5173> and change
+the password there. Without those variables, create the admin with
+`docker compose run --rm -it migrate raisectl user create -username admin -role admin`.
 
 Then open <http://localhost:8000/api/docs> to browse the interactive API docs,
 or follow [Usage](#usage).
@@ -79,7 +84,8 @@ make db                         # Postgres 18 on localhost:5433, from the root d
 
 set -a; source ../.env; set +a  # export .env into the shell; the binaries don't read .env themselves
 make migrate                    # River + app migrations
-make user USERNAME=admin ROLE=admin
+# The first `make api` creates the admin from ADMIN_USERNAME/ADMIN_PASSWORD;
+# without them: make user USERNAME=admin ROLE=admin
 
 make api                        # terminal 1: http://localhost:8000
 make worker                     # terminal 2 (run `set -a; source ../.env; set +a` there too)
@@ -226,12 +232,17 @@ directly with that setting on.
 
 ### 5. Bootstrap the first admin
 
+Either set `ADMIN_USERNAME` and `ADMIN_PASSWORD` for the first API start (it
+creates that admin while the database has no users; remove them from
+`prod.env` afterwards, since they're no longer used), or run:
+
 ```sh
 docker run --rm -it --env-file prod.env raise-backend:<version> raisectl user create -username admin -role admin
 ```
 
-There is no self-signup. After this, admins manage users through the API
-(`/api/users`).
+There is no self-signup. After this, admins register users in the web
+interface (**Users**) or through the API (`/api/users`), and every
+user can change their own password (**Change password**).
 
 ### Operations
 
@@ -274,8 +285,10 @@ curl -c cookies -H 'Content-Type: application/json' \
 curl -b cookies http://localhost:8000/api/auth/me
 ```
 
-The session is an HTTP-only cookie (`raise_session`). The frontend must send
-requests with `credentials: "include"`.
+The session is an HTTP-only cookie (`raise_session`). Browser writes are only
+accepted from the API's own origin, so the frontend is served from the same
+origin as `/api/` (Vite's dev proxy, or nginx in production) and sends its
+requests there.
 
 ### API keys (scripts and notebooks)
 
@@ -401,6 +414,18 @@ curl -b cookies http://localhost:8000/api/collections/1
 `completed`, or `partial` if some jobs failed. Cancel with
 `POST /api/collections/{id}/cancel`.
 
+To see what went wrong, list the collection's failed job attempts:
+
+```sh
+curl -b cookies http://localhost:8000/api/collections/1/errors
+# [{"job_kind": "github.list_issues", "job_args": {"owner": "octocat", …}, "attempt": 1,
+#   "is_final": true, "error": "no usable credential for platform github", …}]
+```
+
+`is_final` marks jobs that were given up (they count in `jobs_failed`); the
+others were retried, so even a `completed` collection can list errors. The log
+is kept after the job queue deletes its jobs.
+
 ### Reading mined data
 
 | Endpoint | Returns |
@@ -437,6 +462,11 @@ curl -b cookies 'http://localhost:8000/api/github/dashboard/graph?entity=1&inter
 #              "series": [{"key": "issues_opened", "label": "Issues opened", "values": [3, 7, …]}, …]}, …]}
 ```
 
+```sh
+curl -b cookies 'http://localhost:8000/api/github/dashboard/date-range?entity=1'
+# {"platform": "github", "entity": {…}, "first_at": "2013-09-03T17:40:26Z", "last_at": "2026-07-10T21:43:07Z"}
+```
+
 - `entity` scopes the dashboard (a repository ID for git and GitHub). Without
   it, the dashboard covers all of the platform's data and `entities` lists
   what it can be scoped to.
@@ -444,6 +474,8 @@ curl -b cookies 'http://localhost:8000/api/github/dashboard/graph?entity=1&inter
   `windowed: false`, such as stars, are current snapshots that ignore them.
 - Cards are typed (`integer`, `number`, `timestamp`, `text`); `value` is
   `null` when unknown.
+- `date-range` returns the earliest and latest values of the timestamp the
+  window applies to (`null` without data), to bound date pickers.
 - Every series has one value per entry in `buckets` (UTC interval start
   dates; weeks start on Monday). `cumulative` graphs hold running totals,
   including data before `since`. `interval` is `day`, `week`, `month`
@@ -560,3 +592,5 @@ collections returns `501 Not Implemented`. The roadmap is in architecture.md
 | `GITHUB_HOSTS` | `github.com` | api, worker | Hosts treated as GitHub when registering repositories |
 | `GITHUB_CONCURRENCY` | `20` | worker | Parallel GitHub jobs per worker process. GitHub limits GraphQL CPU time per account (architecture.md §5.3), so with a single token, values above about 10 mostly cause snoozes. |
 | `GITLAB_HOSTS` | `gitlab.com` | api, worker | Hosts treated as GitLab when registering repositories |
+| `ADMIN_USERNAME` | (empty) | api | First admin, created on startup only while the database has no users. Set together with `ADMIN_PASSWORD` or not at all |
+| `ADMIN_PASSWORD` | (empty) | api | That admin's password, at least 12 characters. Ignored once any user exists; change it in the web interface |

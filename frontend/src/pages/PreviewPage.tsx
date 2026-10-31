@@ -5,7 +5,9 @@ import {
   resolveSectionId,
   resolveSourceId,
 } from "@/lib/source-section-resolver";
+import { isSourceAvailable } from "@/sources";
 import { sourceSectionPreviewUiModules } from "@/sources/registry";
+import SourceUnavailable from "./SourceUnavailable";
 
 export default function PreviewPage() {
   const [searchParams] = useSearchParams();
@@ -25,7 +27,11 @@ export default function PreviewPage() {
       />
 
       <div className="min-h-0 flex-1 overflow-hidden">
-        <PreviewModule />
+        {isSourceAvailable(source) ? (
+          <PreviewModule />
+        ) : (
+          <SourceUnavailable source={source} />
+        )}
       </div>
     </section>
   );

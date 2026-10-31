@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { invalidateJobsQueries } from "../../query/invalidation";
+import { invalidateCollectionQueries } from "../../query/invalidation";
 import { jiraService } from "./jiraService";
 import type { JiraCollectBody, JiraExportBody } from "./jiraTypes";
 import { ExportFormat } from "@/components/preview/PreviewExportModal";
@@ -10,7 +10,7 @@ export function useJiraCollectMutation() {
 
   return useMutation({
     mutationFn: (body: JiraCollectBody) => jiraService.collect(body),
-    onSuccess: () => invalidateJobsQueries(queryClient),
+    onSuccess: () => invalidateCollectionQueries(queryClient),
   });
 }
 

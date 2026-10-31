@@ -1,8 +1,10 @@
 package jobkit
 
 import (
+	"errors"
 	"testing"
 	"time"
+	"unicode/utf8"
 )
 
 func TestSplitWindows(t *testing.T) {
@@ -23,5 +25,16 @@ func TestSplitWindows(t *testing.T) {
 	}
 	if SplitWindows(end, start, time.Hour) != nil {
 		t.Fatal("expected nil for empty range")
+	}
+}
+
+func TestTruncateError(t *testing.T) {
+	if got := truncateError(errors.New("short"), 10); got != "short" {
+		t.Errorf("short message: got %q", got)
+	}
+	// "é" is two bytes: a cut at byte 4 would split it, so it moves back.
+	got := truncateError(errors.New("abcéfgh"), 4)
+	if got != "abc …" || !utf8.ValidString(got) {
+		t.Errorf("long message: got %q, want %q", got, "abc …")
 	}
 }

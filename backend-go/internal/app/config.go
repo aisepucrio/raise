@@ -3,6 +3,7 @@
 package app
 
 import (
+	"errors"
 	"log/slog"
 	"os"
 
@@ -31,10 +32,25 @@ type Config struct {
 	GitHubHosts       []string `env:"GITHUB_HOSTS" envDefault:"github.com" envSeparator:","`
 	GitHubConcurrency int      `env:"GITHUB_CONCURRENCY" envDefault:"20"`
 	GitLabHosts       []string `env:"GITLAB_HOSTS" envDefault:"gitlab.com" envSeparator:","`
+
+	// First admin, created by the API while the database has no users.
+	AdminUsername string `env:"ADMIN_USERNAME"`
+	AdminPassword string `env:"ADMIN_PASSWORD"`
 }
 
 func LoadConfig() (Config, error) {
-	return env.ParseAs[Config]()
+	cfg, err := env.ParseAs[Config]()
+	if err != nil {
+		return cfg, err
+	}
+	return cfg, cfg.validate()
+}
+
+func (c Config) validate() error {
+	if (c.AdminUsername == "") != (c.AdminPassword == "") {
+		return errors.New("set both ADMIN_USERNAME and ADMIN_PASSWORD, or neither")
+	}
+	return nil
 }
 
 func NewLogger(level string) *slog.Logger {

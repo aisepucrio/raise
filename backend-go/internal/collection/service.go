@@ -38,6 +38,18 @@ type Progress struct {
 	JobsFailed   int64 `json:"jobs_failed"`
 }
 
+// JobError is one failed attempt of one of a collection's jobs.
+type JobError struct {
+	ID        int64           `json:"id"`
+	JobID     int64           `json:"job_id" doc:"River job ID"`
+	JobKind   string          `json:"job_kind" example:"github.fetch_issues"`
+	JobArgs   json.RawMessage `json:"job_args" doc:"The job's arguments: what it was working on"`
+	Attempt   int32           `json:"attempt"`
+	IsFinal   bool            `json:"is_final" doc:"The job's last attempt: it was given up and counts in jobs_failed. Otherwise it was retried"`
+	Error     string          `json:"error"`
+	CreatedAt time.Time       `json:"created_at"`
+}
+
 type Service struct {
 	pool     *pgxpool.Pool
 	q        *sqlc.Queries
@@ -74,6 +86,25 @@ func (s *Service) Start(ctx context.Context, createdBy int64, pid platform.ID, p
 		return Collection{}, err
 	}
 	return s.Get(ctx, id)
+}
+
+// ListJobErrors returns the collection's failed job attempts, oldest first.
+func (s *Service) ListJobErrors(ctx context.Context, id int64, limit, offset int32) ([]JobError, error) {
+	if _, err := s.Get(ctx, id); err != nil {
+		return nil, err
+	}
+	rows, err := s.q.ListJobErrors(ctx, sqlc.ListJobErrorsParams{CollectionID: id, Limit: limit, Offset: offset})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]JobError, len(rows))
+	for i, r := range rows {
+		out[i] = JobError{
+			ID: r.ID, JobID: r.JobID, JobKind: r.JobKind, JobArgs: r.JobArgs, Attempt: r.Attempt,
+			IsFinal: r.IsFinal, Error: r.Error, CreatedAt: r.CreatedAt,
+		}
+	}
+	return out, nil
 }
 
 func (s *Service) Get(ctx context.Context, id int64) (Collection, error) {

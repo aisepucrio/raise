@@ -181,6 +181,35 @@ func (q *Queries) DashboardCounts(ctx context.Context, arg DashboardCountsParams
 	return i, err
 }
 
+const dashboardDateRange = `-- name: DashboardDateRange :one
+SELECT least(
+    (SELECT min(github_created_at) FROM github_issues
+     WHERE $1::bigint IS NULL OR repository_id = $1),
+    (SELECT min(github_created_at) FROM github_releases
+     WHERE $1::bigint IS NULL OR repository_id = $1)
+) AS first_at,
+greatest(
+    (SELECT max(github_created_at) FROM github_issues
+     WHERE $1::bigint IS NULL OR repository_id = $1),
+    (SELECT max(github_created_at) FROM github_releases
+     WHERE $1::bigint IS NULL OR repository_id = $1)
+) AS last_at
+`
+
+type DashboardDateRangeRow struct {
+	FirstAt interface{} `json:"first_at"`
+	LastAt  interface{} `json:"last_at"`
+}
+
+// Bounds of github_created_at over issues (which include pull requests) and
+// releases.
+func (q *Queries) DashboardDateRange(ctx context.Context, repositoryID *int64) (DashboardDateRangeRow, error) {
+	row := q.db.QueryRow(ctx, dashboardDateRange, repositoryID)
+	var i DashboardDateRangeRow
+	err := row.Scan(&i.FirstAt, &i.LastAt)
+	return i, err
+}
+
 const dashboardLastMinedAt = `-- name: DashboardLastMinedAt :one
 SELECT greatest(
     (SELECT max(last_mined_at) FROM github_repositories

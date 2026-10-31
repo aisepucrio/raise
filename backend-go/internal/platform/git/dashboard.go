@@ -88,6 +88,18 @@ func (p *Platform) DashboardGraphs(ctx context.Context, f platform.GraphFilter) 
 	)
 }
 
+func (p *Platform) DashboardDateRange(ctx context.Context, f platform.DashboardFilter) (platform.DashboardDateRange, error) {
+	repoID, entity, _, err := p.dashboardScope(ctx, f)
+	if err != nil {
+		return platform.DashboardDateRange{}, err
+	}
+	r, err := p.q.DashboardDateRange(ctx, repoID)
+	if err != nil {
+		return platform.DashboardDateRange{}, err
+	}
+	return platform.DashboardDateRange{Entity: entity, FirstAt: platform.NullTime(r.FirstAt), LastAt: platform.NullTime(r.LastAt)}, nil
+}
+
 // dashboardScope resolves the filter's repository. Unscoped, it lists every
 // repository as an entity instead.
 func (p *Platform) dashboardScope(ctx context.Context, f platform.DashboardFilter) (*int64, *platform.DashboardEntity, []platform.DashboardEntity, error) {

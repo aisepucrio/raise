@@ -540,6 +540,22 @@ SELECT
        AND (sqlc.narg(since)::timestamptz IS NULL OR c.authored_at >= sqlc.narg(since))
        AND (sqlc.narg(until)::timestamptz IS NULL OR c.authored_at < sqlc.narg(until))) AS contributor_count;
 
+-- name: DashboardDateRange :one
+-- Bounds of github_created_at over issues (which include pull requests) and
+-- releases.
+SELECT least(
+    (SELECT min(github_created_at) FROM github_issues
+     WHERE sqlc.narg(repository_id)::bigint IS NULL OR repository_id = sqlc.narg(repository_id)),
+    (SELECT min(github_created_at) FROM github_releases
+     WHERE sqlc.narg(repository_id)::bigint IS NULL OR repository_id = sqlc.narg(repository_id))
+) AS first_at,
+greatest(
+    (SELECT max(github_created_at) FROM github_issues
+     WHERE sqlc.narg(repository_id)::bigint IS NULL OR repository_id = sqlc.narg(repository_id)),
+    (SELECT max(github_created_at) FROM github_releases
+     WHERE sqlc.narg(repository_id)::bigint IS NULL OR repository_id = sqlc.narg(repository_id))
+) AS last_at;
+
 -- name: DashboardLastMinedAt :one
 SELECT greatest(
     (SELECT max(last_mined_at) FROM github_repositories

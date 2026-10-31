@@ -24,7 +24,7 @@ export const stackoverflowService = {
     params?: StackOverflowOverviewParams,
     options?: RequestOptions,
   ): Promise<DashboardOverviewResponse> =>
-    api.get<DashboardOverviewResponse>(endpoints.dashboard(SOURCE), {
+    api.get<DashboardOverviewResponse>(endpoints.legacy.dashboard(SOURCE), {
       params,
       signal: options?.signal,
     }) as Promise<DashboardOverviewResponse>,
@@ -34,7 +34,7 @@ export const stackoverflowService = {
     params: StackOverflowDateRangeParams,
     options?: RequestOptions,
   ): Promise<ApiDateRangeResponse> =>
-    api.get<ApiDateRangeResponse>(endpoints.dateRange(SOURCE), {
+    api.get<ApiDateRangeResponse>(endpoints.legacy.dateRange(SOURCE), {
       params,
       signal: options?.signal,
     }) as Promise<ApiDateRangeResponse>,
@@ -44,7 +44,7 @@ export const stackoverflowService = {
     params: DashboardGraphParams<{ tag?: string }>,
     options?: RequestOptions,
   ): Promise<DashboardGraphResponse> =>
-    api.get<DashboardGraphResponse>(endpoints.dashboardGraph(SOURCE), {
+    api.get<DashboardGraphResponse>(endpoints.legacy.dashboardGraph(SOURCE), {
       params,
       signal: options?.signal,
     }) as Promise<DashboardGraphResponse>,
@@ -56,7 +56,7 @@ export const stackoverflowService = {
     options?: RequestOptions,
   ): Promise<StackOverflowPreviewResponse> =>
     api.get<StackOverflowPreviewResponse>(
-      endpoints.previewList(SOURCE, section),
+      endpoints.legacy.previewList(SOURCE, section),
       {
         params,
         signal: options?.signal,
@@ -66,7 +66,7 @@ export const stackoverflowService = {
   // Preview export: exports in the current standard format (json).
   exportPreview: (options?: RequestOptions) =>
     api.post(
-      endpoints.export(SOURCE),
+      endpoints.legacy.export(SOURCE),
       { format: "json" },
       {
         responseType: "blob",
@@ -76,5 +76,5 @@ export const stackoverflowService = {
 
   // Collect: starts Stack Overflow collection via standardized endpoint.
   collect: (body: StackOverflowCollectBody, options?: RequestOptions) =>
-    api.post(endpoints.collect(SOURCE), body, { signal: options?.signal }),
+    api.post(endpoints.legacy.collect(SOURCE), body, { signal: options?.signal }),
 };

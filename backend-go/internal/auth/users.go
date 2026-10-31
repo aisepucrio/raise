@@ -67,6 +67,26 @@ func (s *Service) CreateUser(ctx context.Context, username, password string, rol
 	return toUser(u), nil
 }
 
+// BootstrapAdmin creates the first admin on a fresh installation, from
+// configuration, so the web interface can be logged into without raisectl.
+// It does nothing when username is empty or any user already exists, so
+// changing the configured password later has no effect. Concurrent API
+// processes may race: the loser's insert conflicts and is not an error.
+func (s *Service) BootstrapAdmin(ctx context.Context, username, password string) (bool, error) {
+	if username == "" {
+		return false, nil
+	}
+	exists, err := s.q.HasUsers(ctx)
+	if err != nil || exists {
+		return false, err
+	}
+	_, err = s.CreateUser(ctx, username, password, access.Admin)
+	if errors.Is(err, apperr.ErrConflict) {
+		return false, nil
+	}
+	return err == nil, err
+}
+
 func (s *Service) GetUser(ctx context.Context, id int64) (User, error) {
 	u, err := s.q.GetUser(ctx, id)
 	if errors.Is(err, pgx.ErrNoRows) {

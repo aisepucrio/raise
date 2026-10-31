@@ -112,6 +112,17 @@ func (q *Queries) GetUserByUsername(ctx context.Context, lower string) (User, er
 	return i, err
 }
 
+const hasUsers = `-- name: HasUsers :one
+SELECT EXISTS (SELECT 1 FROM users)
+`
+
+func (q *Queries) HasUsers(ctx context.Context) (bool, error) {
+	row := q.db.QueryRow(ctx, hasUsers)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const listAPIKeys = `-- name: ListAPIKeys :many
 SELECT id, user_id, label, token_prefix, token_hash, created_at, last_used_at, expires_at, revoked_at FROM api_keys WHERE user_id = $1 AND revoked_at IS NULL ORDER BY created_at DESC
 `
