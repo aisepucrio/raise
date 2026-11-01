@@ -2,6 +2,12 @@
 
 Guidance for AI coding agents working in this repository.
 
+## Commits
+
+The user commits everything manually. Don't run `git commit`, `git push`,
+or otherwise create commits or branches; leave your changes uncommitted in the
+working tree.
+
 ## Repository layout
 
 | Path | What it is |
