@@ -12,6 +12,7 @@ import (
 	"raise/internal/apperr"
 	"raise/internal/jobkit"
 	"raise/internal/platform/git"
+	"raise/internal/platform/github/sqlc"
 )
 
 // Resources that StartEnrichment accepts. Issues and pull requests include
@@ -103,4 +104,82 @@ func fetchCommitJobs(repoID int64, owner, name string, users bool, shas []string
 		jobs = append(jobs, jobkit.Job(FetchCommitsArgs{RepositoryID: repoID, Owner: owner, Name: name, SHAs: chunk, Users: users}))
 	}
 	return jobs
+}
+
+// RepositoryData describes the repository's GitHub data, one part per
+// resource. Users are left out: profiles aren't tied to a repository.
+func (p *Platform) RepositoryData(ctx context.Context, repoID int64) ([]git.DataPart, error) {
+	c, err := p.q.RepositoryDataCounts(ctx, repoID)
+	if err != nil {
+		return nil, err
+	}
+	part := func(key, label, doc string, count int64, minedAt any) git.DataPart {
+		return git.DataPart{Platform: ID, Key: key, Label: label, Description: doc, ItemCount: count, LastMinedAt: git.MinedAt(minedAt)}
+	}
+	commits := part(ResourceCommits, "Commit authors and PR links",
+		"GitHub's view of the mined commits: logins, signatures and the pull requests that introduced them.",
+		c.CommitCount, c.CommitLastMinedAt)
+	commits.SharedCount = c.CommitSharedCount
+	return []git.DataPart{
+		part(ResourceMetadata, "Repository details", "Stars, forks, languages, topics, license, …", c.MetadataCount, c.MetadataLastMinedAt),
+		part(ResourceIssues, "Issues", "Issues with their comments and timeline events.", c.IssueCount, c.IssueLastMinedAt),
+		part(ResourcePullRequests, "Pull requests",
+			"Pull requests with their comments, timeline events, commits, reviews and review comments.",
+			c.PullRequestCount, c.PullRequestLastMinedAt),
+		commits,
+		part(ResourceReleases, "Releases", "Releases with their assets.", c.ReleaseCount, c.ReleaseLastMinedAt),
+	}, nil
+}
+
+// DeleteRepositoryData removes one resource's data, with everything nested
+// in it, in tx.
+func (p *Platform) DeleteRepositoryData(ctx context.Context, tx pgx.Tx, repoID int64, key string) error {
+	q := p.q.WithTx(tx)
+	// The conversation side (github_issues) of issues or of pull requests,
+	// with its comments and events, which are deleted first.
+	conversations := func(isPullRequest bool) []func() error {
+		return []func() error{
+			func() error {
+				return q.DeleteConversationComments(ctx, sqlc.DeleteConversationCommentsParams{RepositoryID: repoID, IsPullRequest: isPullRequest})
+			},
+			func() error {
+				return q.DeleteConversationEvents(ctx, sqlc.DeleteConversationEventsParams{RepositoryID: repoID, IsPullRequest: isPullRequest})
+			},
+			func() error {
+				return q.DeleteConversations(ctx, sqlc.DeleteConversationsParams{RepositoryID: repoID, IsPullRequest: isPullRequest})
+			},
+		}
+	}
+	var steps []func() error
+	switch key {
+	case ResourceMetadata:
+		steps = []func() error{func() error { return q.DeleteRepositoryMetadata(ctx, repoID) }}
+	case ResourceIssues:
+		steps = conversations(false)
+	case ResourcePullRequests:
+		steps = append([]func() error{
+			func() error { return q.DeletePullRequestCommits(ctx, repoID) },
+			func() error { return q.DeletePullRequestReviewComments(ctx, repoID) },
+			func() error { return q.DeletePullRequestReviews(ctx, repoID) },
+			func() error { return q.DeletePullRequests(ctx, repoID) },
+		}, conversations(true)...)
+	case ResourceCommits:
+		steps = []func() error{
+			func() error { return q.DeleteCommitPullRequests(ctx, repoID) },
+			func() error { return q.DeleteRepositoryGitHubCommits(ctx, repoID) },
+		}
+	case ResourceReleases:
+		steps = []func() error{
+			func() error { return q.DeleteReleaseAssets(ctx, repoID) },
+			func() error { return q.DeleteReleases(ctx, repoID) },
+		}
+	default:
+		return fmt.Errorf("%w: github has no data part %q", apperr.ErrNotFound, key)
+	}
+	for _, step := range steps {
+		if err := step(); err != nil {
+			return err
+		}
+	}
+	return nil
 }

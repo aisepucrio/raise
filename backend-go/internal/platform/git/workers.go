@@ -3,6 +3,7 @@ package git
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/riverqueue/river"
@@ -172,6 +173,33 @@ func (w *mineCommitBatchWorker) Work(ctx context.Context, job *river.Job[MineCom
 		}
 		return nil
 	})
+}
+
+type pruneMirrorsWorker struct {
+	river.WorkerDefaults[PruneMirrorsArgs]
+	p *Platform
+}
+
+func (w *pruneMirrorsWorker) Work(ctx context.Context, _ *river.Job[PruneMirrorsArgs]) error {
+	p := w.p
+	mirrored, err := p.mirrors.MirroredRepositories()
+	if err != nil || len(mirrored) == 0 {
+		return err
+	}
+	existing, err := p.q.ListRepositoryIDs(ctx, mirrored)
+	if err != nil {
+		return err
+	}
+	for _, id := range mirrored {
+		if slices.Contains(existing, id) {
+			continue
+		}
+		if err := p.mirrors.Remove(ctx, id); err != nil {
+			return err
+		}
+		p.deps.Logger.Info("removed the mirror of a deleted repository", "repository_id", id)
+	}
+	return nil
 }
 
 func diffJobs(repoID int64, shas []string) []river.InsertManyParams {

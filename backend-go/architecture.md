@@ -174,6 +174,10 @@ type DatasetProvider interface {         // tables to preview and export (§9.2)
     Platform
     Datasets() []Dataset
 }
+type Scheduler interface {               // periodic housekeeping, scheduled by the worker
+    Platform
+    PeriodicJobs() []*river.PeriodicJob
+}
 // platform/git
 type Enricher interface {                // forges
     Platform
@@ -181,18 +185,20 @@ type Enricher interface {                // forges
     CloneAuth(ctx, RepoRef) (*CloneAuth, error)
     StartEnrichment(ctx, pgx.Tx, jobkit.Enqueuer, Repository, RepoRef, EnrichRequest) error
     OnCommitsMined(Repository, RepoRef, EnrichRequest, shas []string) []river.InsertManyParams
+    RepositoryData(ctx, repoID) ([]DataPart, error)              // what it mined, part by part
+    DeleteRepositoryData(ctx, pgx.Tx, repoID, key string) error  // remove one part
 }
 ```
 
 Capabilities are optional interfaces, checked with type assertions:
 
-| Platform | Platform | Credentialed | Source | git.Enricher | Dashboarder | DatasetProvider |
-|---|:-:|:-:|:-:|:-:|:-:|:-:|
-| git | ✓ | | ✓ | | ✓ | ✓ |
-| github | ✓ | ✓ | | ✓ | ✓ | ✓ |
-| gitlab | ✓ | ✓ | | ✓ | | |
-| jira | ✓ | ✓ | ✓ | | | |
-| stackoverflow | ✓ | ✓ | ✓ | | | |
+| Platform | Platform | Credentialed | Source | git.Enricher | Dashboarder | DatasetProvider | Scheduler |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| git | ✓ | | ✓ | | ✓ | ✓ | ✓ |
+| github | ✓ | ✓ | | ✓ | ✓ | ✓ | |
+| gitlab | ✓ | ✓ | | ✓ | | | |
+| jira | ✓ | ✓ | ✓ | | | | |
+| stackoverflow | ✓ | ✓ | ✓ | | | | |
 
 ### 4.2 Package shape
 
@@ -411,6 +417,33 @@ about 700 points of the 5,000-point hourly quota.
   this limit. The jobs then snooze for a minute and continue. Throughput scales
   with the number of tokens from different accounts in the pool.
 
+### 5.4 Removing data
+
+Admins remove a whole repository, or one **part** of what was mined for it
+(`GET /api/repositories/{id}/data` lists them). Git owns the endpoints and its
+own parts (`commits`, `diffs`); forges describe and remove theirs through
+`Enricher.RepositoryData` and `DeleteRepositoryData`, one part per resource,
+with what is nested in it. Everything runs in one transaction.
+
+- **Shared rows.** Commits, their files and diffs, and `github_commits` are
+  keyed by SHA and shared between forks. A removal deletes only the rows no
+  other repository contains (`NOT EXISTS` another `repository_commits` row);
+  `shared_count` tells the admin how many are kept. `DeleteRepositoryCommits`
+  unlinks and deletes in one statement, whose snapshot still sees the
+  unlinked rows, so it excludes the repository explicitly.
+- **Dependent parts.** Removing git's commits first removes every forge's
+  `commits` part (`git.CommitDataKey`), which describes them.
+- **Deleting a repository** removes its commits that way, then the
+  repository row; every forge table keyed by `repository_id` cascades.
+- **Mirrors.** The API can't reach the mirror volume and has no job
+  enqueuer outside collections, so the worker's periodic
+  `git.prune_mirrors` (every 15 minutes, `platform.Scheduler`) removes the
+  mirrors of repositories that no longer exist, under the mirror lock.
+- **Running jobs.** Deleting data under a job that writes it would race, so
+  both endpoints answer 409 while any job whose args contain the
+  repository's `repository_id` is queued or running
+  (`jobkit.UnfinishedJobs`, a JSON containment query on `river_job`).
+
 ---
 
 ## 6. Jobs
@@ -583,7 +616,7 @@ The API uses huma v2 on chi (`humachi`). The OpenAPI 3.1 spec is served at
 | platforms | `GET /api/platforms` |
 | credentials | `GET/POST /api/credentials`, `POST /api/credentials/{id}/test`, `DELETE /api/credentials/{id}` |
 | collections | `POST/GET /api/collections`, `GET /api/collections/{id}`, `GET /api/collections/{id}/errors`, `POST /api/collections/{id}/cancel` |
-| git | `POST /api/repositories`, `GET /api/repositories/{id}`, `GET /api/repositories/{id}/commits/{sha}` |
+| git | `POST /api/repositories`, `GET/DELETE /api/repositories/{id}`, `GET /api/repositories/{id}/commits/{sha}`, `GET /api/repositories/{id}/data`, `DELETE /api/repositories/{id}/data/{platform}/{key}` (§5.4) |
 | dashboards | `GET /api/{platform}/dashboard`, `GET /api/{platform}/dashboard/graph`, `GET /api/{platform}/dashboard/date-range` for every `Dashboarder` (§9.1): `git`, `github` |
 | preview and export | `GET /api/{platform}/preview`, `GET /api/{platform}/preview/{dataset}`, `GET /api/{platform}/export/{dataset}` for every `DatasetProvider` (§9.2): `git`, `github` |
 | github | `GET /api/github/repositories/{id}`, `GET /api/github/repositories/{id}/issues/{number}`, `GET /api/github/repositories/{id}/pull-requests/{number}`, `GET /api/github/repositories/{id}/commits/{sha}`, `GET /api/github/repositories/{id}/releases/{github_id}` |
@@ -774,6 +807,14 @@ collection and one 1,118-commit spf13/cobra collection):
   tracking.
 - Collections: transactional start, sharded progress, reconcile, cancel.
 - Git: registration, mirrors, incremental planning, parallel batch mining.
+- Removing data (§5.4): verified against spf13/cobra and spf13/pflag (mined
+  with diffs), a simulated fork sharing 100 of cobra's commits, and synthetic
+  GitHub rows for every resource. Each GitHub part removed only its own rows
+  (issues kept the pull requests' conversations). Removing cobra's diffs and
+  then its commits kept the fork's 100 commits, their 137 diffs and 5
+  `github_commits` rows, and deleted the other 1,018 commits. Deleting pflag
+  removed its 440 commits, and the next `git.prune_mirrors` removed its
+  mirror. A queued job of the repository produced a 409.
 - Git diffs (`diffs: true`): verified against spf13/cobra (backfilled after a
   commits-only collection) and spf13/pflag (chained after mining). Every
   stored diff of their 1,310 non-merge commits matched `git diff-tree`, every
@@ -821,8 +862,8 @@ TODO, in rough priority order:
 - Frontend: the GitHub screens, login, admin user registration, credential
   management, password change and the collections (Jobs) screen use this API,
   served from one origin (Vite's dev proxy, or nginx). Still to do there: the
-  API-key screen, and the Jira and Stack Overflow screens, which are hidden until their jobs exist
-  (frontend/ARCHITECTURE.md §9).
+  API-key screen, and Jira and Stack Overflow screens, built on the generic
+  modules once their jobs exist (frontend/ARCHITECTURE.md §9).
 
 ---
 

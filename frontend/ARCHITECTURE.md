@@ -9,7 +9,7 @@ see [README.md](README.md).
 
 The app uses React 19, React Router 7, TanStack Query 5, and Axios. Vite 7 builds
 the TypeScript/TSX application. Tailwind CSS 4 and CSS variables style internal
-components; Radix UI supplies primitives, Lucide supplies icons, Nivo renders
+components; Lucide supplies icons, Nivo renders
 line charts, Motion supplies animation, and Sonner supplies toast notifications.
 Storybook 10 provides component examples; Vitest 4 runs unit tests.
 
@@ -39,16 +39,15 @@ in Vite, TypeScript, and Vitest.
 |---|---|
 | `src/pages/` | Route shells; select source UI modules. `JobsPage` (collections), `LoginPage`, `RegisterPage` (admin user registration), `CredentialsPage`, `ChangePasswordPage` and `SourceUnavailable` are source-independent. |
 | `src/auth/` | `RequireAuth` (session guard, 401 redirect) and `RequireRole`. |
-| `src/sidebar/` | Navigation in two groups: **Platform** (the source selector and the screens it scopes: Overview, Collect, Preview) and **System** (Jobs, Credentials, Users, which don't depend on the source). Also query-string normalisation, current user, password and logout. |
+| `src/sidebar/` | Navigation in two groups: **Platform** (the source selector and the screens it scopes: Overview, Collect, Preview and the entities page, named by the source: Repositories, Projects, Tags; each is a generic shell over the source's modules in `registry.ts`) and **System** (Jobs, Credentials, Users, which don't depend on the source). Also query-string normalisation, current user, password and logout. Preview lists a source's main sections and folds the rest (`foldedSectionPreviewIdsBySource`) under a "Show N more" toggle, which stays open while a folded section is the current page. On wide screens the navigation scrolls on its own and the account footer stays pinned; on narrow screens the whole sidebar scrolls within the top 45% of the viewport. |
 | `src/sources/index.ts` | Source IDs, labels, preview sections, defaults, unavailable sources, and related types/options. |
 | `src/sources/registry.ts` | Map source and preview-section IDs to React components. |
-| `src/sources/{github,jira,stackoverflow}/` | Source-specific overview, collect, and preview UI. Jira and Stack Overflow are not rendered (section 9). |
-| `src/sources/shared/` | Shared screen helpers: selectors, overview models (legacy and Go dashboards), collection feedback/URL parsing, table state. |
+| `src/sources/github/` | GitHub's overview, collect, preview and repositories UI. Jira and Stack Overflow have no modules yet and show a notice (section 9). |
+| `src/sources/shared/` | Shared screen helpers: selectors, Go dashboard adapters, collection feedback, GitHub URL parsing, table state. |
 | `src/data/api/` | Axios transport (`apiClient.ts`) and the central endpoint catalogue (`endpoints.ts`). |
 | `src/data/query/` | Query client, cache keys, invalidation, and error-message extraction. |
 | `src/data/modules/{auth,collections,credentials,dashboard,datasets}/` | Go API modules: types, services, and query/mutation hooks. They are keyed by Go platform (`git`, `github`), not frontend source. |
-| `src/data/modules/{jira,stackoverflow}/` | Legacy Django modules, kept for when those platforms are ported; nothing renders them. |
-| `src/data/modules/shared.ts` | Shared types (legacy and Go dashboards, huma errors) and date helpers. |
+| `src/data/modules/shared.ts` | Shared types (Go dashboards, huma errors) and date helpers. |
 | `src/data/index.ts` | Public data-layer entry point for UI imports (`@/data`). |
 | `src/components/` | Reusable primitives and composed overview/collect/preview components, usually with stories and barrel exports. |
 | `src/lib/` | Theme context, source/section resolver, and utilities such as `cn`. |
@@ -83,6 +82,7 @@ fall back to `index.html` for client routes.
 | `/preview` | `PreviewPage` selects `sourceSectionPreviewUiModules[source][section]`. |
 | `/jobs` | `JobsPage`, independent of selected source. |
 | `/credentials` | `CredentialsPage` inside `RequireRole role="researcher"` (the API lists credentials to researchers); add, test and delete controls render for admins only. |
+| `/entities` | `EntitiesPage` inside `RequireRole role="admin"`: titled by `sourceEntityLabels[source]` (Repositories, Projects, Tags) and selects `sourceUiModules[source].entities` (GitHub: `GithubRepositories`; the selected repository is in the URL, `?repository=<id>`). Sources without the module show `SourceUnavailable`. The sidebar lists it in the Platform group, to admins only. |
 | `/register` | `RegisterPage` inside `RequireRole role="admin"`; the sidebar shows it to admins only. |
 | `/password` | `ChangePasswordPage`, for every role; opened from the lock button beside **Log out**. |
 
@@ -91,15 +91,19 @@ the Overview, Collect and Preview pages render `SourceUnavailable` instead of
 the source module, the source selector labels it "(unavailable)", and Preview
 lists no sections.
 
-| Source | Preview sections (first is the default) |
+| Source | Preview sections (default) |
 |---|---|
-| `github` | `issues`, `pull-requests`, `commits`, `users` |
-| `jira` | `users`, `issues`, `comments`, `sprints` (not rendered) |
-| `stackoverflow` | `questions` (not rendered) |
+| `github` | Git: `repositories`, `commits`, `commit-files`, `commit-diffs`, `refs`; GitHub: `github-repositories`, `issues`, `issue-comments`, `issue-events`, `pull-requests`, `pull-request-commits`, `pull-request-reviews`, `pull-request-review-comments`, `github-commits`, `releases`, `release-assets`, `users` (`issues`) |
+| `jira` | `users`, `issues`, `comments`, `sprints` (planned; no modules yet) |
+| `stackoverflow` | `questions` (planned; no modules yet) |
+
+`sectionPreviewGroupsBySource` gives each section a group heading ("Git",
+"GitHub"); the sidebar shows a heading before the first section of each
+group.
 
 The URL owns the selected integration (`source`) and preview subsection
 (`section`). `source-section-resolver.ts` falls back to GitHub for an invalid
-or missing source, and to the selected source's first section for an invalid
+or missing source, and to the selected source's default section for an invalid
 or missing section. Sidebar helpers preserve `source`, keep a valid `section`
 only on Preview, and remove `section` elsewhere. The sidebar replaces invalid
 query strings with normalised ones, retaining other query parameters.
@@ -121,9 +125,10 @@ or disables actions a role can't perform, and the API enforces them.
 ## 4. Data access and cache
 
 [`apiClient.ts`](src/data/api/apiClient.ts) creates one Axios instance with
-`withCredentials` and JSON content type. Its base URL is `VITE_API_URL`, empty
-by default, so requests go to the frontend's own origin: Vite's dev server and
-nginx proxy `/api/` to the API. The session cookie and the API's
+`withCredentials` and JSON content type, and no base URL: requests always go
+to the frontend's own origin, and Vite's dev server and nginx proxy `/api/` to
+the API. There is deliberately no setting for another API origin: the API
+sends no CORS headers. The session cookie and the API's
 cross-origin protection both need this single origin. Its response interceptor
 returns `res.data`, so services receive the response body. Rejections become
 `err.response ?? err`; a 401 from anything but login also calls the handler
@@ -158,7 +163,7 @@ repository caches, so screens show what was mined. Starting a collection
 invalidates collections and repositories (a collection can register them).
 
 `getQueryErrorMessage` reads huma's problem details (`detail`, plus
-`errors[].location: message` on validation failures), then legacy nested
+`errors[].location: message` on validation failures), then nested
 `error`/`message` fields, and falls back to a caller-supplied message. Screens
 use inline errors and/or shared toast helpers. Login and Register map 401 and
 409 to specific messages.
@@ -186,7 +191,9 @@ are the database column names (`github_created_at`, `first_mined_at`, ...).
 | Export | `GET /api/{platform}/export/{dataset}?format=&…` | Preview export (a plain link) |
 | Collections | `GET /api/collections`, `POST /api/collections`, `POST /api/collections/{id}/cancel` | Jobs, Collect |
 | Collection log | `GET /api/collections/{id}/errors?limit=1000` | Jobs (View log) |
-| Repositories | `GET /api/git/preview/repositories?limit=1000&cursor=` (every page) | Jobs (repository names), Collect (known repositories) |
+| Repositories | `GET /api/git/preview/repositories?limit=1000&cursor=` (every page) | Jobs (repository names), Collect (known repositories), Repositories |
+| Repository data | `GET /api/repositories/{id}/data`; `DELETE /api/repositories/{id}/data/{platform}/{key}` (admin; returns what remains) | Repositories |
+| Delete repository | `DELETE /api/repositories/{id}` (admin; 204) | Repositories |
 
 ### Overview
 
@@ -206,14 +213,14 @@ midnight UTC after the last (exclusive).
 
 ### Preview and export
 
-Each GitHub section is one dataset:
-
-| Section | Platform and dataset |
-|---|---|
-| Issues | `github` `issues` (pull requests excluded by the dataset) |
-| Pull requests | `github` `pull-requests` |
-| Commits | `git` `commits` (every mined commit) |
-| Users | `github` `users` |
+Each GitHub section is one dataset, defined in
+[`GithubPreview/index.tsx`](src/sources/github/GithubPreview/index.tsx): the
+section ID is the dataset's name, except `github-repositories` (`github`
+`repositories`) and `github-commits` (`github` `commits`), whose names git's
+datasets already use. Every other section under "Git" is a `git` dataset and
+every one under "GitHub" a `github` dataset. Issues exclude pull requests;
+pull requests include their conversation side. Each section is its own
+component, so switching sections starts with fresh filters and cursors.
 
 `GithubPreview` waits for the dataset catalogue and offers the repository
 filter only when the dataset has a `repository_id` column, and the date
@@ -306,15 +313,14 @@ says to ask an admin.
 
 **Overview:** builds selector options from the unscoped `github` dashboard's
 `entities` and requests cards, graphs, and date bounds for both platforms
-separately. `OverviewShared.ts` holds the Go adapters and the interval rule;
-its legacy adapters remain for the Jira and Stack Overflow modules. Shared
+separately. `OverviewShared.ts` holds the Go adapters and the interval rule. Shared
 `components/overview/` components render the layout.
 
 **Collect:** source-specific forms compose `components/collect/`, with modals
 for repositories and source-specific extra controls.
 `runCollectWithFeedback` handles submission toasts and navigation to Jobs.
 
-**Preview:** small section wrappers name a platform and dataset for
+**Preview:** a table of sections names a platform and dataset for
 `GithubPreview`, which owns filters, paging, sort, export and cell modals.
 `PreviewShared.ts` handles column visibility, three-state sorting, and value
 formatting. `count` drives server-side pagination.
@@ -336,6 +342,22 @@ checks the 12-character minimum, that the new password differs from the
 current one, and that both entries match; a 403 is shown as "the current
 password is wrong" (it is not a session error, so the user stays on the
 page). The API renews the session token, so the user stays logged in.
+
+**Repositories** (`/entities?source=github`): admin only. The list is git's `repositories` dataset
+(every page), filtered in the browser. Selecting one loads
+`GET /api/repositories/{id}/data`: each part of what was collected (git's
+commits and file diffs, then GitHub's details, issues, pull requests, commit
+authors and PR links, releases) with its item count, how many items other
+repositories (forks) also contain, and when it was last collected. Each part
+has a remove button (with a confirmation that says what's kept), and the
+repository a delete button whose dialog lists what will go and needs the
+repository's path typed. Both refresh dashboards, previews and repository
+lists. A 409 (jobs of the repository still running) is shown as a toast or in
+the dialog.
+
+**Sidebar footer:** the user with change-password and log-out buttons, then
+one row with a compact **API docs** button and the theme toggle, an icon
+button showing the theme it switches to.
 
 **Register:** admin-only form (username, role, password of at least 12
 characters with confirmation, the API's minimum) and the user list.
@@ -368,7 +390,7 @@ When adding a source or section within this structure:
   or runtime response validation. Preview rows are untyped records.
 - `npm run build` uses Vite without `tsc`, and there is no type-check script.
   `npx tsc --noEmit -p tsconfig.json` reports errors in Storybook stories and
-  the dormant Jira module that predate the migration.
+  the line chart's colour prop that predate the migration.
 - ESLint's configured file pattern covers JS/JSX only. It does not lint most
   application code in TS/TSX.
 - Vitest uses a Node environment. It covers the collection URL parsers and the
@@ -392,6 +414,6 @@ Still to do:
 | Area | Notes |
 |---|---|
 | Own account | No screen for managing API keys (`/api/auth/api-keys`), nor for disabling users, changing roles or resetting another user's password (`PATCH /api/users/{id}`). |
-| More GitHub data | The API also serves releases, comments, timeline events, reviews, commit files and refs as datasets, and detail endpoints (`/api/github/repositories/{id}/issues/{number}`, ...) for nested views. The UI shows four sections. |
+| Nested views | Every dataset has a preview section, but the detail endpoints (`/api/github/repositories/{id}/issues/{number}`, `/api/repositories/{id}/commits/{sha}?diffs=true`, ...) aren't used: there's no view of one issue or commit with its nested data. |
 | Platform catalogue | Sources and sections are hard-coded; `GET /api/platforms` could drive them. |
-| Jira and Stack Overflow | Their Go collection jobs are TODO (backend-go architecture.md §12). Their screens and data modules still target the Django contract and are hidden; port them to the generic modules when the platforms exist. |
+| Jira and Stack Overflow | Their Go collection jobs are TODO (backend-go architecture.md §12). Their frontend modules (built for the Django API) were removed; when a platform exists, add its modules to `registry.ts` on the generic dashboard, dataset and collection modules, remove it from `unavailableSourceReasons`, and give its collections a label on the Jobs page. The old screens remain in git history for reference. |

@@ -70,9 +70,12 @@ export type GitCollectionParameters = {
   };
 };
 
+// A row of git's `repositories` dataset.
 export type Repository = {
   id: number;
   url: string;
   host: string;
   path: string;
+  mirror_last_synced_at?: string | null;
+  created_at?: string;
 };

@@ -43,8 +43,9 @@ occupied) and log in. The script binds to `0.0.0.0`.
 The dev server proxies `/api/` and `/healthz` to the API, so the browser
 talks to one origin. This is required: the session cookie belongs to that
 origin, and the API rejects browser writes from any other origin and sends no
-CORS headers. Leave `VITE_API_URL` unset. If the API isn't on
-`localhost:8000`, set `API_PROXY_TARGET` (for example in `frontend/.env.local`).
+CORS headers, so there is no setting to call the API on another origin. If the
+API isn't on `localhost:8000`, set `API_PROXY_TARGET` (for example in
+`frontend/.env.local`).
 
 There is no self-signup. The API creates the first admin from
 `ADMIN_USERNAME`/`ADMIN_PASSWORD` in the root `.env` (backend README); admins
@@ -54,7 +55,6 @@ then register other users on the **Users** screen.
 
 | Variable | Purpose |
 |---|---|
-| `VITE_API_URL` | Leave unset (the default): requests go to the frontend's own origin, proxied to the API. An origin such as `https://api.example.org` (**without `/api`**) only works if that host serves the API on the frontend's origin through a proxy; the API sends no CORS headers. |
 | `API_PROXY_TARGET` | Where `npm run dev` proxies `/api/` and `/healthz`. Default `http://localhost:8000`; Compose sets `http://api:8000`. Read by `vite.config.js` only, never bundled. |
 | `IS_DEBUG` | Used only by the container's `run.sh`. The exact string `False` selects the build watcher; any other value selects the Vite dev server. |
 
@@ -85,8 +85,8 @@ For shared UI changes, also inspect the relevant Storybook stories.
 Checks have limits: `build` runs Vite without a TypeScript type-checking step,
 and ESLint currently targets only `.js`/`.jsx`, not `.ts`/`.tsx`. Run
 `npx tsc --noEmit -p tsconfig.json` by hand: it reports errors in Storybook
-stories and the dormant Jira module that predate the Go migration, so check
-that no new ones appear. The unit suite covers collection URL parsers and the
+stories and the line chart's colour prop that predate the Go migration, so
+check that no new ones appear. The unit suite covers collection URL parsers and the
 Go contract helpers (date windows, dataset query strings, dashboard cards and
 series); it does not test rendered pages or end-to-end flows. See the architecture document's
 [known gaps](ARCHITECTURE.md#8-known-gaps-and-validation-limits).
@@ -98,9 +98,10 @@ series); it does not test rendered pages or end-to-end flows. See the architectu
 | `/login` | The only public route. Other routes redirect here without a session and return to the requested page after logging in. |
 | `/` or `/overview?source=github` | Summary cards and time-series charts; filter by repository and dates. |
 | `/collect?source=github` | Configure and start mining (researcher or admin): pick or type repositories, choose what to collect (commits need no token; GitHub data needs one), optionally limit GitHub items by date. Successful submission opens Jobs. |
-| `/preview?source=github&section=issues` | Browse server-paginated data, search, sort, hide columns, inspect cells, and export the filtered table as JSON or CSV. |
+| `/preview?source=github&section=issues` | Every git and GitHub dataset, grouped in the sidebar under Git and GitHub. Browse server-paginated data, search, sort, hide columns, inspect cells, and export the filtered table as JSON or CSV. |
 | `/jobs` | Collections with their progress, polled every five seconds while one runs; view a collection's error log, cancel running ones or run a settled one again. |
 | `/credentials` | Researchers see the lab's platform tokens (status, quota left, secret hints); admins add, re-test and delete them. Tokens are tested as they are added. |
+| `/entities?source=github` | Admin only. Named after what the platform mines from: **Repositories** on GitHub (Projects on Jira, Tags on Stack Overflow, once they are available). On GitHub: list repositories, see what was collected for each (items per kind of data, shared with forks, last collected), remove one kind of data, or delete a repository with everything collected for it. |
 | `/register` | Admin only: register users and list them. |
 | `/password` | Any user: change their own password (current password, then the new one twice). Opened from the lock button next to **Log out**. |
 
@@ -112,10 +113,8 @@ is GitHub. Jira and Stack Overflow show an "unavailable" notice. Preview section
 
 The root [`docker-compose.yaml`](../docker-compose.yaml) runs the frontend
 together with the [Go backend](../backend-go/README.md). It reads the root
-`.env` but passes only `VITE_API_URL` and `IS_DEBUG` to the frontend
-container, sets `API_PROXY_TARGET=http://api:8000`, and publishes port 5173 for
-development. Leave `VITE_API_URL` empty in `.env`, or the browser bypasses the
-proxy.
+`.env` but passes only `IS_DEBUG` to the frontend container, sets
+`API_PROXY_TARGET=http://api:8000`, and publishes port 5173 for development.
 The [frontend Dockerfile](Dockerfile) uses Node 22 Alpine; [`run.sh`](run.sh)
 runs `npm install` on startup before selecting dev server or build watcher.
 
@@ -128,8 +127,8 @@ docker compose --profile production up --build
 ```
 
 [`nginx.conf`](../nginx.conf) falls back to `index.html` for client-side routes
-and proxies `/api/` to the Go API (`api:8000`). For that same-origin setup, leave
-`VITE_API_URL` empty when building. An absolute API URL bypasses that proxy.
+and proxies `/api/` to the Go API (`api:8000`), so the frontend and the API
+share one origin.
 
 For another static host, serve `dist/`, provide an `index.html` fallback for
 routes such as `/preview`, and route API requests to the configured backend.

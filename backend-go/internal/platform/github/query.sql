@@ -572,3 +572,70 @@ WHERE (sqlc.narg(repository_id)::bigint IS NULL OR repository_id = sqlc.narg(rep
   AND (sqlc.narg(until)::timestamptz IS NULL OR github_created_at < sqlc.narg(until))
 GROUP BY 2
 ORDER BY 1, 2;
+
+-- Repository data management (admin). Each part is removed on its own; see
+-- DataParts in enricher.go.
+
+-- name: RepositoryDataCounts :one
+SELECT
+    (SELECT count(*) FROM github_repositories r WHERE r.repository_id = sqlc.arg(repository_id)) AS metadata_count,
+    (SELECT max(r.last_mined_at) FROM github_repositories r WHERE r.repository_id = sqlc.arg(repository_id)) AS metadata_last_mined_at,
+    (SELECT count(*) FROM github_issues i WHERE i.repository_id = sqlc.arg(repository_id) AND NOT i.is_pull_request) AS issue_count,
+    (SELECT max(i.last_mined_at) FROM github_issues i WHERE i.repository_id = sqlc.arg(repository_id) AND NOT i.is_pull_request) AS issue_last_mined_at,
+    (SELECT count(*) FROM github_pull_requests p WHERE p.repository_id = sqlc.arg(repository_id)) AS pull_request_count,
+    (SELECT max(p.last_mined_at) FROM github_pull_requests p WHERE p.repository_id = sqlc.arg(repository_id)) AS pull_request_last_mined_at,
+    (SELECT count(*) FROM repository_commits rc JOIN github_commits g ON g.sha = rc.sha
+     WHERE rc.repository_id = sqlc.arg(repository_id)) AS commit_count,
+    (SELECT count(*) FROM repository_commits rc JOIN github_commits g ON g.sha = rc.sha
+     WHERE rc.repository_id = sqlc.arg(repository_id)
+       AND EXISTS (SELECT 1 FROM repository_commits o WHERE o.sha = rc.sha AND o.repository_id <> sqlc.arg(repository_id))) AS commit_shared_count,
+    (SELECT max(g.last_mined_at) FROM repository_commits rc JOIN github_commits g ON g.sha = rc.sha
+     WHERE rc.repository_id = sqlc.arg(repository_id)) AS commit_last_mined_at,
+    (SELECT count(*) FROM github_releases r WHERE r.repository_id = sqlc.arg(repository_id)) AS release_count,
+    (SELECT max(r.last_mined_at) FROM github_releases r WHERE r.repository_id = sqlc.arg(repository_id)) AS release_last_mined_at;
+
+-- name: DeleteRepositoryMetadata :exec
+DELETE FROM github_repositories WHERE repository_id = $1;
+
+-- name: DeleteConversationComments :exec
+-- Comments of the repository's issues (is_pull_request false) or of its pull
+-- requests (true).
+DELETE FROM github_issue_comments c USING github_issues i
+WHERE c.repository_id = sqlc.arg(repository_id) AND i.repository_id = c.repository_id
+  AND i.number = c.issue_number AND i.is_pull_request = sqlc.arg(is_pull_request);
+
+-- name: DeleteConversationEvents :exec
+DELETE FROM github_issue_events e USING github_issues i
+WHERE e.repository_id = sqlc.arg(repository_id) AND i.repository_id = e.repository_id
+  AND i.number = e.issue_number AND i.is_pull_request = sqlc.arg(is_pull_request);
+
+-- name: DeleteConversations :exec
+DELETE FROM github_issues WHERE repository_id = sqlc.arg(repository_id) AND is_pull_request = sqlc.arg(is_pull_request);
+
+-- name: DeletePullRequestCommits :exec
+DELETE FROM github_pull_request_commits WHERE repository_id = $1;
+
+-- name: DeletePullRequestReviews :exec
+DELETE FROM github_pull_request_reviews WHERE repository_id = $1;
+
+-- name: DeletePullRequestReviewComments :exec
+DELETE FROM github_pull_request_review_comments WHERE repository_id = $1;
+
+-- name: DeletePullRequests :exec
+DELETE FROM github_pull_requests WHERE repository_id = $1;
+
+-- name: DeleteCommitPullRequests :exec
+DELETE FROM github_commit_pull_requests WHERE repository_id = $1;
+
+-- name: DeleteRepositoryGitHubCommits :exec
+-- GitHub's view of the repository's commits, except those other
+-- repositories (forks) also contain.
+DELETE FROM github_commits g USING repository_commits rc
+WHERE rc.repository_id = sqlc.arg(repository_id) AND g.sha = rc.sha
+  AND NOT EXISTS (SELECT 1 FROM repository_commits o WHERE o.sha = g.sha AND o.repository_id <> sqlc.arg(repository_id));
+
+-- name: DeleteReleaseAssets :exec
+DELETE FROM github_release_assets WHERE repository_id = $1;
+
+-- name: DeleteReleases :exec
+DELETE FROM github_releases WHERE repository_id = $1;

@@ -54,6 +54,16 @@ func (MineCommitBatchArgs) InsertOpts() river.InsertOpts {
 	return river.InsertOpts{Queue: queue, UniqueOpts: jobkit.UniqueInFlight()}
 }
 
+// PruneMirrorsArgs removes the mirrors of repositories that no longer exist.
+// Deleting a repository is an API request, and only the worker has the
+// mirror volume, so mirrors are removed here, periodically.
+type PruneMirrorsArgs struct{}
+
+func (PruneMirrorsArgs) Kind() string { return "git.prune_mirrors" }
+func (PruneMirrorsArgs) InsertOpts() river.InsertOpts {
+	return river.InsertOpts{Queue: queue, UniqueOpts: jobkit.UniqueInFlight()}
+}
+
 // MineDiffBatchArgs mines the diffs of mined commits into commit_file_diffs.
 // Diffs are much larger than commit metadata, so batches are smaller
 // (diffBatchSize). Rows are inserted once, so it is idempotent.

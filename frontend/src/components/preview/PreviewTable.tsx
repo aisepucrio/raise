@@ -44,20 +44,13 @@ export type PreviewTableProps = {
   onRowsPerPageChange: (nextRowsPerPage: number) => void;
 };
 
-// generates key stable for row.
+// Row key within the page. Rows are replaced page by page, and no single
+// column identifies a row in every dataset (many start with repository_id),
+// so the position is part of the key.
 function resolvePreviewRowKey(row: PreviewRow, rowIndex: number) {
   const [firstColumn] = Object.keys(row);
-  const stableValue = firstColumn ? row[firstColumn] : undefined;
-
-  if (
-    stableValue !== null &&
-    stableValue !== undefined &&
-    String(stableValue)
-  ) {
-    return `preview-row-${String(stableValue)}`;
-  }
-
-  return `preview-row-${rowIndex}`;
+  const value = firstColumn ? row[firstColumn] : undefined;
+  return `preview-row-${rowIndex}-${String(value)}`;
 }
 
 export function PreviewTable({

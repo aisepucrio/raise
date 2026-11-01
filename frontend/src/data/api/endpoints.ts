@@ -1,11 +1,3 @@
-import type { SectionPreviewIdBySource, SourceId } from "@/sources";
-
-export type Source = SourceId;
-export type SectionBySource = SectionPreviewIdBySource;
-export type GithubSection = SectionBySource["github"];
-export type JiraSection = SectionBySource["jira"];
-export type StackOverflowSection = SectionBySource["stackoverflow"];
-
 // Platforms of the Go API (`GET /api/platforms`). A frontend source can read
 // several: the GitHub screens combine `git` (commits) and `github`.
 export type PlatformId = "git" | "github" | "gitlab" | "jira" | "stackoverflow";
@@ -23,6 +15,12 @@ export const endpoints = {
   credentials: () => "/api/credentials",
   credential: (id: number) => `/api/credentials/${id}`,
   testCredential: (id: number) => `/api/credentials/${id}/test`,
+
+  // ==> REPOSITORIES (listed through git's `repositories` dataset)
+  repository: (id: number) => `/api/repositories/${id}`,
+  repositoryData: (id: number) => `/api/repositories/${id}/data`,
+  repositoryDataPart: (id: number, platform: PlatformId, key: string) =>
+    `/api/repositories/${id}/data/${platform}/${encodeURIComponent(key)}`,
 
   // ==> DASHBOARDS (every platform with `has_dashboard`)
   dashboard: (platform: PlatformId) => `/api/${platform}/dashboard`,
@@ -44,16 +42,4 @@ export const endpoints = {
 
   // ==> DOCS
   apiDocs: () => "/api/docs",
-
-  // ==> LEGACY (Django). Used only by the Jira and Stack Overflow modules,
-  // whose Go collection jobs don't exist yet; their screens are not shown.
-  legacy: {
-    dashboard: (source: Source) => `/api/${source}/dashboard/`,
-    dashboardGraph: (source: Source) => `/api/${source}/dashboard/graph/`,
-    dateRange: (source: Source) => `/api/${source}/date-range/`,
-    collect: (source: Source) => `/api/${source}/collect/`,
-    previewList: <S extends Source>(source: S, section: SectionBySource[S]) =>
-      `/api/${source}/${section}/`,
-    export: (source: Source) => `/api/${source}/export/`,
-  },
 } as const;

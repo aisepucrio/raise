@@ -2,42 +2,24 @@ import type { ComponentType } from "react";
 import type { SectionPreviewIdBySource, SourceId } from "./index";
 import GithubCollect from "./github/GithubCollect";
 import GithubOverview from "./github/GithubOverview";
-import {
-  GithubPreviewCommits,
-  GithubPreviewIssues,
-  GithubPreviewPullRequests,
-  GithubPreviewUsers,
-} from "./github/GithubPreview/index";
-import JiraCollect from "./jira/JiraCollect";
-import JiraOverview from "./jira/JiraOverview";
-import {
-  JiraPreviewComments,
-  JiraPreviewIssues,
-  JiraPreviewSprints,
-  JiraPreviewUsers,
-} from "./jira/JiraPreview/index";
-import StackoverflowCollect from "./stackoverflow/StackoverflowCollect";
-import StackoverflowOverview from "./stackoverflow/StackoverflowOverview";
-import { StackoverflowPreviewQuestions } from "./stackoverflow/StackoverflowPreview/index";
+import GithubRepositories from "./github/GithubRepositories";
+import { githubPreviewModules } from "./github/GithubPreview/index";
 
-// maps each sourceId for modules of UI of overview and Collect.
+// maps each sourceId for modules of UI of overview, Collect and the entities
+// page (what the source mines from: repositories, projects, tags; titled by
+// sourceEntityLabels). Sources without modules (not ported to the Go backend
+// yet) show a notice instead.
 type SourceUiModuleSet = {
   collect: ComponentType;
   overview: ComponentType;
+  entities?: ComponentType;
 };
 
-export const sourceUiModules: Record<SourceId, SourceUiModuleSet> = {
+export const sourceUiModules: Partial<Record<SourceId, SourceUiModuleSet>> = {
   github: {
     collect: GithubCollect,
     overview: GithubOverview,
-  },
-  jira: {
-    collect: JiraCollect,
-    overview: JiraOverview,
-  },
-  stackoverflow: {
-    collect: StackoverflowCollect,
-    overview: StackoverflowOverview,
+    entities: GithubRepositories,
   },
 };
 
@@ -46,20 +28,6 @@ type SourcePreviewUiModuleSet = {
   [S in SourceId]: Record<SectionPreviewIdBySource[S], ComponentType>;
 };
 
-export const sourceSectionPreviewUiModules: SourcePreviewUiModuleSet = {
-  github: {
-    issues: GithubPreviewIssues,
-    "pull-requests": GithubPreviewPullRequests,
-    commits: GithubPreviewCommits,
-    users: GithubPreviewUsers,
-  },
-  jira: {
-    users: JiraPreviewUsers,
-    issues: JiraPreviewIssues,
-    comments: JiraPreviewComments,
-    sprints: JiraPreviewSprints,
-  },
-  stackoverflow: {
-    questions: StackoverflowPreviewQuestions,
-  },
+export const sourceSectionPreviewUiModules: Partial<SourcePreviewUiModuleSet> = {
+  github: githubPreviewModules,
 };

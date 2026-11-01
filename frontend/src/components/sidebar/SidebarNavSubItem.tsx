@@ -2,6 +2,11 @@ export type SidebarNavSubItemProps = {
   label: string;
   active: boolean;
   onClick: () => void;
+  // Heading of the group the item belongs to; SidebarNavItem shows it
+  // before the group's first item.
+  group?: string;
+  // A secondary control among the items, such as a "More" toggle.
+  muted?: boolean;
 };
 
 /**
@@ -12,7 +17,8 @@ export default function SidebarNavSubItem({
   label,
   active,
   onClick,
-}: SidebarNavSubItemProps) {
+  muted = false,
+}: Omit<SidebarNavSubItemProps, "group">) {
   return (
     <button
       type="button"
@@ -25,6 +31,7 @@ export default function SidebarNavSubItem({
         active
           ? "border-r-(--color-secondary-mid) bg-(--color-secondary-strong) text-(--color-secondary-inverse)"
           : "bg-transparent opacity-85 hover:bg-(--color-secondary-soft)",
+        muted ? "text-[0.85rem] text-(--color-secondary-muted) italic" : "",
       ].join(" ")}
     >
       {label}

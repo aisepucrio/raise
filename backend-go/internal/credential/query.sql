@@ -66,6 +66,3 @@ WHERE c.platform = $1 AND q.scope = $2
 ORDER BY q.resets_at
 LIMIT 1;
 
--- name: CountActiveCredentials :one
-SELECT count(*) FROM credentials
-WHERE platform = $1 AND status = 'active' AND deleted_at IS NULL;

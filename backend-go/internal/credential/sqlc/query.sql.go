@@ -27,18 +27,6 @@ func (q *Queries) ConsumeQuota(ctx context.Context, arg ConsumeQuotaParams) erro
 	return err
 }
 
-const countActiveCredentials = `-- name: CountActiveCredentials :one
-SELECT count(*) FROM credentials
-WHERE platform = $1 AND status = 'active' AND deleted_at IS NULL
-`
-
-func (q *Queries) CountActiveCredentials(ctx context.Context, platform string) (int64, error) {
-	row := q.db.QueryRow(ctx, countActiveCredentials, platform)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
 const getCredential = `-- name: GetCredential :one
 SELECT id, platform, kind, label, public_fields, secret_hints, secret_ciphertext, secret_nonce, encryption_key_version, status, last_tested_at, last_test_result, created_by, created_at, deleted_at FROM credentials WHERE id = $1 AND deleted_at IS NULL
 `

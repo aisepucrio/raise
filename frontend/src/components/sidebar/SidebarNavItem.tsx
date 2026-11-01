@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { ChevronUp, type LucideIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import SidebarNavSubItem, {
@@ -92,11 +92,15 @@ export default function SidebarNavItem({
             transition={{ duration: 0.18, ease: "easeOut" }}
           >
             <div className="flex flex-col">
-              {subItems.map((subItem, index) => (
-                <SidebarNavSubItem
-                  key={`${subItem.label}-${index}`}
-                  {...subItem}
-                />
+              {subItems.map(({ group, ...subItem }, index) => (
+                <Fragment key={`${subItem.label}-${index}`}>
+                  {group && group !== subItems[index - 1]?.group ? (
+                    <span className="px-6 pt-2 pb-0.5 text-[0.7rem] font-semibold tracking-wide text-(--color-secondary-muted) uppercase">
+                      {group}
+                    </span>
+                  ) : null}
+                  <SidebarNavSubItem {...subItem} />
+                </Fragment>
               ))}
             </div>
           </motion.div>

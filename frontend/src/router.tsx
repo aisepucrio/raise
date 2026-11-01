@@ -13,6 +13,7 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import CredentialsPage from "./pages/CredentialsPage";
 import ChangePasswordPage from "./pages/ChangePasswordPage";
+import EntitiesPage from "./pages/EntitiesPage";
 
 export const router = createBrowserRouter([
   // Public: the only route without a session.
@@ -36,6 +37,16 @@ export const router = createBrowserRouter([
             element: (
               <RequireRole role="admin">
                 <RegisterPage />
+              </RequireRole>
+            ),
+          },
+          {
+            // What the selected source mines from (repositories, projects,
+            // tags). Removes mined data for everyone, so admins only.
+            path: "entities",
+            element: (
+              <RequireRole role="admin">
+                <EntitiesPage />
               </RequireRole>
             ),
           },

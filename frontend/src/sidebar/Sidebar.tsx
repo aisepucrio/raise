@@ -3,6 +3,7 @@ import {
   Download,
   Eye,
   FileText,
+  Database,
   Home,
   KeyRound,
   Lock,
@@ -10,11 +11,13 @@ import {
   UserPlus,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   defaultSectionPreviewIdBySource,
+  isSectionPreviewFolded,
   isSourceAvailable,
+  sourceEntityLabels,
   sectionPreviewOptionsBySource,
   sourceOptions,
   type SourceId,
@@ -30,13 +33,12 @@ import {
 } from "@/data";
 import { Button } from "@/components/button";
 import { FormSelect } from "@/components/form";
-import SidebarNavItem from "@/components/sidebar/SidebarNavItem";
+import { SidebarNavItem, ThemeSwitcher } from "@/components/sidebar";
 import {
   buildSidebarSearch,
   isSidebarItemActive,
   resolveSidebarRouteContext,
 } from "./sidebarNavigation";
-import ThemeSwitcher from "@/components/sidebar/ThemeSwitcher";
 
 // Type for sidebar items.
 type SidebarRouteItem = {
@@ -51,12 +53,22 @@ type SidebarRouteItem = {
 // In Preview, "active" logic is delegated to subitems, which are source-driven.
 // Active state is URL-based, without extra local state.
 
-// Screens of the platform picked in the source selector above them.
-const sourceItems: SidebarRouteItem[] = [
-  { label: "Overview", to: "/", icon: Home },
-  { label: "Collect", to: "/collect", icon: Download },
-  { label: "Preview", to: "/preview", icon: Eye },
-];
+// Screens of the platform picked in the source selector above them. Each is
+// a generic shell that loads the source's module (src/sources/registry.ts);
+// the entities page is also named by the source (Repositories, Projects, Tags).
+function buildSourceItems(source: SourceId): SidebarRouteItem[] {
+  return [
+    { label: "Overview", to: "/", icon: Home },
+    { label: "Collect", to: "/collect", icon: Download },
+    { label: "Preview", to: "/preview", icon: Eye },
+    {
+      label: sourceEntityLabels[source].title,
+      to: "/entities",
+      icon: Database,
+      role: "admin",
+    },
+  ];
+}
 
 // Screens of the whole system, independent of the selected source.
 const systemItems: SidebarRouteItem[] = [
@@ -73,6 +85,8 @@ const systemItems: SidebarRouteItem[] = [
 export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
+  // Whether Preview lists its folded (less used) sections too.
+  const [showAllSections, setShowAllSections] = useState(false);
 
   // Sidebar uses source/section from the URL as the single source of truth.
   // `resolveSidebarRouteContext` already returns values valid for render.
@@ -144,14 +158,42 @@ export default function Sidebar() {
   };
 
   // Preview subitems are derived dynamically from the selected source.
-  // Unavailable sources have no sections to preview.
-  const previewSubItems = (
-    isSourceAvailable(source) ? sectionPreviewOptionsBySource[source] : []
-  ).map((sectionOption) => ({
-    label: sectionOption.label,
-    active: location.pathname === "/preview" && sectionOption.id === section,
-    onClick: () => handleNavigate("/preview", { section: sectionOption.id }),
-  }));
+  // Unavailable sources have no sections to preview. Less used sections are
+  // folded under a "Show N more" toggle, which stays open while one of them
+  // is the current page so it stays visible.
+  const previewOptions: readonly {
+    id: string;
+    label: string;
+    group?: string;
+  }[] = isSourceAvailable(source) ? sectionPreviewOptionsBySource[source] : [];
+  const isFolded = (id: string) =>
+    isSectionPreviewFolded(source, id as typeof section);
+  const foldedCount = previewOptions.filter((o) => isFolded(o.id)).length;
+  const isOnFoldedSection =
+    location.pathname === "/preview" && isFolded(section);
+  const showFolded = showAllSections || isOnFoldedSection;
+  const previewSubItems = [
+    ...previewOptions
+      .filter((o) => showFolded || !isFolded(o.id))
+      .map((sectionOption) => ({
+        label: sectionOption.label,
+        group: sectionOption.group,
+        active:
+          location.pathname === "/preview" && sectionOption.id === section,
+        onClick: () =>
+          handleNavigate("/preview", { section: sectionOption.id }),
+      })),
+    ...(foldedCount > 0 && !isOnFoldedSection
+      ? [
+          {
+            label: showFolded ? "Show fewer" : `Show ${foldedCount} more`,
+            muted: true,
+            active: false,
+            onClick: () => setShowAllSections((value) => !value),
+          },
+        ]
+      : []),
+  ];
 
   const renderItem = (item: SidebarRouteItem) => {
     const active = isSidebarItemActive(location.pathname, item.to);
@@ -175,8 +217,11 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="shrink-0 border-b-2 border-(--color-secondary-soft) p-4 md:flex md:min-h-dvh md:w-[15%] md:min-w-55 md:max-w-125 md:flex-col md:border-r-2 md:border-b-0">
-      <div className="space-y-4">
+    // On wide screens the navigation scrolls on its own (Preview can list many
+    // sections) while the account footer stays pinned; on narrow screens the
+    // whole sidebar scrolls within part of the viewport.
+    <aside className="max-h-[45dvh] shrink-0 overflow-y-auto border-b-2 border-(--color-secondary-soft) p-4 md:flex md:h-dvh md:max-h-none md:w-[15%] md:min-w-60 md:max-w-125 md:flex-col md:overflow-visible md:border-r-2 md:border-b-0">
+      <div className="space-y-4 md:-ml-4 md:min-h-0 md:flex-1 md:overflow-x-hidden md:overflow-y-auto md:pb-2 md:pl-4">
         <div className="p-3">
           {/* Light/dark logos controlled by Tailwind's `dark` class. */}
           <div className="dark:hidden">
@@ -229,7 +274,11 @@ export default function Sidebar() {
 
         {/* Navigation of the selected source. */}
         <nav aria-label="Platform" className="flex flex-col gap-1">
-          {sourceItems.map(renderItem)}
+          {buildSourceItems(source)
+            .filter(
+              (item) => !item.role || hasRole(currentUser?.role, item.role),
+            )
+            .map(renderItem)}
         </nav>
 
         {/* Navigation of the whole system, set apart from the source group. */}
@@ -251,8 +300,8 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Current user, logout and "API DOCS". */}
-      <div className="mt-6 space-y-3 md:mt-auto">
+      {/* Current user, logout, API docs and theme. */}
+      <div className="mt-6 space-y-3 md:mt-0 md:shrink-0 md:border-t-2 md:border-(--color-secondary-soft) md:pt-4">
         {currentUser ? (
           <div className="flex items-center justify-between gap-2 px-1 text-sm">
             <div className="min-w-0">
@@ -285,17 +334,18 @@ export default function Sidebar() {
           </div>
         ) : null}
 
-        <Button
-          text="API docs"
-          icon={<FileText />}
-          title={"Open API documentation "}
-          onClick={() => {
-            window.open(apiDocsUrl, "_blank", "noopener,noreferrer");
-          }}
-        />
-
-        {/* Visual separator + theme switcher. */}
-        <div className="mt-4 border-t-2 border-(--color-secondary-soft) pt-4">
+        {/* API docs and the theme toggle share one compact row. */}
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            text="API docs"
+            icon={<FileText />}
+            title="Open the API documentation"
+            className="flex-1"
+            onClick={() => {
+              window.open(apiDocsUrl, "_blank", "noopener,noreferrer");
+            }}
+          />
           <ThemeSwitcher />
         </div>
       </div>

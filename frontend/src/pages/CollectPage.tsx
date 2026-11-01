@@ -8,7 +8,7 @@ import SourceUnavailable from "./SourceUnavailable";
 export default function CollectPage() {
   const [searchParams] = useSearchParams();
   const source = resolveSourceId(searchParams.get("source"));
-  const CollectModule = sourceUiModules[source].collect;
+  const CollectModule = sourceUiModules[source]?.collect;
 
   return (
     <section className="flex h-full min-h-0 flex-col gap-2">
@@ -18,7 +18,7 @@ export default function CollectPage() {
       />
 
       <div className="min-h-0 flex-1 overflow-auto">
-        {isSourceAvailable(source) ? (
+        {isSourceAvailable(source) && CollectModule ? (
           <CollectModule />
         ) : (
           <SourceUnavailable source={source} />

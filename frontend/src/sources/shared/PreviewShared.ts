@@ -3,45 +3,15 @@ import { getQueryErrorMessage } from "@/data";
 
 export type PreviewRow = Record<string, unknown>;
 
-export type PreviewDateFilters = {
-  startDate: string;
-  endDate: string;
-};
-
-export type PreviewBuildParamsInput = {
-  page: number;
-  rowsPerPage: number;
-  selectedSourceId?: string;
-  search: string;
-  ordering?: string;
-  dateFilters?: PreviewDateFilters;
-};
-
 type PreviewSortStateLike = {
   field: string;
   direction: "asc" | "desc";
 } | null;
 
-type DownloadPreviewExportFileOptions = {
-  exportPayload: unknown;
-  fileNamePrefix: string;
-  extension?: string;
-  mimeType?: string;
-};
-
 type PreviewTableState = {
   columns: string[];
   visibleColumns: string[];
   tableColumns: string[];
-};
-
-type RunPreviewExportWithFeedbackOptions = {
-  execute: () => Promise<unknown>;
-  fileNamePrefix: string;
-  successMessage: string;
-  errorFallbackMessage?: string;
-  extension?: string;
-  mimeType?: string;
 };
 
 // Detects ISO date strings to improve table display.
@@ -72,52 +42,6 @@ export function toPreviewString(value: unknown) {
   }
 }
 
-// Generates a consistent filename for preview exports.
-export function buildPreviewExportFileName(
-  fileNamePrefix: string,
-  extension: string,
-) {
-  const timestamp = new Date()
-    .toISOString()
-    .replace(/[:.]/g, "-")
-    .replace("T", "_")
-    .slice(0, 19);
-
-  return `${fileNamePrefix}-${timestamp}.${extension}`;
-}
-
-// Normalizes export payload into a Blob.
-export function toPreviewExportBlob(
-  exportPayload: unknown,
-  mimeType = "application/json",
-) {
-  if (exportPayload instanceof Blob) return exportPayload;
-
-  return new Blob([toPreviewString(exportPayload)], {
-    type: mimeType,
-  });
-}
-
-// Downloads the exported file in the browser.
-export function downloadPreviewExportFile({
-  exportPayload,
-  fileNamePrefix,
-  extension = "json",
-  mimeType = "application/json",
-}: DownloadPreviewExportFileOptions) {
-  const exportBlob = toPreviewExportBlob(exportPayload, mimeType);
-  const fileName = buildPreviewExportFileName(fileNamePrefix, extension);
-
-  const objectUrl = URL.createObjectURL(exportBlob);
-  const link = document.createElement("a");
-  link.href = objectUrl;
-  link.download = fileName;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(objectUrl);
-}
-
 // Displays preview errors with a standard fallback.
 export function showPreviewErrorToast(
   error: unknown,
@@ -126,32 +50,6 @@ export function showPreviewErrorToast(
   toast.error(undefined, {
     description: getQueryErrorMessage(error, fallbackMessage),
   });
-}
-
-// Executes export with standard success/error feedback.
-export async function runPreviewExportWithFeedback({
-  execute,
-  fileNamePrefix,
-  successMessage,
-  errorFallbackMessage = "Failed to export preview.",
-  extension,
-  mimeType,
-}: RunPreviewExportWithFeedbackOptions): Promise<void> {
-  try {
-    const exportPayload = await execute();
-    downloadPreviewExportFile({
-      exportPayload,
-      fileNamePrefix,
-      extension,
-      mimeType,
-    });
-
-    toast.success(undefined, {
-      description: successMessage,
-    });
-  } catch (error) {
-    showPreviewErrorToast(error, errorFallbackMessage);
-  }
 }
 
 // Converts sort state to the format expected by the backend.

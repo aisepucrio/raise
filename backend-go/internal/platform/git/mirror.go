@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -40,24 +41,68 @@ func (m *Mirrors) Path(repoID int64) string {
 	return filepath.Join(m.dir, fmt.Sprintf("%d.git", repoID))
 }
 
-// Sync clones the repository if it isn't mirrored yet, then fetches.
-func (m *Mirrors) Sync(ctx context.Context, repoID int64, url string, auth *CloneAuth) error {
+// lock takes the repository's mirror lock on a dedicated connection and
+// returns its release.
+func (m *Mirrors) lock(ctx context.Context, repoID int64) (func(), error) {
 	conn, err := m.pool.Acquire(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	defer conn.Release()
 	if _, err := conn.Exec(ctx, "SELECT pg_advisory_lock($1::int, $2::int)", lockNamespace, repoID); err != nil {
-		return fmt.Errorf("lock mirror: %w", err)
+		conn.Release()
+		return nil, fmt.Errorf("lock mirror: %w", err)
 	}
-	defer func() {
+	return func() {
 		_, err := conn.Exec(context.WithoutCancel(ctx), "SELECT pg_advisory_unlock($1::int, $2::int)", lockNamespace, repoID)
 		if err != nil {
 			// A session lock would outlive this job on a pooled connection;
 			// closing the connection releases it.
 			_ = conn.Conn().Close(context.WithoutCancel(ctx))
 		}
-	}()
+		conn.Release()
+	}, nil
+}
+
+// MirroredRepositories lists the repository IDs that have a mirror on disk.
+// Temporary directories of clones in progress are skipped.
+func (m *Mirrors) MirroredRepositories() ([]int64, error) {
+	entries, err := os.ReadDir(m.dir)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var ids []int64
+	for _, e := range entries {
+		name, ok := strings.CutSuffix(e.Name(), ".git")
+		if !ok || !e.IsDir() {
+			continue
+		}
+		if id, err := strconv.ParseInt(name, 10, 64); err == nil {
+			ids = append(ids, id)
+		}
+	}
+	return ids, nil
+}
+
+// Remove deletes the repository's mirror, under its lock.
+func (m *Mirrors) Remove(ctx context.Context, repoID int64) error {
+	unlock, err := m.lock(ctx, repoID)
+	if err != nil {
+		return err
+	}
+	defer unlock()
+	return os.RemoveAll(m.Path(repoID))
+}
+
+// Sync clones the repository if it isn't mirrored yet, then fetches.
+func (m *Mirrors) Sync(ctx context.Context, repoID int64, url string, auth *CloneAuth) error {
+	unlock, err := m.lock(ctx, repoID)
+	if err != nil {
+		return err
+	}
+	defer unlock()
 
 	path := m.Path(repoID)
 	if _, err := os.Stat(path); errors.Is(err, fs.ErrNotExist) {

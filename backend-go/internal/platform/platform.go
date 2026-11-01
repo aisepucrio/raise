@@ -61,6 +61,14 @@ type Source interface {
 	StartCollection(ctx context.Context, tx pgx.Tx, enq jobkit.Enqueuer, params json.RawMessage) error
 }
 
+// Scheduler is a platform with periodic housekeeping jobs, which the worker
+// schedules (e.g. removing the mirrors of deleted repositories, work the API
+// can't do because only the worker has the mirror volume).
+type Scheduler interface {
+	Platform
+	PeriodicJobs() []*river.PeriodicJob
+}
+
 // CredentialKind describes one type of credential a platform accepts. The
 // frontend renders the "add credential" form from Fields.
 type CredentialKind struct {

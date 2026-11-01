@@ -183,6 +183,60 @@ func (q *Queries) DeleteRefs(ctx context.Context, repositoryID int64) error {
 	return err
 }
 
+const deleteRepository = `-- name: DeleteRepository :execrows
+DELETE FROM repositories WHERE id = $1
+`
+
+func (q *Queries) DeleteRepository(ctx context.Context, repositoryID int64) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteRepository, repositoryID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const deleteRepositoryCommits = `-- name: DeleteRepositoryCommits :one
+WITH unlinked AS (
+    DELETE FROM repository_commits uc WHERE uc.repository_id = $1 RETURNING uc.sha
+), deleted AS (
+    DELETE FROM commits c USING unlinked u
+    WHERE c.sha = u.sha
+      AND NOT EXISTS (SELECT 1 FROM repository_commits o WHERE o.sha = c.sha AND o.repository_id <> $1)
+    RETURNING 1
+)
+SELECT (SELECT count(*) FROM unlinked) AS unlinked_count, (SELECT count(*) FROM deleted) AS deleted_count
+`
+
+type DeleteRepositoryCommitsRow struct {
+	UnlinkedCount int64 `json:"unlinked_count"`
+	DeletedCount  int64 `json:"deleted_count"`
+}
+
+// Unlinks every commit from the repository and deletes those no other
+// repository contains; their files, diffs and forge enrichment
+// (github_commits) cascade. The NOT EXISTS sees the statement's snapshot,
+// in which the unlinked rows still exist, so it excludes this repository.
+func (q *Queries) DeleteRepositoryCommits(ctx context.Context, repositoryID int64) (DeleteRepositoryCommitsRow, error) {
+	row := q.db.QueryRow(ctx, deleteRepositoryCommits, repositoryID)
+	var i DeleteRepositoryCommitsRow
+	err := row.Scan(&i.UnlinkedCount, &i.DeletedCount)
+	return i, err
+}
+
+const deleteRepositoryDiffs = `-- name: DeleteRepositoryDiffs :execrows
+DELETE FROM commit_file_diffs d USING repository_commits rc
+WHERE rc.repository_id = $1 AND d.sha = rc.sha
+  AND NOT EXISTS (SELECT 1 FROM repository_commits o WHERE o.sha = d.sha AND o.repository_id <> $1)
+`
+
+func (q *Queries) DeleteRepositoryDiffs(ctx context.Context, repositoryID int64) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteRepositoryDiffs, repositoryID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const filterUnminedCommits = `-- name: FilterUnminedCommits :many
 SELECT s.sha::text FROM unnest($1::text[]) AS s(sha)
 WHERE NOT EXISTS (
@@ -457,6 +511,30 @@ func (q *Queries) ListRemotes(ctx context.Context, repositoryIds []int64) ([]Rep
 	return items, nil
 }
 
+const listRepositoryIDs = `-- name: ListRepositoryIDs :many
+SELECT id FROM repositories WHERE id = ANY($1::bigint[])
+`
+
+func (q *Queries) ListRepositoryIDs(ctx context.Context, ids []int64) ([]int64, error) {
+	rows, err := q.db.Query(ctx, listRepositoryIDs, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const markMirrorSynced = `-- name: MarkMirrorSynced :exec
 UPDATE repositories SET mirror_last_synced_at = now() WHERE id = $1
 `
@@ -464,6 +542,49 @@ UPDATE repositories SET mirror_last_synced_at = now() WHERE id = $1
 func (q *Queries) MarkMirrorSynced(ctx context.Context, id int64) error {
 	_, err := q.db.Exec(ctx, markMirrorSynced, id)
 	return err
+}
+
+const repositoryDataCounts = `-- name: RepositoryDataCounts :one
+
+SELECT
+    (SELECT count(*) FROM repository_commits rc WHERE rc.repository_id = $1) AS commit_count,
+    (SELECT count(*) FROM repository_commits rc
+     WHERE rc.repository_id = $1
+       AND EXISTS (SELECT 1 FROM repository_commits o WHERE o.sha = rc.sha AND o.repository_id <> $1)) AS commit_shared_count,
+    (SELECT count(*) FROM repository_refs rr WHERE rr.repository_id = $1) AS ref_count,
+    (SELECT count(*) FROM repository_commits rc JOIN commit_file_diffs d ON d.sha = rc.sha
+     WHERE rc.repository_id = $1) AS diff_count,
+    (SELECT count(*) FROM repository_commits rc JOIN commit_file_diffs d ON d.sha = rc.sha
+     WHERE rc.repository_id = $1
+       AND EXISTS (SELECT 1 FROM repository_commits o WHERE o.sha = rc.sha AND o.repository_id <> $1)) AS diff_shared_count,
+    (SELECT max(d.first_mined_at) FROM repository_commits rc JOIN commit_file_diffs d ON d.sha = rc.sha
+     WHERE rc.repository_id = $1) AS diff_last_mined_at
+`
+
+type RepositoryDataCountsRow struct {
+	CommitCount       int64       `json:"commit_count"`
+	CommitSharedCount int64       `json:"commit_shared_count"`
+	RefCount          int64       `json:"ref_count"`
+	DiffCount         int64       `json:"diff_count"`
+	DiffSharedCount   int64       `json:"diff_shared_count"`
+	DiffLastMinedAt   interface{} `json:"diff_last_mined_at"`
+}
+
+// Repository data management (admin). Commits, their files and diffs are
+// shared between repositories (forks), so removing them from one repository
+// deletes only the rows no other repository contains.
+func (q *Queries) RepositoryDataCounts(ctx context.Context, repositoryID int64) (RepositoryDataCountsRow, error) {
+	row := q.db.QueryRow(ctx, repositoryDataCounts, repositoryID)
+	var i RepositoryDataCountsRow
+	err := row.Scan(
+		&i.CommitCount,
+		&i.CommitSharedCount,
+		&i.RefCount,
+		&i.DiffCount,
+		&i.DiffSharedCount,
+		&i.DiffLastMinedAt,
+	)
+	return i, err
 }
 
 const upsertRemote = `-- name: UpsertRemote :exec

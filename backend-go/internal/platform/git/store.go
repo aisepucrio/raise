@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"raise/internal/apperr"
+	"raise/internal/jobkit"
 	"raise/internal/platform"
 	"raise/internal/platform/git/sqlc"
 )
@@ -249,4 +250,142 @@ func execBatch(b batchResults) error {
 		first = err
 	}
 	return first
+}
+
+// RepositoryData is what was mined for a repository, part by part: git's
+// own, then each forge's that hosts it.
+type RepositoryData struct {
+	Repository Repository `json:"repository"`
+	Parts      []DataPart `json:"parts"`
+}
+
+const diffsKey = "diffs"
+
+func (p *Platform) RepositoryData(ctx context.Context, id int64) (RepositoryData, error) {
+	repo, err := p.GetRepository(ctx, id)
+	if err != nil {
+		return RepositoryData{}, err
+	}
+	c, err := p.q.RepositoryDataCounts(ctx, id)
+	if err != nil {
+		return RepositoryData{}, err
+	}
+	out := RepositoryData{Repository: repo, Parts: []DataPart{
+		{
+			Platform: ID, Key: CommitDataKey, Label: "Commits",
+			Description: fmt.Sprintf("The mined history: commits with their changed files and diffs, and %d branches and tags. "+
+				"Removing it also removes the forges' data about these commits.", c.RefCount),
+			ItemCount: c.CommitCount, SharedCount: c.CommitSharedCount,
+		},
+		{
+			Platform: ID, Key: diffsKey, Label: "File diffs",
+			Description: "The text diff of each changed file, counted per file. Commits are kept.",
+			ItemCount:   c.DiffCount, SharedCount: c.DiffSharedCount, LastMinedAt: MinedAt(c.DiffLastMinedAt),
+		},
+	}}
+	if c.CommitCount > 0 {
+		// The last fetch, which mines new commits; once removed, there are none.
+		out.Parts[0].LastMinedAt = repo.MirrorLastSyncedAt
+	}
+	for _, ref := range repo.Remotes {
+		e, ok := p.enrichers[ref.Platform]
+		if !ok {
+			continue
+		}
+		parts, err := e.RepositoryData(ctx, id)
+		if err != nil {
+			return RepositoryData{}, fmt.Errorf("%s data: %w", ref.Platform, err)
+		}
+		out.Parts = append(out.Parts, parts...)
+	}
+	return out, nil
+}
+
+// DeleteRepositoryData removes one part of what was mined for the
+// repository, then returns what remains.
+func (p *Platform) DeleteRepositoryData(ctx context.Context, id int64, from platform.ID, key string) (RepositoryData, error) {
+	repo, err := p.GetRepository(ctx, id)
+	if err != nil {
+		return RepositoryData{}, err
+	}
+	if err := p.checkIdle(ctx, id); err != nil {
+		return RepositoryData{}, err
+	}
+	err = pgx.BeginFunc(ctx, p.deps.DB, func(tx pgx.Tx) error {
+		q := p.q.WithTx(tx)
+		if from != ID {
+			e, ok := p.enrichers[from]
+			if _, hosted := repo.Remote(from); !ok || !hosted {
+				return fmt.Errorf("%w: repository %d has no %s data", apperr.ErrNotFound, id, from)
+			}
+			return e.DeleteRepositoryData(ctx, tx, id, key)
+		}
+		switch key {
+		case CommitDataKey:
+			return p.deleteCommits(ctx, tx, q, repo)
+		case diffsKey:
+			_, err := q.DeleteRepositoryDiffs(ctx, id)
+			return err
+		}
+		return fmt.Errorf("%w: git has no data part %q", apperr.ErrNotFound, key)
+	})
+	if err != nil {
+		return RepositoryData{}, err
+	}
+	return p.RepositoryData(ctx, id)
+}
+
+// DeleteRepository removes the repository and everything mined for it.
+// Commits that other repositories also contain are kept for them. Its mirror
+// is removed by the worker's next PruneMirrors.
+func (p *Platform) DeleteRepository(ctx context.Context, id int64) error {
+	repo, err := p.GetRepository(ctx, id)
+	if err != nil {
+		return err
+	}
+	if err := p.checkIdle(ctx, id); err != nil {
+		return err
+	}
+	return pgx.BeginFunc(ctx, p.deps.DB, func(tx pgx.Tx) error {
+		q := p.q.WithTx(tx)
+		// Forge tables keyed by the repository cascade from it; commits are
+		// only linked to it, so they are deleted explicitly.
+		if err := p.deleteCommits(ctx, tx, q, repo); err != nil {
+			return err
+		}
+		_, err := q.DeleteRepository(ctx, id)
+		return err
+	})
+}
+
+// deleteCommits removes the repository's commits, with their refs and the
+// forges' commit data, keeping commits other repositories contain.
+func (p *Platform) deleteCommits(ctx context.Context, tx pgx.Tx, q *sqlc.Queries, repo Repository) error {
+	for _, ref := range repo.Remotes {
+		e, ok := p.enrichers[ref.Platform]
+		if !ok {
+			continue
+		}
+		if err := e.DeleteRepositoryData(ctx, tx, repo.ID, CommitDataKey); err != nil && !errors.Is(err, apperr.ErrNotFound) {
+			return fmt.Errorf("%s commit data: %w", ref.Platform, err)
+		}
+	}
+	if err := q.DeleteRefs(ctx, repo.ID); err != nil {
+		return err
+	}
+	_, err := q.DeleteRepositoryCommits(ctx, repo.ID)
+	return err
+}
+
+// checkIdle refuses to delete data that queued or running jobs are writing.
+func (p *Platform) checkIdle(ctx context.Context, id int64) error {
+	n, err := jobkit.UnfinishedJobs(ctx, p.deps.DB, map[string]any{"repository_id": id})
+	if err != nil {
+		return err
+	}
+	if n > 0 {
+		return fmt.Errorf("%w: repository %d has %d jobs queued or running; wait for its collections to finish or cancel them",
+			apperr.ErrConflict, id, n)
+	}
+	return nil
 }

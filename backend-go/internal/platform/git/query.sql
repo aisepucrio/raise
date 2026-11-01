@@ -138,3 +138,48 @@ WHERE EXISTS (
   AND (sqlc.narg(until)::timestamptz IS NULL OR c.authored_at < sqlc.narg(until))
 GROUP BY 1
 ORDER BY 1;
+
+-- Repository data management (admin). Commits, their files and diffs are
+-- shared between repositories (forks), so removing them from one repository
+-- deletes only the rows no other repository contains.
+
+-- name: RepositoryDataCounts :one
+SELECT
+    (SELECT count(*) FROM repository_commits rc WHERE rc.repository_id = sqlc.arg(repository_id)) AS commit_count,
+    (SELECT count(*) FROM repository_commits rc
+     WHERE rc.repository_id = sqlc.arg(repository_id)
+       AND EXISTS (SELECT 1 FROM repository_commits o WHERE o.sha = rc.sha AND o.repository_id <> sqlc.arg(repository_id))) AS commit_shared_count,
+    (SELECT count(*) FROM repository_refs rr WHERE rr.repository_id = sqlc.arg(repository_id)) AS ref_count,
+    (SELECT count(*) FROM repository_commits rc JOIN commit_file_diffs d ON d.sha = rc.sha
+     WHERE rc.repository_id = sqlc.arg(repository_id)) AS diff_count,
+    (SELECT count(*) FROM repository_commits rc JOIN commit_file_diffs d ON d.sha = rc.sha
+     WHERE rc.repository_id = sqlc.arg(repository_id)
+       AND EXISTS (SELECT 1 FROM repository_commits o WHERE o.sha = rc.sha AND o.repository_id <> sqlc.arg(repository_id))) AS diff_shared_count,
+    (SELECT max(d.first_mined_at) FROM repository_commits rc JOIN commit_file_diffs d ON d.sha = rc.sha
+     WHERE rc.repository_id = sqlc.arg(repository_id)) AS diff_last_mined_at;
+
+-- name: DeleteRepositoryCommits :one
+-- Unlinks every commit from the repository and deletes those no other
+-- repository contains; their files, diffs and forge enrichment
+-- (github_commits) cascade. The NOT EXISTS sees the statement's snapshot,
+-- in which the unlinked rows still exist, so it excludes this repository.
+WITH unlinked AS (
+    DELETE FROM repository_commits uc WHERE uc.repository_id = sqlc.arg(repository_id) RETURNING uc.sha
+), deleted AS (
+    DELETE FROM commits c USING unlinked u
+    WHERE c.sha = u.sha
+      AND NOT EXISTS (SELECT 1 FROM repository_commits o WHERE o.sha = c.sha AND o.repository_id <> sqlc.arg(repository_id))
+    RETURNING 1
+)
+SELECT (SELECT count(*) FROM unlinked) AS unlinked_count, (SELECT count(*) FROM deleted) AS deleted_count;
+
+-- name: DeleteRepositoryDiffs :execrows
+DELETE FROM commit_file_diffs d USING repository_commits rc
+WHERE rc.repository_id = sqlc.arg(repository_id) AND d.sha = rc.sha
+  AND NOT EXISTS (SELECT 1 FROM repository_commits o WHERE o.sha = d.sha AND o.repository_id <> sqlc.arg(repository_id));
+
+-- name: DeleteRepository :execrows
+DELETE FROM repositories WHERE id = sqlc.arg(repository_id);
+
+-- name: ListRepositoryIDs :many
+SELECT id FROM repositories WHERE id = ANY(sqlc.arg(ids)::bigint[]);

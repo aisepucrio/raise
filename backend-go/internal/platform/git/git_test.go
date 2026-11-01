@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 )
 
 // ---- logparse.go ----
@@ -260,6 +261,42 @@ func deref(s *string) string {
 		return "<nil>"
 	}
 	return *s
+}
+
+// ---- mirror.go ----
+
+func TestMirroredRepositories(t *testing.T) {
+	dir := t.TempDir()
+	for _, name := range []string{"1.git", "42.git", "7.git.tmp-123", "notes.git"} {
+		if err := os.Mkdir(filepath.Join(dir, name), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(dir, "3.git"), nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	ids, err := NewMirrors(dir, "git", nil).MirroredRepositories()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Clones in progress, other names and plain files are not mirrors.
+	slices.Sort(ids)
+	if !slices.Equal(ids, []int64{1, 42}) {
+		t.Errorf("ids = %v", ids)
+	}
+	if ids, err := NewMirrors(filepath.Join(dir, "missing"), "git", nil).MirroredRepositories(); err != nil || ids != nil {
+		t.Errorf("missing directory: %v, %v", ids, err)
+	}
+}
+
+func TestMinedAt(t *testing.T) {
+	at := time.Date(2024, 1, 2, 3, 4, 5, 0, time.UTC)
+	if got := MinedAt(at); got == nil || !got.Equal(at) {
+		t.Errorf("MinedAt(time) = %v", got)
+	}
+	if got := MinedAt(nil); got != nil {
+		t.Errorf("MinedAt(nil) = %v", got)
+	}
 }
 
 // ---- repository.go ----

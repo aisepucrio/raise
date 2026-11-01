@@ -126,3 +126,10 @@ func (p *Platform) StartEnrichment(context.Context, pgx.Tx, jobkit.Enqueuer, git
 func (p *Platform) OnCommitsMined(git.Repository, git.RepoRef, git.EnrichRequest, []string) []river.InsertManyParams {
 	return nil
 }
+
+// RepositoryData has no parts until GitLab enrichment is implemented.
+func (p *Platform) RepositoryData(context.Context, int64) ([]git.DataPart, error) { return nil, nil }
+
+func (p *Platform) DeleteRepositoryData(_ context.Context, _ pgx.Tx, _ int64, key string) error {
+	return fmt.Errorf("%w: gitlab has no data part %q", apperr.ErrNotFound, key)
+}

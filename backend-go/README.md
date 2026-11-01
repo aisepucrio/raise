@@ -36,7 +36,7 @@ share one PostgreSQL database.
 | | Development | Production |
 |---|---|---|
 | Docker + Docker Compose | recommended | recommended |
-| Go | 1.27.1+ | only to build without Docker |
+| Go | 1.27.3+ (security fixes; CI uses the version in go.mod) | only to build without Docker |
 | git | 2.31+ (for the worker) | included in the image |
 | PostgreSQL | 18 (via `make db`) | 14+ |
 
@@ -433,6 +433,36 @@ curl -b cookies http://localhost:8000/api/collections/1/errors
 others were retried, so even a `completed` collection can list errors. The log
 is kept after the job queue deletes its jobs.
 
+### Managing repositories (admin)
+
+```sh
+curl -b cookies http://localhost:8000/api/repositories/1/data
+# {"repository": {...}, "parts": [
+#   {"platform": "git", "key": "commits", "label": "Commits", "item_count": 1118, "shared_count": 0, "last_mined_at": "…", …},
+#   {"platform": "git", "key": "diffs", "label": "File diffs", "item_count": 2618, …},
+#   {"platform": "github", "key": "issues", "label": "Issues", "item_count": 1259, …}, …]}
+
+curl -b cookies -X DELETE http://localhost:8000/api/repositories/1/data/github/issues   # returns what remains
+curl -b cookies -X DELETE http://localhost:8000/api/repositories/1                      # 204
+```
+
+- **Parts** are what can be removed on their own. Git has `commits` (with
+  their files, diffs, branches and tags) and `diffs`. GitHub has `metadata`,
+  `issues`, `pull_requests`, `commits` (logins, signatures, PR links) and
+  `releases`, each with the data nested in it (comments, events, reviews,
+  assets). GitHub user profiles aren't tied to one repository and aren't
+  listed.
+- **Removing git's `commits`** also removes every forge's `commits` part,
+  which describes them.
+- **Forks share commits.** `shared_count` counts items that other
+  repositories also contain. Removing a part, or deleting the repository,
+  keeps those for the other repositories.
+- **Deleting a repository** removes everything mined for it. Its mirror is
+  removed by the worker within 15 minutes (`git.prune_mirrors`).
+- Both are refused with **409** while jobs of the repository are queued or
+  running. Wait for its collections, or cancel them.
+- Reading the parts needs any role; removing needs admin.
+
 ### Reading mined data
 
 | Endpoint | Returns |
@@ -445,6 +475,7 @@ with its nested data:
 | Endpoint | Returns |
 |---|---|
 | `GET /api/repositories/{id}` | One registered repository and the forges that host it |
+| `GET /api/repositories/{id}/data` | What was mined for it, part by part (see [Managing repositories](#managing-repositories-admin)) |
 | `GET /api/repositories/{id}/commits/{sha}?diffs=` | One commit with its changed files; with `diffs=true`, each file's diff too, once mined |
 | `GET /api/github/repositories/{id}` | GitHub repository metadata, plus `contributor_count` computed from the mined commits (`null` until they are mined) |
 | `GET /api/github/repositories/{id}/issues/{number}` | One issue or pull request with its comments and timeline events |

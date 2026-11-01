@@ -261,6 +261,139 @@ func (q *Queries) DashboardRepositories(ctx context.Context, repositoryID *int64
 	return i, err
 }
 
+const deleteCommitPullRequests = `-- name: DeleteCommitPullRequests :exec
+DELETE FROM github_commit_pull_requests WHERE repository_id = $1
+`
+
+func (q *Queries) DeleteCommitPullRequests(ctx context.Context, repositoryID int64) error {
+	_, err := q.db.Exec(ctx, deleteCommitPullRequests, repositoryID)
+	return err
+}
+
+const deleteConversationComments = `-- name: DeleteConversationComments :exec
+DELETE FROM github_issue_comments c USING github_issues i
+WHERE c.repository_id = $1 AND i.repository_id = c.repository_id
+  AND i.number = c.issue_number AND i.is_pull_request = $2
+`
+
+type DeleteConversationCommentsParams struct {
+	RepositoryID  int64 `json:"repository_id"`
+	IsPullRequest bool  `json:"is_pull_request"`
+}
+
+// Comments of the repository's issues (is_pull_request false) or of its pull
+// requests (true).
+func (q *Queries) DeleteConversationComments(ctx context.Context, arg DeleteConversationCommentsParams) error {
+	_, err := q.db.Exec(ctx, deleteConversationComments, arg.RepositoryID, arg.IsPullRequest)
+	return err
+}
+
+const deleteConversationEvents = `-- name: DeleteConversationEvents :exec
+DELETE FROM github_issue_events e USING github_issues i
+WHERE e.repository_id = $1 AND i.repository_id = e.repository_id
+  AND i.number = e.issue_number AND i.is_pull_request = $2
+`
+
+type DeleteConversationEventsParams struct {
+	RepositoryID  int64 `json:"repository_id"`
+	IsPullRequest bool  `json:"is_pull_request"`
+}
+
+func (q *Queries) DeleteConversationEvents(ctx context.Context, arg DeleteConversationEventsParams) error {
+	_, err := q.db.Exec(ctx, deleteConversationEvents, arg.RepositoryID, arg.IsPullRequest)
+	return err
+}
+
+const deleteConversations = `-- name: DeleteConversations :exec
+DELETE FROM github_issues WHERE repository_id = $1 AND is_pull_request = $2
+`
+
+type DeleteConversationsParams struct {
+	RepositoryID  int64 `json:"repository_id"`
+	IsPullRequest bool  `json:"is_pull_request"`
+}
+
+func (q *Queries) DeleteConversations(ctx context.Context, arg DeleteConversationsParams) error {
+	_, err := q.db.Exec(ctx, deleteConversations, arg.RepositoryID, arg.IsPullRequest)
+	return err
+}
+
+const deletePullRequestCommits = `-- name: DeletePullRequestCommits :exec
+DELETE FROM github_pull_request_commits WHERE repository_id = $1
+`
+
+func (q *Queries) DeletePullRequestCommits(ctx context.Context, repositoryID int64) error {
+	_, err := q.db.Exec(ctx, deletePullRequestCommits, repositoryID)
+	return err
+}
+
+const deletePullRequestReviewComments = `-- name: DeletePullRequestReviewComments :exec
+DELETE FROM github_pull_request_review_comments WHERE repository_id = $1
+`
+
+func (q *Queries) DeletePullRequestReviewComments(ctx context.Context, repositoryID int64) error {
+	_, err := q.db.Exec(ctx, deletePullRequestReviewComments, repositoryID)
+	return err
+}
+
+const deletePullRequestReviews = `-- name: DeletePullRequestReviews :exec
+DELETE FROM github_pull_request_reviews WHERE repository_id = $1
+`
+
+func (q *Queries) DeletePullRequestReviews(ctx context.Context, repositoryID int64) error {
+	_, err := q.db.Exec(ctx, deletePullRequestReviews, repositoryID)
+	return err
+}
+
+const deletePullRequests = `-- name: DeletePullRequests :exec
+DELETE FROM github_pull_requests WHERE repository_id = $1
+`
+
+func (q *Queries) DeletePullRequests(ctx context.Context, repositoryID int64) error {
+	_, err := q.db.Exec(ctx, deletePullRequests, repositoryID)
+	return err
+}
+
+const deleteReleaseAssets = `-- name: DeleteReleaseAssets :exec
+DELETE FROM github_release_assets WHERE repository_id = $1
+`
+
+func (q *Queries) DeleteReleaseAssets(ctx context.Context, repositoryID int64) error {
+	_, err := q.db.Exec(ctx, deleteReleaseAssets, repositoryID)
+	return err
+}
+
+const deleteReleases = `-- name: DeleteReleases :exec
+DELETE FROM github_releases WHERE repository_id = $1
+`
+
+func (q *Queries) DeleteReleases(ctx context.Context, repositoryID int64) error {
+	_, err := q.db.Exec(ctx, deleteReleases, repositoryID)
+	return err
+}
+
+const deleteRepositoryGitHubCommits = `-- name: DeleteRepositoryGitHubCommits :exec
+DELETE FROM github_commits g USING repository_commits rc
+WHERE rc.repository_id = $1 AND g.sha = rc.sha
+  AND NOT EXISTS (SELECT 1 FROM repository_commits o WHERE o.sha = g.sha AND o.repository_id <> $1)
+`
+
+// GitHub's view of the repository's commits, except those other
+// repositories (forks) also contain.
+func (q *Queries) DeleteRepositoryGitHubCommits(ctx context.Context, repositoryID int64) error {
+	_, err := q.db.Exec(ctx, deleteRepositoryGitHubCommits, repositoryID)
+	return err
+}
+
+const deleteRepositoryMetadata = `-- name: DeleteRepositoryMetadata :exec
+DELETE FROM github_repositories WHERE repository_id = $1
+`
+
+func (q *Queries) DeleteRepositoryMetadata(ctx context.Context, repositoryID int64) error {
+	_, err := q.db.Exec(ctx, deleteRepositoryMetadata, repositoryID)
+	return err
+}
+
 const deleteStaleCommitPullRequests = `-- name: DeleteStaleCommitPullRequests :exec
 DELETE FROM github_commit_pull_requests g
 WHERE g.repository_id = $1
@@ -1186,6 +1319,61 @@ func (q *Queries) ListUnminedLogins(ctx context.Context, logins []string) ([]str
 		return nil, err
 	}
 	return items, nil
+}
+
+const repositoryDataCounts = `-- name: RepositoryDataCounts :one
+
+SELECT
+    (SELECT count(*) FROM github_repositories r WHERE r.repository_id = $1) AS metadata_count,
+    (SELECT max(r.last_mined_at) FROM github_repositories r WHERE r.repository_id = $1) AS metadata_last_mined_at,
+    (SELECT count(*) FROM github_issues i WHERE i.repository_id = $1 AND NOT i.is_pull_request) AS issue_count,
+    (SELECT max(i.last_mined_at) FROM github_issues i WHERE i.repository_id = $1 AND NOT i.is_pull_request) AS issue_last_mined_at,
+    (SELECT count(*) FROM github_pull_requests p WHERE p.repository_id = $1) AS pull_request_count,
+    (SELECT max(p.last_mined_at) FROM github_pull_requests p WHERE p.repository_id = $1) AS pull_request_last_mined_at,
+    (SELECT count(*) FROM repository_commits rc JOIN github_commits g ON g.sha = rc.sha
+     WHERE rc.repository_id = $1) AS commit_count,
+    (SELECT count(*) FROM repository_commits rc JOIN github_commits g ON g.sha = rc.sha
+     WHERE rc.repository_id = $1
+       AND EXISTS (SELECT 1 FROM repository_commits o WHERE o.sha = rc.sha AND o.repository_id <> $1)) AS commit_shared_count,
+    (SELECT max(g.last_mined_at) FROM repository_commits rc JOIN github_commits g ON g.sha = rc.sha
+     WHERE rc.repository_id = $1) AS commit_last_mined_at,
+    (SELECT count(*) FROM github_releases r WHERE r.repository_id = $1) AS release_count,
+    (SELECT max(r.last_mined_at) FROM github_releases r WHERE r.repository_id = $1) AS release_last_mined_at
+`
+
+type RepositoryDataCountsRow struct {
+	MetadataCount          int64       `json:"metadata_count"`
+	MetadataLastMinedAt    interface{} `json:"metadata_last_mined_at"`
+	IssueCount             int64       `json:"issue_count"`
+	IssueLastMinedAt       interface{} `json:"issue_last_mined_at"`
+	PullRequestCount       int64       `json:"pull_request_count"`
+	PullRequestLastMinedAt interface{} `json:"pull_request_last_mined_at"`
+	CommitCount            int64       `json:"commit_count"`
+	CommitSharedCount      int64       `json:"commit_shared_count"`
+	CommitLastMinedAt      interface{} `json:"commit_last_mined_at"`
+	ReleaseCount           int64       `json:"release_count"`
+	ReleaseLastMinedAt     interface{} `json:"release_last_mined_at"`
+}
+
+// Repository data management (admin). Each part is removed on its own; see
+// DataParts in enricher.go.
+func (q *Queries) RepositoryDataCounts(ctx context.Context, repositoryID int64) (RepositoryDataCountsRow, error) {
+	row := q.db.QueryRow(ctx, repositoryDataCounts, repositoryID)
+	var i RepositoryDataCountsRow
+	err := row.Scan(
+		&i.MetadataCount,
+		&i.MetadataLastMinedAt,
+		&i.IssueCount,
+		&i.IssueLastMinedAt,
+		&i.PullRequestCount,
+		&i.PullRequestLastMinedAt,
+		&i.CommitCount,
+		&i.CommitSharedCount,
+		&i.CommitLastMinedAt,
+		&i.ReleaseCount,
+		&i.ReleaseLastMinedAt,
+	)
+	return i, err
 }
 
 const upsertRepository = `-- name: UpsertRepository :exec

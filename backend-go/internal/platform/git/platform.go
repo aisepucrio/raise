@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"runtime"
+	"time"
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/jackc/pgx/v5"
@@ -41,7 +42,10 @@ type Platform struct {
 	order     []Enricher
 }
 
-var _ platform.Source = (*Platform)(nil)
+var (
+	_ platform.Source    = (*Platform)(nil)
+	_ platform.Scheduler = (*Platform)(nil)
+)
 
 func New(deps platform.Deps, cfg Config, enrichers ...Enricher) *Platform {
 	if cfg.GitBinary == "" {
@@ -78,6 +82,18 @@ func (p *Platform) RegisterWorkers(w *river.Workers) {
 	river.AddWorker(w, &planCommitsWorker{p: p})
 	river.AddWorker(w, &mineCommitBatchWorker{p: p})
 	river.AddWorker(w, &mineDiffBatchWorker{p: p})
+	river.AddWorker(w, &pruneMirrorsWorker{p: p})
+}
+
+// pruneInterval is how long a deleted repository's mirror may stay on disk.
+const pruneInterval = 15 * time.Minute
+
+func (p *Platform) PeriodicJobs() []*river.PeriodicJob {
+	return []*river.PeriodicJob{river.NewPeriodicJob(
+		river.PeriodicInterval(pruneInterval),
+		func() (river.JobArgs, *river.InsertOpts) { return PruneMirrorsArgs{}, nil },
+		&river.PeriodicJobOpts{RunOnStart: true},
+	)}
 }
 
 func (p *Platform) RegisterRoutes(api huma.API) { p.registerRoutes(api) }

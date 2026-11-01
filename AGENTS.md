@@ -41,10 +41,11 @@ When working in `frontend/`, read these first and follow them:
   routing and state, data access and caching, current API contracts, known
   gaps, and the Go backend migration checklist.
 
-The frontend currently targets the legacy Django/Celery API. Changing
-`VITE_API_URL` alone does not make it compatible with `backend-go/`. For
-migration work, also read the Go backend docs above and check its published
-OpenAPI contract; distinguish implemented behaviour from planned work.
+The frontend talks to `backend-go/` only, through the same origin (the Vite
+dev proxy or nginx). When frontend work touches the API, also read the Go
+backend docs above and check its published OpenAPI contract; distinguish
+implemented behaviour from planned work. Jira and Stack Overflow have no Go
+backend yet, so the frontend shows them as unavailable.
 
 ## Keep the docs up to date
 

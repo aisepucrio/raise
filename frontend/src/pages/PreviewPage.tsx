@@ -13,11 +13,10 @@ export default function PreviewPage() {
   const [searchParams] = useSearchParams();
   const source = resolveSourceId(searchParams.get("source"));
   const section = resolveSectionId(source, searchParams.get("section"));
-  const previewModules = sourceSectionPreviewUiModules[source] as Record<
-    string,
-    ComponentType
-  >;
-  const PreviewModule = previewModules[section];
+  const previewModules = sourceSectionPreviewUiModules[source] as
+    | Record<string, ComponentType>
+    | undefined;
+  const PreviewModule = previewModules?.[section];
 
   return (
     <section className="flex h-full min-h-0 flex-col gap-2 overflow-hidden">
@@ -27,7 +26,7 @@ export default function PreviewPage() {
       />
 
       <div className="min-h-0 flex-1 overflow-hidden">
-        {isSourceAvailable(source) ? (
+        {isSourceAvailable(source) && PreviewModule ? (
           <PreviewModule />
         ) : (
           <SourceUnavailable source={source} />

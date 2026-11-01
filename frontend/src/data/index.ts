@@ -4,15 +4,11 @@ export * from "./modules/collections/collectionQueries";
 export * from "./modules/credentials/credentialQueries";
 export * from "./modules/dashboard/dashboardQueries";
 export * from "./modules/datasets/datasetQueries";
+export * from "./modules/repositories/repositoryQueries";
 export { buildDatasetExportUrl } from "./modules/datasets/datasetService";
-export * from "./modules/jira/jiraQueries";
-export * from "./modules/jira/jiraMutations";
-export * from "./modules/stackoverflow/stackoverflowQueries";
-export * from "./modules/stackoverflow/stackoverflowMutations";
 
 // Re-exports module types from the same shared entry point.
 export type {
-  ApiDateRangeResponse,
   Dashboard,
   DashboardCard,
   DashboardDateRange,
@@ -21,12 +17,8 @@ export type {
   DashboardGraph,
   DashboardGraphFilter,
   DashboardGraphInterval,
-  DashboardGraphParams,
-  DashboardGraphResponse,
   DashboardGraphs,
-  DashboardOverviewResponse,
   DateBounds,
-  DateFilterRange,
   HookQueryOptions,
 } from "./modules/shared";
 export { mergeDateRanges, toApiSince, toApiUntil } from "./modules/shared";
@@ -66,23 +58,11 @@ export type {
   DatasetRow,
 } from "./modules/datasets/datasetTypes";
 export type {
-  JiraCollectBody,
-  JiraDateRangeParams,
-  JiraOverviewParams,
-  JiraPreviewParams,
-  JiraPreviewResponse,
-  JiraPreviewRow,
-} from "./modules/jira";
-export type {
-  StackOverflowCollectBody,
-  StackOverflowCollectFilters,
-  StackOverflowDateRangeParams,
-  StackOverflowOverviewParams,
-  StackOverflowPreviewParams,
-  StackOverflowPreviewResponse,
-  StackOverflowPreviewRow,
-} from "./modules/stackoverflow";
-export type { GithubSection, JiraSection, PlatformId, StackOverflowSection } from "./api/endpoints";
+  RepositoryData,
+  RepositoryDataPart,
+  RepositoryRemote,
+} from "./modules/repositories/repositoryTypes";
+export type { PlatformId } from "./api/endpoints";
 export { endpoints } from "./api/endpoints";
 export { apiUrl, setUnauthorizedHandler } from "./api/apiClient";
 

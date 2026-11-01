@@ -62,7 +62,6 @@ services:
     # Only what the frontend needs: .env also holds the backend's secrets.
     environment:
       IS_DEBUG: ${IS_DEBUG:-True}
-      VITE_API_URL: ${VITE_API_URL:-}
       # The Vite dev server proxies /api/ here, so the browser stays on :5173.
       API_PROXY_TARGET: http://api:8000
     ports: ["5173:5173"]

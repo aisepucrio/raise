@@ -92,8 +92,8 @@ docker compose run --rm -it migrate raisectl user create -username admin -role a
 
 The web interface runs at <http://localhost:5173>: log in with the user from
 step 5. Admins register further users under **Users** (there is no
-self-signup). The dev server proxies `/api/` to the API, so leave
-`VITE_API_URL` empty in `.env`.
+self-signup). The dev server proxies `/api/` to the API, so the
+browser only ever talks to `:5173`.
 
 The API runs at <http://localhost:8000>, with interactive docs at
 <http://localhost:8000/api/docs>.

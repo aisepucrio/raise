@@ -15,6 +15,7 @@ import (
 	"raise/internal/credential"
 	"raise/internal/db"
 	"raise/internal/jobkit"
+	"raise/internal/platform"
 )
 
 type WorkerOptions struct {
@@ -45,9 +46,13 @@ func RunWorker(ctx context.Context, cfg Config, opts WorkerOptions) error {
 	workers := river.NewWorkers()
 	queues := map[string]river.QueueConfig{river.QueueDefault: {MaxWorkers: 5}}
 	river.AddWorker(workers, collection.NewReconcileWorker(pool))
+	periodic := []*river.PeriodicJob{collection.PeriodicJob()}
 	for _, p := range registry.All() {
 		p.RegisterWorkers(workers)
 		maps.Copy(queues, p.Queues())
+		if s, ok := p.(platform.Scheduler); ok {
+			periodic = append(periodic, s.PeriodicJobs()...)
+		}
 	}
 	if len(opts.Queues) > 0 {
 		for name := range queues {
@@ -65,7 +70,7 @@ func RunWorker(ctx context.Context, cfg Config, opts WorkerOptions) error {
 		Queues:       queues,
 		Workers:      workers,
 		Middleware:   []rivertype.Middleware{jobkit.NewMiddleware(pool, logger)},
-		PeriodicJobs: []*river.PeriodicJob{collection.PeriodicJob()},
+		PeriodicJobs: periodic,
 	})
 	if err != nil {
 		return err
