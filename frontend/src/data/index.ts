@@ -26,6 +26,7 @@ export type {
   ChangePasswordBody,
   CreateUserBody,
   LoginBody,
+  UpdateUserBody,
   User,
   UserRole,
 } from "./modules/auth";

@@ -166,10 +166,11 @@ func (s *Service) registerUserAdminRoutes(api huma.API) {
 
 	huma.Register(api, huma.Operation{
 		OperationID: "update-user", Method: http.MethodPatch, Path: "/api/users/{id}",
-		Summary: "Change a user's role, disable them, or reset their password", Tags: tags, Metadata: admin,
+		Summary: "Rename a user, change their role, disable them, or reset their password", Tags: tags, Metadata: admin,
 	}, func(ctx context.Context, in *struct {
 		ID   int64 `path:"id"`
 		Body struct {
+			Username   *string      `json:"username,omitempty"`
 			Role       *access.Role `json:"role,omitempty" enum:"viewer,researcher,admin"`
 			IsDisabled *bool        `json:"is_disabled,omitempty"`
 			Password   *string      `json:"password,omitempty"`
@@ -178,10 +179,22 @@ func (s *Service) registerUserAdminRoutes(api huma.API) {
 		if in.ID == principal(ctx).UserID && (in.Body.Role != nil || in.Body.IsDisabled != nil) {
 			return nil, huma.Error422UnprocessableEntity("admins can't change their own role or disable themselves")
 		}
-		u, err := s.UpdateUser(ctx, in.ID, UserUpdate{Role: in.Body.Role, IsDisabled: in.Body.IsDisabled, Password: in.Body.Password})
+		u, err := s.UpdateUser(ctx, in.ID, UserUpdate{Username: in.Body.Username, Role: in.Body.Role, IsDisabled: in.Body.IsDisabled, Password: in.Body.Password})
 		if err != nil {
 			return nil, httpapi.Error(err)
 		}
 		return &userOutput{Body: u}, nil
+	})
+
+	huma.Register(api, huma.Operation{
+		OperationID: "delete-user", Method: http.MethodDelete, Path: "/api/users/{id}",
+		Summary: "Delete a user", Tags: tags, Metadata: admin, DefaultStatus: http.StatusNoContent,
+	}, func(ctx context.Context, in *struct {
+		ID int64 `path:"id"`
+	}) (*struct{}, error) {
+		if in.ID == principal(ctx).UserID {
+			return nil, huma.Error422UnprocessableEntity("admins can't delete themselves")
+		}
+		return nil, httpapi.Error(s.DeleteUser(ctx, in.ID))
 	})
 }

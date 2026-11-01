@@ -37,7 +37,7 @@ in Vite, TypeScript, and Vitest.
 
 | Path | Responsibility |
 |---|---|
-| `src/pages/` | Route shells; select source UI modules. `JobsPage` (collections), `LoginPage`, `RegisterPage` (admin user registration), `CredentialsPage`, `ChangePasswordPage` and `SourceUnavailable` are source-independent. |
+| `src/pages/` | Route shells; select source UI modules. `JobsPage` (collections), `LoginPage`, `UsersPage` (user management), `CredentialsPage`, `ChangePasswordPage` and `SourceUnavailable` are source-independent. |
 | `src/auth/` | `RequireAuth` (session guard, 401 redirect) and `RequireRole`. |
 | `src/sidebar/` | Navigation in two groups: **Platform** (the source selector and the screens it scopes: Overview, Collect, Preview and the entities page, named by the source: Repositories, Projects, Tags; each is a generic shell over the source's modules in `registry.ts`) and **System** (Jobs, Credentials, Users, which don't depend on the source). Also query-string normalisation, current user, password and logout. Preview lists a source's main sections and folds the rest (`foldedSectionPreviewIdsBySource`) under a "Show N more" toggle, which stays open while a folded section is the current page. On wide screens the navigation scrolls on its own and the account footer stays pinned; on narrow screens the whole sidebar scrolls within the top 45% of the viewport. |
 | `src/sources/index.ts` | Source IDs, labels, preview sections, defaults, unavailable sources, and related types/options. |
@@ -83,7 +83,7 @@ fall back to `index.html` for client routes.
 | `/jobs` | `JobsPage`, independent of selected source. |
 | `/credentials` | `CredentialsPage` inside `RequireRole role="researcher"` (the API lists credentials to researchers); add, test and delete controls render for admins only. |
 | `/entities` | `EntitiesPage` inside `RequireRole role="admin"`: titled by `sourceEntityLabels[source]` (Repositories, Projects, Tags) and selects `sourceUiModules[source].entities` (GitHub: `GithubRepositories`; the selected repository is in the URL, `?repository=<id>`). Sources without the module show `SourceUnavailable`. The sidebar lists it in the Platform group, to admins only. |
-| `/register` | `RegisterPage` inside `RequireRole role="admin"`; the sidebar shows it to admins only. |
+| `/users` | `UsersPage` inside `RequireRole role="admin"`; the sidebar shows it to admins only. The old `/register` path redirects here. |
 | `/password` | `ChangePasswordPage`, for every role; opened from the lock button beside **Log out**. |
 
 For an unavailable source (`unavailableSourceReasons` in `src/sources/index.ts`),
@@ -180,7 +180,7 @@ are the database column names (`github_created_at`, `first_mined_at`, ...).
 |---|---|---|
 | Session | `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me` | Login, `RequireAuth`, sidebar |
 | Own password | `POST /api/auth/password` `{current_password, new_password}` (204; a wrong current password is a 403) | Change password |
-| Users (admin) | `GET /api/users`, `POST /api/users` `{username, password, role}` | Register |
+| Users (admin) | `GET /api/users`, `POST /api/users` `{username, password, role}`, `PATCH /api/users/{id}` `{username?, role?, is_disabled?, password?}` (409 for a taken username), `DELETE /api/users/{id}` (204); 422 for the admin's own role, status or account | Users |
 | Platforms | `GET /api/platforms` | Credentials (credential kinds and their fields) |
 | Credentials | `GET /api/credentials` (researcher), `POST /api/credentials` `{platform, kind, label, fields}`, `POST /api/credentials/{id}/test`, `DELETE /api/credentials/{id}` (admin) | Credentials |
 | Dashboard | `GET /api/{platform}/dashboard?entity=&since=&until=` | Overview cards; repository selector options (`entities`) |
@@ -404,7 +404,7 @@ When adding a source or section within this structure:
 ## 9. Go backend migration status
 
 Done: same-origin serving (Vite proxy and nginx), session login and logout,
-role-aware UI, admin user registration, password change, credential
+role-aware UI, user management, password change, credential
 management, the GitHub
 overview, collect and preview screens, exports, and the collections (Jobs)
 screen.
@@ -413,7 +413,16 @@ Still to do:
 
 | Area | Notes |
 |---|---|
-| Own account | No screen for managing API keys (`/api/auth/api-keys`), nor for disabling users, changing roles or resetting another user's password (`PATCH /api/users/{id}`). |
-| Nested views | Every dataset has a preview section, but the detail endpoints (`/api/github/repositories/{id}/issues/{number}`, `/api/repositories/{id}/commits/{sha}?diffs=true`, ...) aren't used: there's no view of one issue or commit with its nested data. |
-| Platform catalogue | Sources and sections are hard-coded; `GET /api/platforms` could drive them. |
+| Platform catalogue | Sources and sections stay hard-coded for now. Once the Go backend reaches parity with the old one (Jira and Stack Overflow), drive them from `GET /api/platforms`. |
 | Jira and Stack Overflow | Their Go collection jobs are TODO (backend-go architecture.md §12). Their frontend modules (built for the Django API) were removed; when a platform exists, add its modules to `registry.ts` on the generic dashboard, dataset and collection modules, remove it from `unavailableSourceReasons`, and give its collections a label on the Jobs page. The old screens remain in git history for reference. |
+
+Not planned:
+
+- **API-key screen.** Scripts create keys through `/api/auth/api-keys`
+  directly.
+- **Detail views** of one issue, pull request or commit with its nested data.
+  Raise is for overviews and mining, and deeper analysis of the data belongs
+  in external tools (through the exports). The backend's detail endpoints
+  (`/api/github/repositories/{id}/issues/{number}`,
+  `/api/repositories/{id}/commits/{sha}?diffs=true`, ...) stay for API
+  users.

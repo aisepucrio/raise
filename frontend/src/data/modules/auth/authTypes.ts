@@ -29,6 +29,15 @@ export type CreateUserBody = {
   role: UserRole;
 };
 
+// Admin-only. Omitted fields stay as they are. Admins can't change their own
+// role or disable or delete themselves (422).
+export type UpdateUserBody = {
+  username?: string;
+  role?: UserRole;
+  is_disabled?: boolean;
+  password?: string;
+};
+
 // Must match minPasswordLength in backend-go/internal/auth/users.go.
 export const MIN_PASSWORD_LENGTH = 12;
 

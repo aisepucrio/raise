@@ -240,7 +240,7 @@ creates that admin while the database has no users; remove them from
 docker run --rm -it --env-file prod.env raise-backend:<version> raisectl user create -username admin -role admin
 ```
 
-There is no self-signup. After this, admins register users in the web
+There is no self-signup. After this, admins add, edit and delete users in the web
 interface (**Users**) or through the API (`/api/users`), and every
 user can change their own password (**Change password**).
 

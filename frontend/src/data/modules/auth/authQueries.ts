@@ -6,6 +6,7 @@ import type {
   ChangePasswordBody,
   CreateUserBody,
   LoginBody,
+  UpdateUserBody,
 } from "./authTypes";
 
 // Current session's user. A 401 is an answer (logged out), not a failure, so
@@ -63,6 +64,33 @@ export function useCreateUserMutation() {
 
   return useMutation({
     mutationFn: (body: CreateUserBody) => authService.createUser(body),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.all }),
+  });
+}
+
+// Admin only.
+export function useUpdateUserMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, body }: { id: number; body: UpdateUserBody }) =>
+      authService.updateUser(id, body),
+    onSuccess: (user) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
+      // Renaming yourself changes the sidebar's account footer.
+      const me = queryClient.getQueryData<{ id: number }>(queryKeys.auth.me());
+      if (me?.id === user.id) queryClient.setQueryData(queryKeys.auth.me(), user);
+    },
+  });
+}
+
+// Admin only.
+export function useDeleteUserMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => authService.deleteUser(id),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: queryKeys.users.all }),
   });

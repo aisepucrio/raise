@@ -50,8 +50,8 @@ func NewService(pool *pgxpool.Pool, sessions *scs.SessionManager) *Service {
 }
 
 func (s *Service) CreateUser(ctx context.Context, username, password string, role access.Role) (User, error) {
-	if !usernameRE.MatchString(username) {
-		return User{}, fmt.Errorf("%w: username must be 2-64 characters of letters, digits, '.', '_' or '-'", apperr.ErrInvalid)
+	if err := validateUsername(username); err != nil {
+		return User{}, err
 	}
 	hash, err := hashPassword(password)
 	if err != nil {
@@ -137,13 +137,19 @@ func (s *Service) Authenticate(ctx context.Context, username, password string) (
 }
 
 type UserUpdate struct {
+	Username   *string
 	Role       *access.Role
 	IsDisabled *bool
 	Password   *string
 }
 
 func (s *Service) UpdateUser(ctx context.Context, id int64, upd UserUpdate) (User, error) {
-	params := sqlc.UpdateUserParams{ID: id, IsDisabled: upd.IsDisabled}
+	params := sqlc.UpdateUserParams{ID: id, Username: upd.Username, IsDisabled: upd.IsDisabled}
+	if upd.Username != nil {
+		if err := validateUsername(*upd.Username); err != nil {
+			return User{}, err
+		}
+	}
 	if upd.Role != nil {
 		r := string(*upd.Role)
 		params.Role = &r
@@ -159,7 +165,24 @@ func (s *Service) UpdateUser(ctx context.Context, id int64, upd UserUpdate) (Use
 	if errors.Is(err, pgx.ErrNoRows) {
 		return User{}, fmt.Errorf("%w: user %d", apperr.ErrNotFound, id)
 	}
+	if isUniqueViolation(err) {
+		return User{}, fmt.Errorf("%w: username %q is taken", apperr.ErrConflict, *upd.Username)
+	}
 	return toUser(u), err
+}
+
+// DeleteUser removes an account. Its API keys go with it (cascade), its
+// sessions stop resolving, and the credentials and collections it created
+// keep their data with created_by set to NULL.
+func (s *Service) DeleteUser(ctx context.Context, id int64) error {
+	n, err := s.q.DeleteUser(ctx, id)
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return fmt.Errorf("%w: user %d", apperr.ErrNotFound, id)
+	}
+	return nil
 }
 
 func (s *Service) ChangePassword(ctx context.Context, userID int64, current, next string) error {
@@ -176,6 +199,13 @@ func (s *Service) ChangePassword(ctx context.Context, userID int64, current, nex
 	}
 	_, err = s.UpdateUser(ctx, userID, UserUpdate{Password: &next})
 	return err
+}
+
+func validateUsername(username string) error {
+	if !usernameRE.MatchString(username) {
+		return fmt.Errorf("%w: username must be 2-64 characters of letters, digits, '.', '_' or '-'", apperr.ErrInvalid)
+	}
+	return nil
 }
 
 func hashPassword(password string) (string, error) {

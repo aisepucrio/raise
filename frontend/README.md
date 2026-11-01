@@ -49,7 +49,7 @@ API isn't on `localhost:8000`, set `API_PROXY_TARGET` (for example in
 
 There is no self-signup. The API creates the first admin from
 `ADMIN_USERNAME`/`ADMIN_PASSWORD` in the root `.env` (backend README); admins
-then register other users on the **Users** screen.
+then add other users on the **Users** screen.
 
 ### Configuration
 
@@ -102,7 +102,7 @@ series); it does not test rendered pages or end-to-end flows. See the architectu
 | `/jobs` | Collections with their progress, polled every five seconds while one runs; view a collection's error log, cancel running ones or run a settled one again. |
 | `/credentials` | Researchers see the lab's platform tokens (status, quota left, secret hints); admins add, re-test and delete them. Tokens are tested as they are added. |
 | `/entities?source=github` | Admin only. Named after what the platform mines from: **Repositories** on GitHub (Projects on Jira, Tags on Stack Overflow, once they are available). On GitHub: list repositories, see what was collected for each (items per kind of data, shared with forks, last collected), remove one kind of data, or delete a repository with everything collected for it. |
-| `/register` | Admin only: register users and list them. |
+| `/users` | Admin only: list users; add them, edit them (username, role, active or disabled, password reset) and delete them. Admins can't change their own role or status or delete themselves. `/register` redirects here. |
 | `/password` | Any user: change their own password (current password, then the new one twice). Opened from the lock button next to **Log out**. |
 
 Supported `source` values are `github`, `jira`, and `stackoverflow`. The default

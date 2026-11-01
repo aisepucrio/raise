@@ -74,6 +74,18 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const deleteUser = `-- name: DeleteUser :execrows
+DELETE FROM users WHERE id = $1
+`
+
+func (q *Queries) DeleteUser(ctx context.Context, id int64) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteUser, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const getUser = `-- name: GetUser :one
 SELECT id, username, password_hash, role, is_disabled, created_at, updated_at FROM users WHERE id = $1
 `
@@ -209,15 +221,17 @@ func (q *Queries) RevokeAPIKey(ctx context.Context, arg RevokeAPIKeyParams) (int
 
 const updateUser = `-- name: UpdateUser :one
 UPDATE users SET
-    role          = coalesce($1, role),
-    is_disabled   = coalesce($2, is_disabled),
-    password_hash = coalesce($3, password_hash),
+    username      = coalesce($1, username),
+    role          = coalesce($2, role),
+    is_disabled   = coalesce($3, is_disabled),
+    password_hash = coalesce($4, password_hash),
     updated_at    = now()
-WHERE id = $4
+WHERE id = $5
 RETURNING id, username, password_hash, role, is_disabled, created_at, updated_at
 `
 
 type UpdateUserParams struct {
+	Username     *string `json:"username"`
 	Role         *string `json:"role"`
 	IsDisabled   *bool   `json:"is_disabled"`
 	PasswordHash *string `json:"password_hash"`
@@ -226,6 +240,7 @@ type UpdateUserParams struct {
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
 	row := q.db.QueryRow(ctx, updateUser,
+		arg.Username,
 		arg.Role,
 		arg.IsDisabled,
 		arg.PasswordHash,

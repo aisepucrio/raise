@@ -346,6 +346,11 @@ from a branch or tag).
 Migration: `00004_git.sql`. Files changed by each non-merge commit, with rename
 detection.
 
+Code complexity metrics (the old backend's per-file and per-method Lizard
+complexity, through pydriller) are not mined, by design: they need
+language-specific parsing of every file version, and can be computed from the
+mirror or the diffs with external tools.
+
 | Column | Type | Null | Description |
 |---|---|:-:|---|
 | `sha` | `text` | | → `commits.sha`; part of the primary key |

@@ -17,12 +17,16 @@ SELECT * FROM users ORDER BY username;
 
 -- name: UpdateUser :one
 UPDATE users SET
+    username      = coalesce(sqlc.narg(username), username),
     role          = coalesce(sqlc.narg(role), role),
     is_disabled   = coalesce(sqlc.narg(is_disabled), is_disabled),
     password_hash = coalesce(sqlc.narg(password_hash), password_hash),
     updated_at    = now()
 WHERE id = sqlc.arg(id)
 RETURNING *;
+
+-- name: DeleteUser :execrows
+DELETE FROM users WHERE id = $1;
 
 
 -- name: CreateAPIKey :one

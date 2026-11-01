@@ -8,7 +8,7 @@ import {
   KeyRound,
   Lock,
   LogOut,
-  UserPlus,
+  Users,
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -79,7 +79,7 @@ const systemItems: SidebarRouteItem[] = [
     icon: KeyRound,
     role: "researcher",
   },
-  { label: "Users", to: "/register", icon: UserPlus, role: "admin" },
+  { label: "Users", to: "/users", icon: Users, role: "admin" },
 ];
 
 export default function Sidebar() {

@@ -599,8 +599,12 @@ instance.
   but only while the `users` table is empty, so the variables never override
   a changed password. If two API processes race, the loser's insert conflicts
   and is ignored. `raisectl user create -username admin -role admin` does the
-  same by hand. Admins then manage users via `/api/users`; each user changes
-  their own password via `POST /api/auth/password`.
+  same by hand. Admins then manage users via `/api/users` (add, rename, change
+  role, disable, reset password, delete), but not their own role, status or
+  account, so an admin always remains. Deleting a user cascades to their API
+  keys and keeps the credentials and collections they created
+  (`created_by` becomes `NULL`). Each user changes their own password via
+  `POST /api/auth/password`.
 
 ---
 
@@ -612,7 +616,7 @@ The API uses huma v2 on chi (`humachi`). The OpenAPI 3.1 spec is served at
 | Area | Endpoints |
 |---|---|
 | auth | `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`, `POST /api/auth/password`, `GET/POST /api/auth/api-keys`, `DELETE /api/auth/api-keys/{id}` |
-| users (admin) | `GET/POST /api/users`, `PATCH /api/users/{id}` |
+| users (admin) | `GET/POST /api/users`, `PATCH/DELETE /api/users/{id}` |
 | platforms | `GET /api/platforms` |
 | credentials | `GET/POST /api/credentials`, `POST /api/credentials/{id}/test`, `DELETE /api/credentials/{id}` |
 | collections | `POST/GET /api/collections`, `GET /api/collections/{id}`, `GET /api/collections/{id}/errors`, `POST /api/collections/{id}/cancel` |
@@ -859,11 +863,12 @@ TODO, in rough priority order:
 - Dashboards, previews and exports for Jira and Stack Overflow: they
   implement `Dashboarder` and `DatasetProvider` with their collection jobs
   (git and GitHub are done, §9.1 and §9.2).
-- Frontend: the GitHub screens, login, admin user registration, credential
+- Frontend: the GitHub screens, login, user management, credential
   management, password change and the collections (Jobs) screen use this API,
   served from one origin (Vite's dev proxy, or nginx). Still to do there: the
-  API-key screen, and Jira and Stack Overflow screens, built on the generic
-  modules once their jobs exist (frontend/ARCHITECTURE.md §9).
+  Jira and Stack Overflow screens, built on the generic modules once their
+  jobs exist (frontend/ARCHITECTURE.md §9). An API-key screen and detail
+  views are not planned.
 
 ---
 

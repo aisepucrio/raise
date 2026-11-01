@@ -9,6 +9,7 @@ export const endpoints = {
   me: () => "/api/auth/me",
   changePassword: () => "/api/auth/password",
   users: () => "/api/users",
+  user: (id: number) => `/api/users/${id}`,
 
   // ==> PLATFORMS AND CREDENTIALS
   platforms: () => "/api/platforms",

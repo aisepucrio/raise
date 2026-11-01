@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router-dom";
+import { Navigate, createBrowserRouter } from "react-router-dom";
 
 import Layout from "./layout";
 import NotFound from "./pages/NotFound";
@@ -10,7 +10,7 @@ import CollectPage from "./pages/CollectPage";
 import PreviewPage from "./pages/PreviewPage";
 import JobsPage from "./pages/JobsPage";
 import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
+import UsersPage from "./pages/UsersPage";
 import CredentialsPage from "./pages/CredentialsPage";
 import ChangePasswordPage from "./pages/ChangePasswordPage";
 import EntitiesPage from "./pages/EntitiesPage";
@@ -33,13 +33,15 @@ export const router = createBrowserRouter([
           { path: "jobs", element: <JobsPage /> },
           { path: "preview", element: <PreviewPage /> },
           {
-            path: "register",
+            path: "users",
             element: (
               <RequireRole role="admin">
-                <RegisterPage />
+                <UsersPage />
               </RequireRole>
             ),
           },
+          // The users screen's old path, kept for bookmarks.
+          { path: "register", element: <Navigate to="/users" replace /> },
           {
             // What the selected source mines from (repositories, projects,
             // tags). Removes mined data for everyone, so admins only.

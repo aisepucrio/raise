@@ -5,6 +5,7 @@ import type {
   ChangePasswordBody,
   CreateUserBody,
   LoginBody,
+  UpdateUserBody,
   User,
 } from "./authTypes";
 
@@ -31,4 +32,11 @@ export const authService = {
   // Admin only.
   createUser: (body: CreateUserBody) =>
     api.post<User, User>(endpoints.users(), body),
+
+  // Admin only. A taken username is a 409.
+  updateUser: (id: number, body: UpdateUserBody) =>
+    api.patch<User, User>(endpoints.user(id), body),
+
+  // Admin only; 204. Credentials and collections the user created are kept.
+  deleteUser: (id: number) => api.delete(endpoints.user(id)),
 };
