@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -31,18 +30,16 @@ func (s *Service) RegisterRoutes(api huma.API) {
 			Password string `json:"password" minLength:"1"`
 		}
 	}) (*userOutput, error) {
-		if !s.limiter.Allow(httpapi.ClientIP(ctx) + "|" + strings.ToLower(in.Body.Username)) {
+		if !s.limiter.Allow(httpapi.ClientIP(ctx), in.Body.Username) {
 			return nil, huma.Error429TooManyRequests("too many login attempts, try again in a minute")
 		}
 		u, err := s.Authenticate(ctx, in.Body.Username, in.Body.Password)
 		if err != nil {
 			return nil, httpapi.Error(err)
 		}
-		// New token on privilege change prevents session fixation.
-		if err := s.sessions.RenewToken(ctx); err != nil {
+		if err := s.startSession(ctx, u); err != nil {
 			return nil, httpapi.Error(err)
 		}
-		s.sessions.Put(ctx, sessionUserKey, u.ID)
 		return &userOutput{Body: u}, nil
 	})
 
@@ -66,17 +63,24 @@ func (s *Service) RegisterRoutes(api huma.API) {
 
 	huma.Register(api, huma.Operation{
 		OperationID: "change-password", Method: http.MethodPost, Path: "/api/auth/password",
-		Summary: "Change own password", Tags: tags, DefaultStatus: http.StatusNoContent,
+		Summary:     "Change own password",
+		Description: "Ends the user's other sessions and revokes their API keys; the session making the request stays logged in.",
+		Tags:        tags, DefaultStatus: http.StatusNoContent,
 	}, func(ctx context.Context, in *struct {
 		Body struct {
 			CurrentPassword string `json:"current_password"`
 			NewPassword     string `json:"new_password"`
 		}
 	}) (*struct{}, error) {
-		if err := s.ChangePassword(ctx, principal(ctx).UserID, in.Body.CurrentPassword, in.Body.NewPassword); err != nil {
+		p := principal(ctx)
+		u, err := s.ChangePassword(ctx, p.UserID, in.Body.CurrentPassword, in.Body.NewPassword)
+		if err != nil {
 			return nil, httpapi.Error(err)
 		}
-		return nil, httpapi.Error(s.sessions.RenewToken(ctx))
+		if p.Via != viaSession {
+			return nil, nil
+		}
+		return nil, httpapi.Error(s.startSession(ctx, u))
 	})
 
 	s.registerAPIKeyRoutes(api)
@@ -103,13 +107,18 @@ func (s *Service) registerAPIKeyRoutes(api huma.API) {
 	}
 	huma.Register(api, huma.Operation{
 		OperationID: "create-api-key", Method: http.MethodPost, Path: "/api/auth/api-keys",
-		Summary: "Create an API key for scripted access", Tags: tags, DefaultStatus: http.StatusCreated,
+		Summary:     "Create an API key for scripted access",
+		Description: "Only from a logged-in session: an API key can't create more keys, so revoking a leaked key is final.",
+		Tags:        tags, DefaultStatus: http.StatusCreated,
 	}, func(ctx context.Context, in *struct {
 		Body struct {
 			Label         string `json:"label" minLength:"1" maxLength:"100"`
 			ExpiresInDays int    `json:"expires_in_days,omitempty" minimum:"0" doc:"0 means no expiry"`
 		}
 	}) (*struct{ Body createdKey }, error) {
+		if principal(ctx).Via != viaSession {
+			return nil, huma.Error403Forbidden("API keys can only be created from a logged-in session")
+		}
 		var expires *time.Time
 		if d := in.Body.ExpiresInDays; d > 0 {
 			t := time.Now().AddDate(0, 0, d)
@@ -176,8 +185,15 @@ func (s *Service) registerUserAdminRoutes(api huma.API) {
 			Password   *string      `json:"password,omitempty"`
 		}
 	}) (*userOutput, error) {
-		if in.ID == principal(ctx).UserID && (in.Body.Role != nil || in.Body.IsDisabled != nil) {
-			return nil, huma.Error422UnprocessableEntity("admins can't change their own role or disable themselves")
+		if in.ID == principal(ctx).UserID {
+			if in.Body.Role != nil || in.Body.IsDisabled != nil {
+				return nil, huma.Error422UnprocessableEntity("admins can't change their own role or disable themselves")
+			}
+			// Otherwise a stolen admin session could take over the account
+			// without knowing its password.
+			if in.Body.Password != nil {
+				return nil, huma.Error422UnprocessableEntity("change your own password with POST /api/auth/password, which checks the current one")
+			}
 		}
 		u, err := s.UpdateUser(ctx, in.ID, UserUpdate{Username: in.Body.Username, Role: in.Body.Role, IsDisabled: in.Body.IsDisabled, Password: in.Body.Password})
 		if err != nil {

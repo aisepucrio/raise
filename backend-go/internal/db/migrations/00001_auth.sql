@@ -5,6 +5,9 @@ CREATE TABLE users (
     password_hash text        NOT NULL,
     role          text        NOT NULL CHECK (role IN ('viewer', 'researcher', 'admin')),
     is_disabled   boolean     NOT NULL DEFAULT false,
+    -- Sessions record the version they started with; a password change bumps
+    -- it, which ends every older session.
+    session_version integer   NOT NULL DEFAULT 1,
     created_at    timestamptz NOT NULL DEFAULT now(),
     updated_at    timestamptz NOT NULL DEFAULT now()
 );

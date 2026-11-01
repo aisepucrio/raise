@@ -50,7 +50,7 @@ func (q *Queries) CreateAPIKey(ctx context.Context, arg CreateAPIKeyParams) (Api
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (username, password_hash, role)
 VALUES ($1, $2, $3)
-RETURNING id, username, password_hash, role, is_disabled, created_at, updated_at
+RETURNING id, username, password_hash, role, is_disabled, session_version, created_at, updated_at
 `
 
 type CreateUserParams struct {
@@ -68,6 +68,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.PasswordHash,
 		&i.Role,
 		&i.IsDisabled,
+		&i.SessionVersion,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -87,7 +88,7 @@ func (q *Queries) DeleteUser(ctx context.Context, id int64) (int64, error) {
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, username, password_hash, role, is_disabled, created_at, updated_at FROM users WHERE id = $1
+SELECT id, username, password_hash, role, is_disabled, session_version, created_at, updated_at FROM users WHERE id = $1
 `
 
 func (q *Queries) GetUser(ctx context.Context, id int64) (User, error) {
@@ -99,6 +100,7 @@ func (q *Queries) GetUser(ctx context.Context, id int64) (User, error) {
 		&i.PasswordHash,
 		&i.Role,
 		&i.IsDisabled,
+		&i.SessionVersion,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -106,7 +108,7 @@ func (q *Queries) GetUser(ctx context.Context, id int64) (User, error) {
 }
 
 const getUserByUsername = `-- name: GetUserByUsername :one
-SELECT id, username, password_hash, role, is_disabled, created_at, updated_at FROM users WHERE lower(username) = lower($1)
+SELECT id, username, password_hash, role, is_disabled, session_version, created_at, updated_at FROM users WHERE lower(username) = lower($1)
 `
 
 func (q *Queries) GetUserByUsername(ctx context.Context, lower string) (User, error) {
@@ -118,6 +120,7 @@ func (q *Queries) GetUserByUsername(ctx context.Context, lower string) (User, er
 		&i.PasswordHash,
 		&i.Role,
 		&i.IsDisabled,
+		&i.SessionVersion,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -170,7 +173,7 @@ func (q *Queries) ListAPIKeys(ctx context.Context, userID int64) ([]ApiKey, erro
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, username, password_hash, role, is_disabled, created_at, updated_at FROM users ORDER BY username
+SELECT id, username, password_hash, role, is_disabled, session_version, created_at, updated_at FROM users ORDER BY username
 `
 
 func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
@@ -188,6 +191,7 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 			&i.PasswordHash,
 			&i.Role,
 			&i.IsDisabled,
+			&i.SessionVersion,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -219,15 +223,27 @@ func (q *Queries) RevokeAPIKey(ctx context.Context, arg RevokeAPIKeyParams) (int
 	return result.RowsAffected(), nil
 }
 
+const revokeUserAPIKeys = `-- name: RevokeUserAPIKeys :exec
+UPDATE api_keys SET revoked_at = now()
+WHERE user_id = $1 AND revoked_at IS NULL
+`
+
+func (q *Queries) RevokeUserAPIKeys(ctx context.Context, userID int64) error {
+	_, err := q.db.Exec(ctx, revokeUserAPIKeys, userID)
+	return err
+}
+
 const updateUser = `-- name: UpdateUser :one
 UPDATE users SET
     username      = coalesce($1, username),
     role          = coalesce($2, role),
     is_disabled   = coalesce($3, is_disabled),
     password_hash = coalesce($4, password_hash),
+    -- A new password ends every existing session.
+    session_version = session_version + CASE WHEN $4::text IS NULL THEN 0 ELSE 1 END,
     updated_at    = now()
 WHERE id = $5
-RETURNING id, username, password_hash, role, is_disabled, created_at, updated_at
+RETURNING id, username, password_hash, role, is_disabled, session_version, created_at, updated_at
 `
 
 type UpdateUserParams struct {
@@ -253,6 +269,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.PasswordHash,
 		&i.Role,
 		&i.IsDisabled,
+		&i.SessionVersion,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

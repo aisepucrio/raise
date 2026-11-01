@@ -18,7 +18,8 @@ type Config struct {
 	// API
 	HTTPAddr      string `env:"HTTP_ADDR" envDefault:":8000"`
 	SecureCookies bool   `env:"SECURE_COOKIES" envDefault:"false"`
-	TrustProxy    bool   `env:"TRUST_PROXY" envDefault:"false"`
+	// Reverse proxies whose X-Forwarded-For is believed: addresses or CIDRs.
+	TrustedProxies []string `env:"TRUSTED_PROXIES" envSeparator:","`
 
 	// Git
 	GitMirrorDir       string `env:"GIT_MIRROR_DIR" envDefault:"./data/mirrors"`

@@ -163,7 +163,7 @@ pass the command explicitly (e.g. `worker`).
 | `DATABASE_URL` | A dedicated database user with a strong password, e.g. `postgres://raise:…@db:5432/raise` |
 | `ENCRYPTION_KEYS` | Generate with `raisectl keygen` and **store it in your secret store or backups**. Without it, stored credentials can't be decrypted. |
 | `SECURE_COOKIES` | `true`, since the app must be served over HTTPS |
-| `TRUST_PROXY` | `true` when behind nginx or another reverse proxy |
+| `TRUSTED_PROXIES` | The reverse proxies' addresses or networks, e.g. `172.16.0.0/12` for nginx on a Docker network |
 | `GIT_MIRROR_DIR` | A persistent volume mounted on the worker (default `/data/mirrors` in the image) |
 
 The full list is in the [Configuration reference](#configuration-reference).
@@ -226,9 +226,12 @@ location / {
 }
 ```
 
-With `TRUST_PROXY=true`, the API takes the client IP from the **last**
-`X-Forwarded-For` entry, the one nginx appends. The API is not safe to expose
-directly with that setting on.
+The API reads `X-Forwarded-For` only from the addresses in `TRUSTED_PROXIES`.
+It takes the client IP from the last entry that isn't itself a trusted proxy.
+List every proxy in the chain: if TLS ends at another proxy in front of nginx,
+list that one too. Otherwise every user shares one IP, and anyone can throttle
+an account's logins. Keep the list as narrow as your network allows, since any
+listed address can claim any client IP.
 
 ### 5. Bootstrap the first admin
 
@@ -633,7 +636,7 @@ collections returns `501 Not Implemented`. The roadmap is in architecture.md
 | `LOG_LEVEL` | `info` | api, worker | `debug`, `info`, `warn` or `error` (JSON logs to stdout) |
 | `HTTP_ADDR` | `:8000` | api | Listen address |
 | `SECURE_COOKIES` | `false` | api | Mark session cookies `Secure` (required over HTTPS) |
-| `TRUST_PROXY` | `false` | api | Take the client IP from `X-Forwarded-For` (only behind a proxy) |
+| `TRUSTED_PROXIES` | (none) | api | Comma-separated addresses or CIDRs of reverse proxies whose `X-Forwarded-For` is believed |
 | `GIT_MIRROR_DIR` | `./data/mirrors` (`/data/mirrors` in the image) | worker | Where bare mirrors are stored |
 | `GIT_BINARY` | `git` | worker | Path to the git executable |
 | `GIT_COMMIT_BATCH_SIZE` | `500` | worker | Commits per mining job |

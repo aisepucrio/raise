@@ -162,6 +162,7 @@ Migration: `00001_auth.sql`. Holds local accounts; there is no self-signup.
 | `password_hash` | `text` | | argon2id hash in PHC format |
 | `role` | `text` | | `viewer`, `researcher` or `admin` |
 | `is_disabled` | `boolean` | | Disabled users can't log in; their sessions and API keys stop working |
+| `session_version` | `integer` | | Starts at 1; incremented with every new password. Sessions store the value from login and stop resolving once it changes |
 | `created_at` | `timestamptz` | | |
 | `updated_at` | `timestamptz` | | |
 

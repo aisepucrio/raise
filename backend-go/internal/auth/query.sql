@@ -21,6 +21,8 @@ UPDATE users SET
     role          = coalesce(sqlc.narg(role), role),
     is_disabled   = coalesce(sqlc.narg(is_disabled), is_disabled),
     password_hash = coalesce(sqlc.narg(password_hash), password_hash),
+    -- A new password ends every existing session.
+    session_version = session_version + CASE WHEN sqlc.narg(password_hash)::text IS NULL THEN 0 ELSE 1 END,
     updated_at    = now()
 WHERE id = sqlc.arg(id)
 RETURNING *;
@@ -40,6 +42,10 @@ SELECT * FROM api_keys WHERE user_id = $1 AND revoked_at IS NULL ORDER BY create
 -- name: RevokeAPIKey :execrows
 UPDATE api_keys SET revoked_at = now()
 WHERE id = $1 AND user_id = $2 AND revoked_at IS NULL;
+
+-- name: RevokeUserAPIKeys :exec
+UPDATE api_keys SET revoked_at = now()
+WHERE user_id = $1 AND revoked_at IS NULL;
 
 -- name: UseAPIKey :one
 -- Resolves an API key to its user and bumps last_used_at.

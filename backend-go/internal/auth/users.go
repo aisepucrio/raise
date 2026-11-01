@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"runtime"
 	"sync"
 	"time"
 
@@ -32,28 +33,37 @@ type User struct {
 	Role       access.Role `json:"role" enum:"viewer,researcher,admin"`
 	IsDisabled bool        `json:"is_disabled"`
 	CreatedAt  time.Time   `json:"created_at"`
+
+	sessionVersion int32 // never serialised; see startSession
 }
 
 func toUser(u sqlc.User) User {
-	return User{ID: u.ID, Username: u.Username, Role: access.Role(u.Role), IsDisabled: u.IsDisabled, CreatedAt: u.CreatedAt}
+	return User{ID: u.ID, Username: u.Username, Role: access.Role(u.Role), IsDisabled: u.IsDisabled, CreatedAt: u.CreatedAt, sessionVersion: u.SessionVersion}
 }
 
 type Service struct {
+	pool     *pgxpool.Pool
 	q        *sqlc.Queries
 	sessions *scs.SessionManager
 	limiter  *loginLimiter
+	// hashSlots bounds concurrent argon2id computations, so a flood of logins
+	// queues instead of exhausting memory.
+	hashSlots chan struct{}
 }
 
 // NewService builds the auth service. sessions may be nil for CLI use.
 func NewService(pool *pgxpool.Pool, sessions *scs.SessionManager) *Service {
-	return &Service{q: sqlc.New(pool), sessions: sessions, limiter: newLoginLimiter()}
+	return &Service{
+		pool: pool, q: sqlc.New(pool), sessions: sessions, limiter: newLoginLimiter(),
+		hashSlots: make(chan struct{}, runtime.NumCPU()),
+	}
 }
 
 func (s *Service) CreateUser(ctx context.Context, username, password string, role access.Role) (User, error) {
 	if err := validateUsername(username); err != nil {
 		return User{}, err
 	}
-	hash, err := hashPassword(password)
+	hash, err := s.hashPassword(ctx, password)
 	if err != nil {
 		return User{}, err
 	}
@@ -120,13 +130,13 @@ func (s *Service) ListUsers(ctx context.Context) ([]User, error) {
 func (s *Service) Authenticate(ctx context.Context, username, password string) (User, error) {
 	u, err := s.q.GetUserByUsername(ctx, username)
 	if errors.Is(err, pgx.ErrNoRows) {
-		_, _ = argon2id.ComparePasswordAndHash(password, dummyHash())
+		_, _ = s.comparePassword(ctx, password, dummyHash())
 		return User{}, apperr.ErrUnauthorized
 	}
 	if err != nil {
 		return User{}, err
 	}
-	ok, err := argon2id.ComparePasswordAndHash(password, u.PasswordHash)
+	ok, err := s.comparePassword(ctx, password, u.PasswordHash)
 	if err != nil {
 		return User{}, err
 	}
@@ -143,6 +153,9 @@ type UserUpdate struct {
 	Password   *string
 }
 
+// UpdateUser changes the given fields. A new password also ends the user's
+// sessions (their session_version moves on) and revokes their API keys, so
+// resetting a compromised account locks out whoever holds them.
 func (s *Service) UpdateUser(ctx context.Context, id int64, upd UserUpdate) (User, error) {
 	params := sqlc.UpdateUserParams{ID: id, Username: upd.Username, IsDisabled: upd.IsDisabled}
 	if upd.Username != nil {
@@ -155,13 +168,25 @@ func (s *Service) UpdateUser(ctx context.Context, id int64, upd UserUpdate) (Use
 		params.Role = &r
 	}
 	if upd.Password != nil {
-		hash, err := hashPassword(*upd.Password)
+		hash, err := s.hashPassword(ctx, *upd.Password)
 		if err != nil {
 			return User{}, err
 		}
 		params.PasswordHash = &hash
 	}
-	u, err := s.q.UpdateUser(ctx, params)
+
+	var u sqlc.User
+	err := pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
+		q := s.q.WithTx(tx)
+		var err error
+		if u, err = q.UpdateUser(ctx, params); err != nil {
+			return err
+		}
+		if upd.Password != nil {
+			return q.RevokeUserAPIKeys(ctx, id)
+		}
+		return nil
+	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return User{}, fmt.Errorf("%w: user %d", apperr.ErrNotFound, id)
 	}
@@ -185,20 +210,22 @@ func (s *Service) DeleteUser(ctx context.Context, id int64) error {
 	return nil
 }
 
-func (s *Service) ChangePassword(ctx context.Context, userID int64, current, next string) error {
+// ChangePassword sets a user's own password after checking the current one.
+// Like any new password, it ends the user's sessions and revokes their API
+// keys; the caller starts a new session for the user's current client.
+func (s *Service) ChangePassword(ctx context.Context, userID int64, current, next string) (User, error) {
 	u, err := s.q.GetUser(ctx, userID)
 	if err != nil {
-		return err
+		return User{}, err
 	}
-	ok, err := argon2id.ComparePasswordAndHash(current, u.PasswordHash)
+	ok, err := s.comparePassword(ctx, current, u.PasswordHash)
 	if err != nil {
-		return err
+		return User{}, err
 	}
 	if !ok {
-		return fmt.Errorf("%w: current password is wrong", apperr.ErrForbidden)
+		return User{}, fmt.Errorf("%w: current password is wrong", apperr.ErrForbidden)
 	}
-	_, err = s.UpdateUser(ctx, userID, UserUpdate{Password: &next})
-	return err
+	return s.UpdateUser(ctx, userID, UserUpdate{Password: &next})
 }
 
 func validateUsername(username string) error {
@@ -208,15 +235,44 @@ func validateUsername(username string) error {
 	return nil
 }
 
-func hashPassword(password string) (string, error) {
+// argon2Params is OWASP's recommended argon2id configuration: 19 MiB, two
+// passes, one lane. With hashSlots, hashing never holds more than
+// NumCPU × 19 MiB, whatever the request rate. Existing hashes keep the
+// parameters encoded in them.
+var argon2Params = &argon2id.Params{Memory: 19 * 1024, Iterations: 2, Parallelism: 1, SaltLength: 16, KeyLength: 32}
+
+func (s *Service) hashPassword(ctx context.Context, password string) (string, error) {
 	if len(password) < minPasswordLength {
 		return "", fmt.Errorf("%w: password must be at least %d characters", apperr.ErrInvalid, minPasswordLength)
 	}
-	return argon2id.CreateHash(password, argon2id.DefaultParams)
+	release, err := s.acquireHashSlot(ctx)
+	if err != nil {
+		return "", err
+	}
+	defer release()
+	return argon2id.CreateHash(password, argon2Params)
+}
+
+func (s *Service) comparePassword(ctx context.Context, password, hash string) (bool, error) {
+	release, err := s.acquireHashSlot(ctx)
+	if err != nil {
+		return false, err
+	}
+	defer release()
+	return argon2id.ComparePasswordAndHash(password, hash)
+}
+
+func (s *Service) acquireHashSlot(ctx context.Context) (func(), error) {
+	select {
+	case s.hashSlots <- struct{}{}:
+		return func() { <-s.hashSlots }, nil
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
 }
 
 var dummyHash = sync.OnceValue(func() string {
-	h, _ := argon2id.CreateHash("timing-equalisation", argon2id.DefaultParams)
+	h, _ := argon2id.CreateHash("timing-equalisation", argon2Params)
 	return h
 })
 

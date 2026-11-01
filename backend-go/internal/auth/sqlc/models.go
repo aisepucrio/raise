@@ -21,11 +21,12 @@ type ApiKey struct {
 }
 
 type User struct {
-	ID           int64     `json:"id"`
-	Username     string    `json:"username"`
-	PasswordHash string    `json:"password_hash"`
-	Role         string    `json:"role"`
-	IsDisabled   bool      `json:"is_disabled"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	ID             int64     `json:"id"`
+	Username       string    `json:"username"`
+	PasswordHash   string    `json:"password_hash"`
+	Role           string    `json:"role"`
+	IsDisabled     bool      `json:"is_disabled"`
+	SessionVersion int32     `json:"session_version"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
 }

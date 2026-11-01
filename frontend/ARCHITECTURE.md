@@ -179,8 +179,8 @@ are the database column names (`github_created_at`, `first_mined_at`, ...).
 | Operation | Method and path | Used by |
 |---|---|---|
 | Session | `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me` | Login, `RequireAuth`, sidebar |
-| Own password | `POST /api/auth/password` `{current_password, new_password}` (204; a wrong current password is a 403) | Change password |
-| Users (admin) | `GET /api/users`, `POST /api/users` `{username, password, role}`, `PATCH /api/users/{id}` `{username?, role?, is_disabled?, password?}` (409 for a taken username), `DELETE /api/users/{id}` (204); 422 for the admin's own role, status or account | Users |
+| Own password | `POST /api/auth/password` `{current_password, new_password}` (204; a wrong current password is a 403). Ends the user's other sessions and revokes their API keys | Change password |
+| Users (admin) | `GET /api/users`, `POST /api/users` `{username, password, role}`, `PATCH /api/users/{id}` `{username?, role?, is_disabled?, password?}` (409 for a taken username; a new password ends the user's sessions and revokes their API keys), `DELETE /api/users/{id}` (204); 422 for the admin's own role, status, password or account | Users |
 | Platforms | `GET /api/platforms` | Credentials (credential kinds and their fields) |
 | Credentials | `GET /api/credentials` (researcher), `POST /api/credentials` `{platform, kind, label, fields}`, `POST /api/credentials/{id}/test`, `DELETE /api/credentials/{id}` (admin) | Credentials |
 | Dashboard | `GET /api/{platform}/dashboard?entity=&since=&until=` | Overview cards; repository selector options (`entities`) |
@@ -341,7 +341,8 @@ and delete (with a confirmation; a deleted secret must be entered again).
 checks the 12-character minimum, that the new password differs from the
 current one, and that both entries match; a 403 is shown as "the current
 password is wrong" (it is not a session error, so the user stays on the
-page). The API renews the session token, so the user stays logged in.
+page). The API renews the session token, so the user stays logged in here;
+their other sessions end and their API keys are revoked.
 
 **Repositories** (`/entities?source=github`): admin only. The list is git's `repositories` dataset
 (every page), filtered in the browser. Selecting one loads

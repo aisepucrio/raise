@@ -11,6 +11,12 @@ import (
 	"raise/internal/access"
 )
 
+// Values of access.Principal.Via.
+const (
+	viaSession = "session"
+	viaAPIKey  = "api_key"
+)
+
 // ResolvePrincipal authenticates the request from an API key (Authorization:
 // Bearer rk_...) or the session cookie, and stores the Principal in the
 // context. It never rejects anonymous requests; RequireRole does that per
@@ -29,16 +35,18 @@ func (s *Service) ResolvePrincipal(next http.Handler) http.Handler {
 				http.Error(w, "internal error", http.StatusInternalServerError)
 				return
 			}
-			p := access.Principal{UserID: row.ID, Username: row.Username, Role: access.Role(row.Role), Via: "api_key"}
+			p := access.Principal{UserID: row.ID, Username: row.Username, Role: access.Role(row.Role), Via: viaAPIKey}
 			next.ServeHTTP(w, r.WithContext(access.WithPrincipal(ctx, p)))
 			return
 		}
 
-		// Users are re-read on every request so that disabling an account or
-		// changing a role takes effect immediately for existing sessions.
+		// Users are re-read on every request so that disabling an account,
+		// changing a role or setting a new password (which bumps
+		// session_version) takes effect immediately for existing sessions.
 		if id := s.sessions.GetInt64(ctx, sessionUserKey); id != 0 {
-			if u, err := s.q.GetUser(ctx, id); err == nil && !u.IsDisabled {
-				p := access.Principal{UserID: u.ID, Username: u.Username, Role: access.Role(u.Role), Via: "session"}
+			u, err := s.q.GetUser(ctx, id)
+			if err == nil && !u.IsDisabled && s.sessions.GetInt32(ctx, sessionVersionKey) == u.SessionVersion {
+				p := access.Principal{UserID: u.ID, Username: u.Username, Role: access.Role(u.Role), Via: viaSession}
 				ctx = access.WithPrincipal(ctx, p)
 			}
 		}

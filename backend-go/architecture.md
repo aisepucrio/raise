@@ -563,24 +563,45 @@ instance.
 - **Passwords** are hashed with argon2id (`alexedwards/argon2id`) and must be at
   least 12 characters. Unknown usernames are compared against a dummy hash, so
   their timing matches a wrong password.
+  - The parameters are OWASP's (19 MiB, two passes, one lane). At most one hash
+    per CPU runs at a time; further logins queue. So a flood of logins costs
+    latency, not memory: hashing never holds more than NumCPU × 19 MiB.
 - **Sessions** use `alexedwards/scs`, stored in the Postgres `sessions` table.
   - The `raise_session` cookie is `HttpOnly`, `SameSite=Lax`, and `Secure` when
     `SECURE_COOKIES=true`.
   - The session token is renewed on login and on password change.
   - The user is re-read on every request, so disabling an account or changing a
     role takes effect immediately.
+  - A session stores the user's `session_version` from when it began, and only
+    resolves while it still matches. Setting a new password (own change, admin
+    reset or `raisectl user reset-password`) increments it, which ends every
+    session of that user. The same transaction revokes the user's API keys. An
+    own password change then starts a fresh session for the client that made
+    it.
 - **API keys** are for scripts and notebooks: `Authorization: Bearer rk_…`.
   - Each key is 256 bits of randomness, stored as a SHA-256 hash and shown only
     once.
   - Keys can be revoked and can expire.
+  - Keys are created only from a logged-in session (403 with an API key), so
+    a leaked key can't mint replacements before it's revoked.
   - A key and a session both resolve to the same `access.Principal`.
 - **CSRF** is handled by Go's `http.CrossOriginProtection`, which rejects
   cross-origin, state-changing browser requests. Non-browser clients send no
   `Origin` or `Sec-Fetch-Site` header and pass.
-- **Login throttling**: 5 attempts per minute per (client IP, username), kept in
-  memory, which assumes a single API process. Behind nginx, set
-  `TRUST_PROXY=true`; the client IP is then taken from the *last*
-  `X-Forwarded-For` hop, the one added by the proxy.
+- **Login throttling**, kept in memory, which assumes a single API process:
+  - 5 attempts per minute per (client IP, username), against guessing one
+    password;
+  - 20 attempts per minute per client IP, against spraying passwords over many
+    usernames.
+
+  Each table holds at most 10,000 keys. Keys idle long enough to have refilled
+  are evicted; if the table is still full, new keys are refused until it
+  isn't.
+- **Client IP.** `X-Forwarded-For` is only read when the request comes from an
+  address in `TRUSTED_PROXIES`. The API walks it from the end and takes the
+  first address that isn't a trusted proxy. A direct connection can't forge
+  its address, and chained proxies (a TLS terminator in front of nginx) all
+  get skipped when they're listed.
 - **Roles**:
 
   | Role | Can |
@@ -604,7 +625,10 @@ instance.
   account, so an admin always remains. Deleting a user cascades to their API
   keys and keeps the credentials and collections they created
   (`created_by` becomes `NULL`). Each user changes their own password via
-  `POST /api/auth/password`.
+  `POST /api/auth/password`, which checks the current one. That includes
+  admins: `PATCH /api/users/{id}` refuses a password for the admin's own
+  account, so a stolen admin session can't take the account over without
+  knowing its password.
 
 ---
 

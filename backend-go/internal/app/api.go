@@ -56,7 +56,11 @@ func RunAPI(ctx context.Context, cfg Config) error {
 	credSvc := credential.NewService(pool, keys, registry)
 	collSvc := collection.NewService(pool, riverClient, registry)
 
-	middleware := append(httpapi.Standard(logger, cfg.TrustProxy), sessions.LoadAndSave, authSvc.ResolvePrincipal)
+	trustedProxies, err := httpapi.ParseTrustedProxies(cfg.TrustedProxies)
+	if err != nil {
+		return err
+	}
+	middleware := append(httpapi.Standard(logger, trustedProxies), sessions.LoadAndSave, authSvc.ResolvePrincipal)
 	router, api := httpapi.New(httpapi.Config{Title: "Raise API", Version: version}, middleware...)
 	// Must be installed before any operation is registered.
 	api.UseMiddleware(auth.RequireRole(api))
